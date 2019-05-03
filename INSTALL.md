@@ -1,5 +1,49 @@
 ## Installation
 
+#### Installation Used for State of Detroit Child
+On Ubuntu 14.04 LTS:
+
+```bash
+git clone https://github.com/NiJeLorg/census-api.git
+sudo apt-add-repository -y ppa:ubuntugis/ubuntugis-unstable
+sudo add-apt-repository -y ppa:ubuntugis/ppa
+sudo apt-get update
+sudo apt upgrade
+sudo apt-get -y install libgdal1-dev libmemcached-dev libpq-dev gdal-bin python-gdal python3-gdal python-pip python-dev postgresql postgresql-contrib postgresql-9.3-postgis-scripts
+export CPLUS_INCLUDE_PATH=/usr/include/gdal
+export C_INCLUDE_PATH=/usr/include/gdal
+pip install -r requirements.txt
+
+sudo -u postgres psql
+postgres=# CREATE DATABASE census;
+postgres=# CREATE EXTENSION postgis;
+postgres=# CREATE USER census WITH PASSWORD '********';
+postgres=# GRANT ALL PRIVILEGES ON DATABASE "census" to census;
+
+apt-get install -q -y memcached
+sed -i "s/^-m 64$/-m 1024 -I 10485760/g" /etc/memcached.conf
+service memcached restart
+
+
+Example wget and zcat commands:
+wget "https://s3.amazonaws.com/census-backup/tiger/2017/tiger2017_backup.sql.gz"
+
+zcat tiger2017_backup.sql.gz | PGPASSWORD="********" psql -U census census
+
+Commands to restore Census dump file
+pg_restore -d census -U census census.dump
+
+Added Census metadata outside of the project directory:
+git clone https://github.com/NiJeLorg/census-table-metadata.git
+psql -d census -h localhost -U census -f census_metadata_drop.sql
+psql -d census -h localhost -U census -f census_metadata.sql
+sudo -u postgres psql -f census_metadata_load.sql
+
+
+```
+
+
+
 *(This is a work in progress)*
 
 Due to the size of the ACS data we're using, it's relatively difficult to run everything locally for development. In practice we develop by connecting to a remote database on the EC2 instance.
