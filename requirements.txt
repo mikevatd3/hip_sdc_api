@@ -1,7 +1,7 @@
 Fabric
 Flask
 Flask-SQLAlchemy
-GDAL==1.10.0
+GDAL==2.2.0
 SQLAlchemy
 blinker
 boto
