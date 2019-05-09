@@ -5,7 +5,7 @@ GDAL==1.10.0
 SQLAlchemy
 blinker
 boto
-/home/sdcapi/census-api/packages/mockcache.tar.gz
+packages/mockcache.tar.gz
 newrelic
 openpyxl
 psycopg2

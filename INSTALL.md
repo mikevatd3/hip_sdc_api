@@ -9,7 +9,7 @@ sudo apt-add-repository -y ppa:ubuntugis/ubuntugis-unstable
 sudo add-apt-repository -y ppa:ubuntugis/ppa
 sudo apt-get update
 sudo apt upgrade
-sudo apt-get -y install libgdal1-dev libmemcached-dev libpq-dev gdal-bin python-gdal python3-gdal python-pip python-dev postgresql postgresql-contrib postgresql-9.3-postgis-scripts
+sudo apt-get -y install libgdal1-dev libmemcached-dev libpq-dev gdal-bin python-gdal python3-gdal python-pip python-dev postgresql postgresql-contrib postgresql-9.5-postgis-scripts
 export CPLUS_INCLUDE_PATH=/usr/include/gdal
 export C_INCLUDE_PATH=/usr/include/gdal
 pip install -r requirements.txt
