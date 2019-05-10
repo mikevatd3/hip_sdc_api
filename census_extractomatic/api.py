@@ -6,7 +6,7 @@ from flask import abort, request, g
 from flask import make_response, current_app, send_file
 from flask import jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
-from raven.contrib.flask import Sentry
+#from raven.contrib.flask import Sentry
 from werkzeug.exceptions import HTTPException
 from functools import update_wrapper
 from itertools import groupby
@@ -34,7 +34,7 @@ from census_extractomatic.exporters import create_ogr_download, create_excel_dow
 app = Flask(__name__)
 app.config.from_object(os.environ.get('EXTRACTOMATIC_CONFIG_MODULE', 'census_extractomatic.config.Development'))
 db = SQLAlchemy(app)
-sentry = Sentry(app)
+#sentry = Sentry(app)
 
 if not app.debug:
     import logging
