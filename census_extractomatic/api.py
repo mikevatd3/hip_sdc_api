@@ -297,7 +297,7 @@ def moe_ratio(numerator, denominator, numerator_moe, denominator_moe):
 ops = {
     '+': operator.add,
     '-': operator.sub,
-    '/': operator.div,
+    '/': operator.truediv,
     '%': percentify,
     '%%': rateify,
 }
