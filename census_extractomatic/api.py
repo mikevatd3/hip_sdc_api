@@ -29,7 +29,7 @@ from boto.s3.key import Key
 from boto.exception import S3ResponseError
 #from validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
 
-from exporters import create_ogr_download, create_excel_download, supported_formats
+from census_extractomatic.exporters import create_ogr_download, create_excel_download, supported_formats
 
 app = Flask(__name__)
 app.config.from_object(os.environ.get('EXTRACTOMATIC_CONFIG_MODULE', 'census_extractomatic.config.Development'))
