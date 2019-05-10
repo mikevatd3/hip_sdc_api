@@ -1,5 +1,5 @@
-import newrelic.agent
-newrelic.agent.initialize('newrelic.ini')
+#import newrelic.agent
+#newrelic.agent.initialize('newrelic.ini')
 
 from census_extractomatic.api import app as application
 
