@@ -468,7 +468,7 @@ def get_data_fallback(table_ids, geoids, acs=None):
         for row in result.fetchall():
             row = dict(row)
             geoid = row.pop('geoid')
-            data[geoid] = dict([(col, val) for (col, val) in row.iteritems()])
+            data[geoid] = dict([(col, val) for (col, val) in row.items()])
 
         return data, acs
 
@@ -484,7 +484,7 @@ def get_data_fallback(table_ids, geoids, acs=None):
             for row in result.fetchall():
                 row = dict(row)
                 geoid = row.pop('geoid')
-                data[geoid] = dict([(col, val) for (col, val) in row.iteritems()])
+                data[geoid] = dict([(col, val) for (col, val) in row.items()])
 
             # Check to see if this release has our data
             data_with_values = filter(lambda geoid_data: geoid_data.values()[0] is not None, data.values())

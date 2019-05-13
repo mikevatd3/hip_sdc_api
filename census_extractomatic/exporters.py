@@ -44,7 +44,7 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
         header = []
         max_indent = 0
         # get column headers
-        for column_id, column_info in table['columns'].iteritems():
+        for column_id, column_info in table['columns'].items():
             column_name_utf8 = column_info['name'].encode('utf-8')
             indent = column_info['indent']
 
@@ -85,11 +85,11 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
             geo_headers.append(name)
             col_values = []
             col_errors = []
-            for (table_id, table) in table_metadata.iteritems():
+            for (table_id, table) in table_metadata.items():
                 table_estimates = data[geoid][table_id]['estimate']
                 table_errors = data[geoid][table_id]['error']
                 if option == 'value':
-                    for column_id, column_info in table['columns'].iteritems():
+                    for column_id, column_info in table['columns'].items():
                         col_values.append(table_estimates[column_id])
                         col_errors.append(table_errors[column_id])
                 elif option == 'percent':
@@ -97,7 +97,7 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
                         has_denominator_column = True
                         base_estimate = data[geoid][table_id]['estimate'][table['denominator_column_id']]
 
-                        for column_id, column_info in table['columns'].iteritems():
+                        for column_id, column_info in table['columns'].items():
                             if base_estimate is not None and base_estimate != 0:
                                 col_values.append(table_estimates[column_id] / base_estimate)
                                 col_errors.append(table_errors[column_id] / base_estimate)
@@ -142,7 +142,7 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
     wb = openpyxl.workbook.Workbook()
 
     # For every table in table_metadata, make a two sheets (values and percentages)
-    for i, (table_id, table) in enumerate(table_metadata.iteritems()):
+    for i, (table_id, table) in enumerate(table_metadata.items()):
         sheet = wb.active
         sheet.title = table_id + ' Values'
         excel_helper(sheet, table_id, table, 'value')
@@ -173,8 +173,8 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
     out_layer = out_data.CreateLayer(file_ident.encode('utf-8'), srs=out_srs, geom_type=ogr.wkbMultiPolygon)
     out_layer.CreateField(ogr.FieldDefn('geoid', ogr.OFTString))
     out_layer.CreateField(ogr.FieldDefn('name', ogr.OFTString))
-    for (table_id, table) in table_metadata.iteritems():
-        for column_id, column_info in table['columns'].iteritems():
+    for (table_id, table) in table_metadata.items():
+        for column_id, column_info in table['columns'].items():
             column_name_utf8 = column_id.encode('utf-8')
             if driver_name == "ESRI Shapefile":
                 # Work around the Shapefile column name length limits
@@ -199,10 +199,10 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
         geoid = in_feat.GetField('full_geoid')
         out_feat.SetField('geoid', geoid)
         out_feat.SetField('name', in_feat.GetField('display_name'))
-        for (table_id, table) in table_metadata.iteritems():
+        for (table_id, table) in table_metadata.items():
             table_estimates = data[geoid][table_id]['estimate']
             table_errors = data[geoid][table_id]['error']
-            for column_id, column_info in table['columns'].iteritems():
+            for column_id, column_info in table['columns'].items():
                 column_name_utf8 = column_id.encode('utf-8')
                 if column_id in table_estimates:
                     if format == 'shp':

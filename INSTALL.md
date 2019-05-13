@@ -31,13 +31,15 @@ wget "https://s3.amazonaws.com/census-backup/tiger/2017/tiger2017_backup.sql.gz"
 zcat tiger2017_backup.sql.gz | PGPASSWORD="********" psql -U census census
 
 Commands to restore Census dump file
+tar -zxvf census.dump.tar.gz
 pg_restore -d census -U census census.dump
+
 
 Added Census metadata outside of the project directory:
 git clone https://github.com/NiJeLorg/census-table-metadata.git
 psql -d census -h localhost -U census -f census_metadata_drop.sql
 psql -d census -h localhost -U census -f census_metadata.sql
-sudo -u postgres psql -f census_metadata_load.sql
+sudo psql -U postgres -d census -f census_metadata_load.sql
 
 
 ```

@@ -65,7 +65,7 @@ def check_tables_exist(to_check, all_tables):
     results = { "main_fine": [], "missing": [], "no_collapsed": [], 
                 "no_iterations": [], "no_pr": [] }
 
-    for table, annotations in to_check.iteritems():
+    for table, annotations in to_check.items():
         # Check existence of main table
         if table in all_tables:
             results["main_fine"].append(table)
