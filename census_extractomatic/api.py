@@ -50,8 +50,8 @@ except Exception as e:
 
 # Allowed ACS's in "best" order (newest and smallest range preferred)
 allowed_acs = [
-    'acs2017_1yr',
-    'acs2017_5yr',
+    'acs2016_1yr',
+    'acs2016_5yr',
 ]
 # When expanding a container geoid shorthand (i.e. 140|05000US12127),
 # use this ACS. It should always be a 5yr release so as to include as
