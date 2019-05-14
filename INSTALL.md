@@ -26,9 +26,9 @@ service memcached restart
 
 
 Example wget and zcat commands:
-wget "https://s3.amazonaws.com/census-backup/tiger/2017/tiger2017_backup.sql.gz"
+wget "https://s3.amazonaws.com/census-backup/tiger/2017/tiger2016_backup.sql.gz"
 
-zcat tiger2017_backup.sql.gz | PGPASSWORD="********" psql -U census census
+zcat tiger2016_backup.sql.gz | PGPASSWORD="********" psql -U census census
 
 Commands to restore Census dump file
 tar -zxvf census.dump.tar.gz
