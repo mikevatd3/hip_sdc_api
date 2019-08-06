@@ -584,12 +584,12 @@ def compute_profile_item_levels(geoid):
             'coverage': 100.0,
             })
 
-    if sumlevel != '010':
-        levels.append({
-            'relation': 'nation',
-            'geoid': '01000US',
-            'coverage': 100.0,
-        })
+    # if sumlevel != '010':
+    #     levels.append({
+    #         'relation': 'nation',
+    #         'geoid': '01000US',
+    #         'coverage': 100.0,
+    #     })
 
     levels = special_case_parents(geoid, levels)
 
