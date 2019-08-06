@@ -524,6 +524,9 @@ def special_case_parents(geoid, levels):
     # 050 Jefferson  which should already be in there so we'll just pluck it out.
     levels = [level for level in levels if not level['geoid'] == '16000US2148000']
 
+    # remove US as a parent -- this geoid does not exist in the SDC API
+    levels = [level for level in levels if not level['geoid'] == '01000US']
+
     return levels
 
 def compute_profile_item_levels(geoid):
@@ -557,12 +560,11 @@ def compute_profile_item_levels(geoid):
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(row['parent_geoid'][:3])['name']
 
-            if row['parent_geoid'] != '01000US':
-                levels.append({
-                    'relation': parent_sumlevel_name,
-                    'geoid': row['parent_geoid'],
-                    'coverage': row['percent_covered'],
-                })
+            levels.append({
+                'relation': parent_sumlevel_name,
+                'geoid': row['parent_geoid'],
+                'coverage': row['percent_covered'],
+            })
 
     if sumlevel in ('060', '140', '150'):
         levels.append({
@@ -585,12 +587,12 @@ def compute_profile_item_levels(geoid):
             'coverage': 100.0,
             })
 
-    # if sumlevel != '010':
-    #     levels.append({
-    #         'relation': 'nation',
-    #         'geoid': '01000US',
-    #         'coverage': 100.0,
-    #     })
+    if sumlevel != '010':
+        levels.append({
+            'relation': 'nation',
+            'geoid': '01000US',
+            'coverage': 100.0,
+        })
 
     levels = special_case_parents(geoid, levels)
 
