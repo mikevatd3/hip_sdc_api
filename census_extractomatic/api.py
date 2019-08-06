@@ -559,12 +559,12 @@ def compute_profile_item_levels(geoid):
         )
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(row['parent_geoid'][:3])['name']
-
-            levels.append({
-                'relation': parent_sumlevel_name,
-                'geoid': row['parent_geoid'],
-                'coverage': row['percent_covered'],
-            })
+            if not row['parent_geoid'] == '01000US':
+                levels.append({
+                    'relation': parent_sumlevel_name,
+                    'geoid': row['parent_geoid'],
+                    'coverage': row['percent_covered'],
+                })
 
     if sumlevel in ('060', '140', '150'):
         levels.append({
@@ -587,12 +587,12 @@ def compute_profile_item_levels(geoid):
             'coverage': 100.0,
             })
 
-    if sumlevel != '010':
-        levels.append({
-            'relation': 'nation',
-            'geoid': '01000US',
-            'coverage': 100.0,
-        })
+    # if sumlevel != '010':
+    #     levels.append({
+    #         'relation': 'nation',
+    #         'geoid': '01000US',
+    #         'coverage': 100.0,
+    #     })
 
     levels = special_case_parents(geoid, levels)
 
@@ -823,7 +823,6 @@ def geo_parent(release, geoid):
         except Exception as e:
             abort(400, "Could not compute parents: " + e.message)
         parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
-        parent_geoids = []
         
 
         def build_item(p):
