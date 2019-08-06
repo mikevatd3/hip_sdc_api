@@ -851,7 +851,7 @@ def geo_parent(release, geoid):
     resp = make_response(result)
     # put_in_cache(cache_key, result)
 
-    # resp.headers.set('Content-Type', 'application/json')
+    resp.headers.set('Content-Type', 'application/json')
     # resp.headers.set('Cache-Control', 'public,max-age=%d' % int(3600*4))
 
     return resp
