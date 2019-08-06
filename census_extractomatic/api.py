@@ -822,8 +822,8 @@ def geo_parent(release, geoid):
             parents = compute_profile_item_levels(geoid)
         except Exception as e:
             abort(400, "Could not compute parents: " + e.message)
-        parent_geoids = [p['geoid'] for p in parents]
-        print(parents)
+        parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
+        
 
         def build_item(p):
             return (p['full_geoid'], {
