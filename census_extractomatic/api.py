@@ -823,7 +823,7 @@ def geo_parent(release, geoid):
         except Exception as e:
             abort(400, "Could not compute parents: " + e.message)
         parent_geoids = [p['geoid'] for p in parents]
-        print parents
+        print(parents)
 
         def build_item(p):
             return (p['full_geoid'], {
