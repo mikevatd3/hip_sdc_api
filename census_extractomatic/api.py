@@ -823,6 +823,7 @@ def geo_parent(release, geoid):
         except Exception as e:
             abort(400, "Could not compute parents: " + e.message)
         parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
+        parent_geoids = []
         
 
         def build_item(p):
