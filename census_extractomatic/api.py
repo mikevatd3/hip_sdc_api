@@ -814,7 +814,7 @@ def geo_parent(release, geoid):
 
     # cache_key = str('%s/show/%s.parents.json' % (release, geoid))
     # cached = get_from_cache(cache_key)
-    cached = False
+    cached = None
 
     if cached:
         resp = make_response(cached)
