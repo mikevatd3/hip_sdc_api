@@ -50,7 +50,11 @@ except Exception as e:
 
 # Allowed ACS's in "best" order (newest and smallest range preferred)
 allowed_acs = [
+    'acs2017_5yr',
+    'acs2017_1yr',
     'acs2016_5yr',
+    'acs2012_5yr',
+    'acs2012_1yr',
     'acs2011_5yr',
 ]
 # When expanding a container geoid shorthand (i.e. 140|05000US12127),
@@ -2233,7 +2237,7 @@ def robots_txt():
 
 @app.route('/')
 def index():
-    return redirect('https://github.com/censusreporter/census-api/blob/master/API.md')
+    return redirect('https://github.com/NiJeLorg/census-api/blob/master/API.md')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
