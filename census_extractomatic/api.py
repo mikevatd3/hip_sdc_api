@@ -557,7 +557,7 @@ def compute_profile_item_levels(geoid):
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(row['parent_geoid'][:3])['name']
 
-            if row['parent_geoid'] !== '01000US':
+            if row['parent_geoid'] != '01000US':
                 levels.append({
                     'relation': parent_sumlevel_name,
                     'geoid': row['parent_geoid'],
