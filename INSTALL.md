@@ -19,6 +19,11 @@ postgres=# CREATE DATABASE census;
 postgres=# CREATE EXTENSION postgis;
 postgres=# CREATE USER census WITH PASSWORD '********';
 postgres=# GRANT ALL PRIVILEGES ON DATABASE "census" to census;
+postgres=# GRANT USAGE ON SCHEMA public TO census;
+postgres=# \q
+psql -d census -U postgres
+census=# CREATE EXTENSION postgis;
+
 
 apt-get install -q -y memcached
 sed -i "s/^-m 64$/-m 1024 -I 10485760/g" /etc/memcached.conf
@@ -26,9 +31,9 @@ service memcached restart
 
 
 Example wget and zcat commands:
-wget "https://s3.amazonaws.com/census-backup/tiger/2016/tiger2016_backup.sql.gz"
+wget "https://s3.amazonaws.com/census-backup/tiger/2017/tiger2017_backup.sql.gz"
 
-zcat tiger2016_backup.sql.gz | psql -q -U census census
+zcat tiger2017_backup.sql.gz | psql -q -U census census
 
 Commands to restore Census dump file
 tar -zxvf census.dump.tar.gz

@@ -30,7 +30,7 @@ CREATE TABLE search_metadata AS (
         FROM (
             SELECT DISTINCT display_name, sumlevel, full_geoid,
                             population, priority
-            FROM tiger2016.census_name_lookup
+            FROM tiger2017.census_name_lookup
             WHERE sumlevel NOT IN ('067', '258', '355')
             ) profile_search
         ) profile_documents
