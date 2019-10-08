@@ -37,13 +37,13 @@ zcat tiger2017_backup.sql.gz | psql -q -U census census
 
 Commands to restore Census dump file
 tar -zxvf census.dump.tar.gz
-pg_restore -d census -U census census.dump
+pg_restore --verbose -c --if-exists -d census -U postgres census.dump
 
 
 Added Census metadata outside of the project directory:
 git clone https://github.com/NiJeLorg/census-table-metadata.git
-psql -d census -h localhost -U census -f census_metadata_drop.sql
-psql -d census -h localhost -U census -f census_metadata.sql
+psql -d census -U census -f census_metadata_drop.sql
+psql -d census -U census -f census_metadata.sql
 sudo psql -U postgres -d census -f census_metadata_load.sql
 
 
