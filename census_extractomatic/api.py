@@ -838,7 +838,7 @@ def geo_parent(release, geoid):
             parent_list = dict([build_item(p) for p in result if p['full_geoid'] != '01000US'])
 
             for parent in parents:
-                if not parent['geoid'] == '01000US':
+                if parent['geoid'] != '01000US':
                     parent.update(parent_list.get(parent['geoid'], {}))
 
         result = json.dumps(dict(parents=parents))
