@@ -44,7 +44,7 @@ if not app.debug:
 
 try:
     app.s3 = S3Connection()
-except Exception:
+except Exception as e:
     app.s3 = None
     app.logger.warning("S3 Configuration failed.")
 
@@ -813,7 +813,7 @@ def geo_parent(release, geoid):
     else:
         try:
             parents = compute_profile_item_levels(geoid)
-        except Exception, e:
+        except Exception as e:
             abort(400, "Could not compute parents: " + e.message)
         parent_geoids = [p['geoid'] for p in parents]
 
