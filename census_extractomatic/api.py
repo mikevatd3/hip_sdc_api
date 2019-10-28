@@ -818,7 +818,7 @@ def geo_parent(release, geoid):
             parents = compute_profile_item_levels(geoid)
         except Exception as e:
             abort(400, "Could not compute parents: " + e.message)
-        parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
+        parent_geoids = [p['geoid'] for p in parents if p['geoid'] != '01000US']
 
         def build_item(p):
             return (p['full_geoid'], {
@@ -835,7 +835,7 @@ def geo_parent(release, geoid):
                    ORDER BY sumlevel DESC""" % (release,),
                 {'geoids': tuple(parent_geoids)}
             )
-            parent_list = dict([build_item(p) for p in result if not p['geoid'] == '01000US'])
+            parent_list = dict([build_item(p) for p in result if p['full_geoid'] != '01000US'])
 
             for parent in parents:
                 if not parent['geoid'] == '01000US':
