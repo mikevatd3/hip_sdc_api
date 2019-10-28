@@ -1748,7 +1748,7 @@ def show_specified_data(acs):
     requested_geo_ids = request.qwargs.geo_ids
     try:
         valid_geo_ids, child_parent_map = expand_geoids(requested_geo_ids, release=expand_geoids_with)
-    except ShowDataException, e:
+    except ShowDataException as e:
         abort(400, e.message)
 
     if not valid_geo_ids:
@@ -1885,7 +1885,7 @@ def show_specified_data(acs):
             resp = make_response(resp_data)
             resp.headers['Content-Type'] = 'application/json'
             return resp
-        except ShowDataException, e:
+        except ShowDataException as e:
             continue
     abort(400, str(e))
 
@@ -1911,7 +1911,7 @@ def download_specified_data(acs):
 
     try:
         valid_geo_ids, child_parent_map = expand_geoids(request.qwargs.geo_ids, release=expand_geoids_with)
-    except ShowDataException, e:
+    except ShowDataException as e:
         abort(400, e.message)
 
     max_geoids = current_app.config.get('MAX_GEOIDS_TO_DOWNLOAD', 1000)
@@ -2043,7 +2043,7 @@ def download_specified_data(acs):
             shutil.rmtree(temp_path)
 
             return resp
-        except ShowDataException, e:
+        except ShowDataException as e:
             continue
     abort(400, str(e))
 
