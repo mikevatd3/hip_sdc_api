@@ -1869,7 +1869,7 @@ def show_specified_data(acs):
                         table_for_geoid['estimate'][col_name] = value
                         table_for_geoid['error'][col_name] = moe_value
 
-                    print_error = str(table_id)
+                    print_error = str(data_iter)
                     if this_geo_has_data:
                         data_for_geoid[table_id] = table_for_geoid
                     else:
