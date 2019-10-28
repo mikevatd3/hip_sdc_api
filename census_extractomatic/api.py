@@ -1735,7 +1735,6 @@ class ShowDataException(Exception):
 })
 @crossdomain(origin='*')
 def show_specified_data(acs):
-    print_error = "hello"
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -1786,7 +1785,6 @@ def show_specified_data(acs):
 
     for acs in acs_to_try:
         try:
-            print_error = "try_top"
             db.session.execute("SET search_path=:acs, public;", {'acs': acs})
 
             # Check to make sure the tables requested are valid
@@ -1841,8 +1839,6 @@ def show_specified_data(acs):
                 returned_geo_ids = set([row['geoid'] for row in result])
                 raise ShowDataException("The %s release doesn't include GeoID(s) %s." % (get_acs_name(acs), ','.join(set(valid_geo_ids) - returned_geo_ids)))
 
-            print_error = "try_get_data"
-            print_error = str(sql)
             for row in result:
                 row = dict(row)
                 geoid = row.pop('geoid')
@@ -1878,8 +1874,6 @@ def show_specified_data(acs):
 
                 data[geoid] = data_for_geoid
 
-            print_error = "try_got_data"
-
             resp_data = json.dumps({
                 'tables': table_metadata,
                 'geography': geo_metadata,
@@ -1895,7 +1889,7 @@ def show_specified_data(acs):
             return resp
         except ShowDataException as e:
             continue
-    abort(400, print_error)
+    abort(400, 'Unspecified error.')
 
 
 # Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
