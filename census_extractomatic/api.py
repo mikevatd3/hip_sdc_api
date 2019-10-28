@@ -1846,6 +1846,7 @@ def show_specified_data(acs):
             for row in result:
                 row = dict(row)
                 geoid = row.pop('geoid')
+                print_error = str(geoid)
                 data_for_geoid = OrderedDict()
 
                 # If we end up at the 'most complete' release, we should include every bit of
