@@ -841,7 +841,7 @@ def geo_parent(release, geoid):
                 if parent['geoid'] != '01000US':
                     parent.update(parent_list.get(parent['geoid'], {}))
 
-        result = json.dumps(dict(parents=parents))
+        result = json.dumps(dict(parents=parent_geoids))
 
         resp = make_response(result)
         put_in_cache(cache_key, result)
