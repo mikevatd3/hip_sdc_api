@@ -1804,6 +1804,7 @@ def show_specified_data(acs):
                    ORDER BY column_id;""",
                 {'table_ids': tuple(request.qwargs.table_ids)}
             )
+            print_error = "try_exe"
 
             valid_table_ids = []
             table_metadata = OrderedDict()
@@ -1886,8 +1887,6 @@ def show_specified_data(acs):
             })
             resp = make_response(resp_data)
             resp.headers['Content-Type'] = 'application/json'
-            print_error = "try_bottom"
-
             return resp
         except ShowDataException as e:
             continue
