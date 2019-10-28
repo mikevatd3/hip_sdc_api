@@ -835,7 +835,7 @@ def geo_parent(release, geoid):
                    ORDER BY sumlevel DESC""" % (release,),
                 {'geoids': tuple(parent_geoids)}
             )
-            parent_list = dict([build_item(p) for p in result if not p['full_geoid'] == '01000US'])
+            parent_list = dict([build_item(p) for p in result if not p['geoid'] == '01000US'])
 
             for parent in parents:
                 if not parent['geoid'] == '01000US':
