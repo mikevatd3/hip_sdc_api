@@ -1784,9 +1784,9 @@ def show_specified_data(acs):
         if geo['full_geoid'] in child_parent_map:
             geo_metadata[geo['full_geoid']]['parent_geoid'] = child_parent_map[geo['full_geoid']]
 
-    print(print_error)
     for acs in acs_to_try:
         try:
+            print_error = "try_top"
             db.session.execute("SET search_path=:acs, public;", {'acs': acs})
 
             # Check to make sure the tables requested are valid
