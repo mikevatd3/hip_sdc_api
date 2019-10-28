@@ -1886,6 +1886,8 @@ def show_specified_data(acs):
             })
             resp = make_response(resp_data)
             resp.headers['Content-Type'] = 'application/json'
+            print_error = "try_bottom"
+
             return resp
         except ShowDataException as e:
             continue
