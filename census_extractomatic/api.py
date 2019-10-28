@@ -1842,11 +1842,9 @@ def show_specified_data(acs):
                 raise ShowDataException("The %s release doesn't include GeoID(s) %s." % (get_acs_name(acs), ','.join(set(valid_geo_ids) - returned_geo_ids)))
 
             print_error = "try_get_data"
-            print_error = str(sql)
             for row in result:
                 row = dict(row)
                 geoid = row.pop('geoid')
-                print_error = str(geoid)
                 data_for_geoid = OrderedDict()
 
                 # If we end up at the 'most complete' release, we should include every bit of
@@ -1857,6 +1855,7 @@ def show_specified_data(acs):
 
                 cols_iter = iter(sorted(row.items(), key=lambda tup: tup[0]))
                 for table_id, data_iter in groupby(cols_iter, lambda x: x[0][:-3].upper()):
+                    print_error = str(geoid)
                     table_for_geoid = OrderedDict()
                     table_for_geoid['estimate'] = OrderedDict()
                     table_for_geoid['error'] = OrderedDict()
