@@ -1842,6 +1842,7 @@ def show_specified_data(acs):
                 raise ShowDataException("The %s release doesn't include GeoID(s) %s." % (get_acs_name(acs), ','.join(set(valid_geo_ids) - returned_geo_ids)))
 
             print_error = "try_get_data"
+            print_error = str(sql)
             for row in result:
                 row = dict(row)
                 geoid = row.pop('geoid')
@@ -1860,7 +1861,6 @@ def show_specified_data(acs):
                     table_for_geoid['error'] = OrderedDict()
 
                     for (col_name, value) in data_iter:
-                        print_error = str(value)
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
 
