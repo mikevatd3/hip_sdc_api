@@ -1836,6 +1836,7 @@ def show_specified_data(acs):
 
             result = db.session.execute(sql, {'geoids': tuple(valid_geo_ids)})
             data = OrderedDict()
+            print_error = "try_get_data"
 
             if result.rowcount != len(valid_geo_ids):
                 returned_geo_ids = set([row['geoid'] for row in result])
@@ -1849,7 +1850,8 @@ def show_specified_data(acs):
                 # If we end up at the 'most complete' release, we should include every bit of
                 # data we can instead of erroring out on the user.
                 # See https://www.pivotaltracker.com/story/show/70906084
-                this_geo_has_data = False or acs == allowed_acs[1]
+                this_geo_has_data = False 
+                acs == allowed_acs[1]
 
                 cols_iter = iter(sorted(row.items(), key=lambda tup: tup[0]))
                 for table_id, data_iter in groupby(cols_iter, lambda x: x[0][:-3].upper()):
@@ -1875,6 +1877,7 @@ def show_specified_data(acs):
                 data[geoid] = data_for_geoid
 
             print_error = "try_got_data"
+            
             resp_data = json.dumps({
                 'tables': table_metadata,
                 'geography': geo_metadata,
