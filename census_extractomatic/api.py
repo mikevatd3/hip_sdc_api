@@ -44,7 +44,7 @@ if not app.debug:
 
 try:
     app.s3 = S3Connection()
-except Exception, e:
+except Exception:
     app.s3 = None
     app.logger.warning("S3 Configuration failed.")
 
