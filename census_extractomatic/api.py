@@ -1860,6 +1860,7 @@ def show_specified_data(acs):
                     table_for_geoid['error'] = OrderedDict()
 
                     for (col_name, value) in data_iter:
+                        print_error = str(col_name)
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
 
@@ -1869,7 +1870,7 @@ def show_specified_data(acs):
                         table_for_geoid['estimate'][col_name] = value
                         table_for_geoid['error'][col_name] = moe_value
 
-                    print_error = str(data_iter)
+                    
                     if this_geo_has_data:
                         data_for_geoid[table_id] = table_for_geoid
                     else:
