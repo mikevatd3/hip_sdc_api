@@ -1749,7 +1749,7 @@ def show_specified_data(acs):
     try:
         valid_geo_ids, child_parent_map = expand_geoids(requested_geo_ids, release=expand_geoids_with)
     except ShowDataException as e:
-        abort(400, e.message)
+        abort(400, str(e.message))
 
     if not valid_geo_ids:
         abort(404, 'None of the geo_ids specified were valid: %s' % ', '.join(requested_geo_ids))
@@ -1887,7 +1887,7 @@ def show_specified_data(acs):
             return resp
         except ShowDataException as e:
             continue
-    abort(400, str(e))
+    abort(400, 'Unspecified error')
 
 
 # Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
@@ -2045,7 +2045,7 @@ def download_specified_data(acs):
             return resp
         except ShowDataException as e:
             continue
-    abort(400, str(e))
+    abort(400, 'Unspecified error.')
 
 
 # Example: /1.0/data/compare/acs2012_5yr/B01001?sumlevel=050&within=04000US53
