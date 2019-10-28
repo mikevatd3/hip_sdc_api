@@ -1860,7 +1860,7 @@ def show_specified_data(acs):
                     table_for_geoid['error'] = OrderedDict()
 
                     for (col_name, value) in data_iter:
-                        print_error = str(col_name)
+                        print_error = str(value)
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
 
