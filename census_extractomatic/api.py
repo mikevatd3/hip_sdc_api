@@ -1886,7 +1886,7 @@ def show_specified_data(acs):
             resp.headers['Content-Type'] = 'application/json'
             return resp
         except ShowDataException as e:
-            print e
+            print(e)
             continue
     abort(400, 'Unspecified error')
 
