@@ -808,43 +808,43 @@ def geo_parent(release, geoid):
 
     geoid = geoid.upper()
 
-    cache_key = str('%s/show/%s.parents.json' % (release, geoid))
-    cached = get_from_cache(cache_key)
+    # cache_key = str('%s/show/%s.parents.json' % (release, geoid))
+    # cached = get_from_cache(cache_key)
 
-    if cached:
-        resp = make_response(cached)
-    else:
-        try:
-            parents = compute_profile_item_levels(geoid)
-        except Exception as e:
-            abort(400, "Could not compute parents: " + e.message)
-        parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
+    # if cached:
+    #     resp = make_response(cached)
+    # else:
+    try:
+        parents = compute_profile_item_levels(geoid)
+    except Exception as e:
+        abort(400, "Could not compute parents: " + e.message)
+    parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
 
-        def build_item(p):
-            return (p['full_geoid'], {
-                "display_name": p['display_name'],
-                "sumlevel": p['sumlevel'],
-                "geoid": p['full_geoid'],
-            })
+    def build_item(p):
+        return (p['full_geoid'], {
+            "display_name": p['display_name'],
+            "sumlevel": p['sumlevel'],
+            "geoid": p['full_geoid'],
+        })
 
-        if parent_geoids:
-            result = db.session.execute(
-                """SELECT display_name,sumlevel,full_geoid
-                   FROM %s.census_name_lookup
-                   WHERE full_geoid IN :geoids
-                   ORDER BY sumlevel DESC""" % (release,),
-                {'geoids': tuple(parent_geoids)}
-            )
-            parent_list = dict([build_item(p) for p in result if not p['full_geoid'] == '01000US'])
+    if parent_geoids:
+        result = db.session.execute(
+            """SELECT display_name,sumlevel,full_geoid
+                FROM %s.census_name_lookup
+                WHERE full_geoid IN :geoids
+                ORDER BY sumlevel DESC""" % (release,),
+            {'geoids': tuple(parent_geoids)}
+        )
+        parent_list = dict([build_item(p) for p in result if not p['full_geoid'] == '01000US'])
 
-            for parent in parents:
-                if not parent['geoid'] == '01000US':
-                    parent.update(parent_list.get(parent['geoid'], {}))
+        for parent in parents:
+            if not parent['geoid'] == '01000US':
+                parent.update(parent_list.get(parent['geoid'], {}))
 
-        result = json.dumps(dict(parents=parents))
+    result = json.dumps(dict(parents=parents))
 
-        resp = make_response(result)
-        put_in_cache(cache_key, result)
+    resp = make_response(result)
+    put_in_cache(cache_key, result)
 
     resp.headers.set('Content-Type', 'application/json')
     resp.headers.set('Cache-Control', 'public,max-age=%d' % int(3600*4))
