@@ -1855,7 +1855,6 @@ def show_specified_data(acs):
 
                 cols_iter = iter(sorted(row.items(), key=lambda tup: tup[0]))
                 for table_id, data_iter in groupby(cols_iter, lambda x: x[0][:-3].upper()):
-                    print_error = str(geoid)
                     table_for_geoid = OrderedDict()
                     table_for_geoid['estimate'] = OrderedDict()
                     table_for_geoid['error'] = OrderedDict()
@@ -1870,6 +1869,7 @@ def show_specified_data(acs):
                         table_for_geoid['estimate'][col_name] = value
                         table_for_geoid['error'][col_name] = moe_value
 
+                    print_error = str(this_geo_has_data)
                     if this_geo_has_data:
                         data_for_geoid[table_id] = table_for_geoid
                     else:
