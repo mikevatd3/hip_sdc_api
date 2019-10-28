@@ -1804,7 +1804,6 @@ def show_specified_data(acs):
                    ORDER BY column_id;""",
                 {'table_ids': tuple(request.qwargs.table_ids)}
             )
-            print_error = "try_exe"
 
             valid_table_ids = []
             table_metadata = OrderedDict()
@@ -1837,6 +1836,7 @@ def show_specified_data(acs):
 
             result = db.session.execute(sql, {'geoids': tuple(valid_geo_ids)})
             data = OrderedDict()
+            print_error = "try_get_data"
 
             if result.rowcount != len(valid_geo_ids):
                 returned_geo_ids = set([row['geoid'] for row in result])
