@@ -6,7 +6,7 @@ from flask import abort, request, g
 from flask import make_response, current_app, send_file
 from flask import jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
-#from raven.contrib.flask import Sentry
+from raven.contrib.flask import Sentry
 from werkzeug.exceptions import HTTPException
 from functools import update_wrapper
 from itertools import groupby
@@ -27,14 +27,14 @@ import mockcache
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
-from census_extractomatic.validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
+from validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
 
 from census_extractomatic.exporters import create_ogr_download, create_excel_download, supported_formats
 
 app = Flask(__name__)
 app.config.from_object(os.environ.get('EXTRACTOMATIC_CONFIG_MODULE', 'census_extractomatic.config.Development'))
 db = SQLAlchemy(app)
-#sentry = Sentry(app)
+sentry = Sentry(app)
 
 if not app.debug:
     import logging
@@ -44,7 +44,7 @@ if not app.debug:
 
 try:
     app.s3 = S3Connection()
-except Exception as e:
+except Exception, e:
     app.s3 = None
     app.logger.warning("S3 Configuration failed.")
 
@@ -77,10 +77,8 @@ allowed_searches = [
 
 ACS_NAMES = {
     'acs2017_5yr': {'name': 'ACS 2017 5-year', 'years': '2013-2017'},
-    'acs2017_1yr': {'name': 'ACS 2017 1-year', 'years': '2017'},
     'acs2016_5yr': {'name': 'ACS 2016 5-year', 'years': '2012-2016'},
-    'acs2012_5yr': {'name': 'ACS 2017 5-year', 'years': '2008-2012'},
-    'acs2012_1yr': {'name': 'ACS 2017 1-year', 'years': '2012'},
+    'acs2012_5yr': {'name': 'ACS 2012 5-year', 'years': '2008-2012'},
     'acs2011_5yr': {'name': 'ACS 2011 5-year', 'years': '2007-2011'},
 }
 
@@ -222,9 +220,9 @@ def crossdomain(origin=None, methods=None, headers=None,
                 automatic_options=True):
     if methods is not None:
         methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, str):
+    if headers is not None and not isinstance(headers, basestring):
         headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, str):
+    if not isinstance(origin, basestring):
         origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
@@ -303,7 +301,7 @@ def moe_ratio(numerator, denominator, numerator_moe, denominator_moe):
 ops = {
     '+': operator.add,
     '-': operator.sub,
-    '/': operator.truediv,
+    '/': operator.div,
     '%': percentify,
     '%%': rateify,
 }
@@ -474,7 +472,7 @@ def get_data_fallback(table_ids, geoids, acs=None):
         for row in result.fetchall():
             row = dict(row)
             geoid = row.pop('geoid')
-            data[geoid] = dict([(col, val) for (col, val) in row.items()])
+            data[geoid] = dict([(col, val) for (col, val) in row.iteritems()])
 
         return data, acs
 
@@ -490,7 +488,7 @@ def get_data_fallback(table_ids, geoids, acs=None):
             for row in result.fetchall():
                 row = dict(row)
                 geoid = row.pop('geoid')
-                data[geoid] = dict([(col, val) for (col, val) in row.items()])
+                data[geoid] = dict([(col, val) for (col, val) in row.iteritems()])
 
             # Check to see if this release has our data
             data_with_values = filter(lambda geoid_data: geoid_data.values()[0] is not None, data.values())
@@ -522,9 +520,6 @@ def special_case_parents(geoid, levels):
     # 050 Jefferson  which should already be in there so we'll just pluck it out.
     levels = [level for level in levels if not level['geoid'] == '16000US2148000']
 
-    # remove US as a parent -- this geoid does not exist in the SDC API
-    levels = [level for level in levels if not level['geoid'] == '01000US']
-
     return levels
 
 def compute_profile_item_levels(geoid):
@@ -549,7 +544,7 @@ def compute_profile_item_levels(geoid):
 
     if sumlevel in ('140', '150', '160', '310', '330', '350', '860', '950', '960', '970'):
         result = db.session.execute(
-            """SELECT * FROM tiger2017.census_geo_containment
+            """SELECT * FROM tiger2018.census_geo_containment
                WHERE child_geoid=:geoid
                ORDER BY percent_covered ASC
             """,
@@ -557,12 +552,12 @@ def compute_profile_item_levels(geoid):
         )
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(row['parent_geoid'][:3])['name']
-            if not row['parent_geoid'] == '01000US':
-                levels.append({
-                    'relation': parent_sumlevel_name,
-                    'geoid': row['parent_geoid'],
-                    'coverage': row['percent_covered'],
-                })
+
+            levels.append({
+                'relation': parent_sumlevel_name,
+                'geoid': row['parent_geoid'],
+                'coverage': row['percent_covered'],
+            })
 
     if sumlevel in ('060', '140', '150'):
         levels.append({
@@ -585,12 +580,12 @@ def compute_profile_item_levels(geoid):
             'coverage': 100.0,
             })
 
-    # if sumlevel != '010':
-    #     levels.append({
-    #         'relation': 'nation',
-    #         'geoid': '01000US',
-    #         'coverage': 100.0,
-    #     })
+    if sumlevel != '010':
+        levels.append({
+            'relation': 'nation',
+            'geoid': '01000US',
+            'coverage': 100.0,
+        })
 
     levels = special_case_parents(geoid, levels)
 
@@ -654,13 +649,13 @@ def geo_search():
 
     if with_geom:
         sql = """SELECT DISTINCT geoid,sumlevel,population,display_name,full_geoid,priority,ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geom
-            FROM tiger2017.census_name_lookup
+            FROM tiger2018.census_name_lookup
             WHERE %s
             ORDER BY priority, population DESC NULLS LAST
             LIMIT 25;""" % (where)
     else:
         sql = """SELECT DISTINCT geoid,sumlevel,population,display_name,full_geoid,priority
-            FROM tiger2017.census_name_lookup
+            FROM tiger2018.census_name_lookup
             WHERE %s
             ORDER BY priority, population DESC NULLS LAST
             LIMIT 25;""" % (where)
@@ -810,47 +805,45 @@ def geo_parent(release, geoid):
 
     geoid = geoid.upper()
 
-    # cache_key = str('%s/show/%s.parents.json' % (release, geoid))
-    # cached = get_from_cache(cache_key)
+    cache_key = str('%s/show/%s.parents.json' % (release, geoid))
+    cached = get_from_cache(cache_key)
 
-    # if cached:
-    #     resp = make_response(cached)
-    # else:
-    try:
-        parents = compute_profile_item_levels(geoid)
-    except Exception as e:
-        abort(400, "Could not compute parents: " + e.message)
-    parent_geoids = [p['geoid'] for p in parents if not p['geoid'] == '01000US']
-    
+    if cached:
+        resp = make_response(cached)
+    else:
+        try:
+            parents = compute_profile_item_levels(geoid)
+        except Exception, e:
+            abort(400, "Could not compute parents: " + e.message)
+        parent_geoids = [p['geoid'] for p in parents]
 
-    def build_item(p):
-        return (p['full_geoid'], {
-            "display_name": p['display_name'],
-            "sumlevel": p['sumlevel'],
-            "geoid": p['full_geoid'],
-        })
+        def build_item(p):
+            return (p['full_geoid'], {
+                "display_name": p['display_name'],
+                "sumlevel": p['sumlevel'],
+                "geoid": p['full_geoid'],
+            })
 
-    if parent_geoids:
-        result = db.session.execute(
-            """SELECT display_name,sumlevel,full_geoid
-                FROM %s.census_name_lookup
-                WHERE full_geoid IN :geoids
-                ORDER BY sumlevel DESC""" % (release,),
-            {'geoids': tuple(parent_geoids)}
-        )
-        parent_list = dict([build_item(p) for p in result if not p['full_geoid'] == '01000US'])
+        if parent_geoids:
+            result = db.session.execute(
+                """SELECT display_name,sumlevel,full_geoid
+                   FROM %s.census_name_lookup
+                   WHERE full_geoid IN :geoids
+                   ORDER BY sumlevel DESC""" % (release,),
+                {'geoids': tuple(parent_geoids)}
+            )
+            parent_list = dict([build_item(p) for p in result])
 
-        for parent in parents:
-            if not parent['geoid'] == '01000US':
+            for parent in parents:
                 parent.update(parent_list.get(parent['geoid'], {}))
 
-    result = json.dumps(dict(parents=parents))
+        result = json.dumps(dict(parents=parents))
 
-    resp = make_response(result)
-    # put_in_cache(cache_key, result)
+        resp = make_response(result)
+        put_in_cache(cache_key, result)
 
     resp.headers.set('Content-Type', 'application/json')
-    # resp.headers.set('Cache-Control', 'public,max-age=%d' % int(3600*4))
+    resp.headers.set('Cache-Control', 'public,max-age=%d' % int(3600*4))
 
     return resp
 
@@ -1627,7 +1620,7 @@ def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     db.session.execute("SET search_path=:acs,public;", {'acs': release})
     result = db.session.execute(
         """SELECT geoid, name
-           FROM tiger2017.census_geo_containment, geoheader
+           FROM tiger2018.census_geo_containment, geoheader
            WHERE geoheader.geoid = census_geo_containment.child_geoid
              AND census_geo_containment.parent_geoid = :parent_geoid
              AND census_geo_containment.child_geoid LIKE :child_geoids""",
@@ -1649,8 +1642,8 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     child_geoids = []
     result = db.session.execute(
         """SELECT child.full_geoid
-           FROM tiger2017.census_name_lookup parent
-           JOIN tiger2017.census_name_lookup child ON ST_Intersects(parent.geom, child.geom) AND child.sumlevel=:child_sumlevel
+           FROM tiger2018.census_name_lookup parent
+           JOIN tiger2018.census_name_lookup child ON ST_Intersects(parent.geom, child.geom) AND child.sumlevel=:child_sumlevel
            WHERE parent.full_geoid=:parent_geoid AND parent.sumlevel=:parent_sumlevel""",
         {'child_sumlevel': child_summary_level, 'parent_geoid': parent_geoid, 'parent_sumlevel': parent_sumlevel}
     )
@@ -1755,7 +1748,7 @@ def show_specified_data(acs):
     requested_geo_ids = request.qwargs.geo_ids
     try:
         valid_geo_ids, child_parent_map = expand_geoids(requested_geo_ids, release=expand_geoids_with)
-    except ShowDataException as e:
+    except ShowDataException, e:
         abort(400, e.message)
 
     if not valid_geo_ids:
@@ -1775,7 +1768,7 @@ def show_specified_data(acs):
     # Fill in the display name for the geos
     result = db.session.execute(
         """SELECT full_geoid,population,display_name
-           FROM tiger2017.census_name_lookup
+           FROM tiger2018.census_name_lookup
            WHERE full_geoid IN :geoids;""",
         {'geoids': tuple(named_geo_ids)}
     )
@@ -1892,7 +1885,7 @@ def show_specified_data(acs):
             resp = make_response(resp_data)
             resp.headers['Content-Type'] = 'application/json'
             return resp
-        except ShowDataException as e:
+        except ShowDataException, e:
             continue
     abort(400, str(e))
 
@@ -1918,7 +1911,7 @@ def download_specified_data(acs):
 
     try:
         valid_geo_ids, child_parent_map = expand_geoids(request.qwargs.geo_ids, release=expand_geoids_with)
-    except ShowDataException as e:
+    except ShowDataException, e:
         abort(400, e.message)
 
     max_geoids = current_app.config.get('MAX_GEOIDS_TO_DOWNLOAD', 1000)
@@ -1930,7 +1923,7 @@ def download_specified_data(acs):
         """SELECT full_geoid,
                   population,
                   display_name
-           FROM tiger2017.census_name_lookup
+           FROM tiger2018.census_name_lookup
            WHERE full_geoid IN :geo_ids;""",
         {'geo_ids': tuple(valid_geo_ids)}
     )
@@ -2050,7 +2043,7 @@ def download_specified_data(acs):
             shutil.rmtree(temp_path)
 
             return resp
-        except ShowDataException as e:
+        except ShowDataException, e:
             continue
     abort(400, str(e))
 
@@ -2146,7 +2139,7 @@ def data_compare_geographies_within_parent(acs, table_id):
         # get the parent geometry and add to API response
         result = db.session.execute(
             """SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
-               FROM tiger2017.census_name_lookup
+               FROM tiger2018.census_name_lookup
                WHERE full_geoid=:geo_ids;""",
             {'geo_ids': parent_geoid}
         )
@@ -2160,7 +2153,7 @@ def data_compare_geographies_within_parent(acs, table_id):
         # get the child geometries and store for later
         result = db.session.execute(
             """SELECT geoid, ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
-               FROM tiger2017.census_name_lookup
+               FROM tiger2018.census_name_lookup
                WHERE full_geoid IN :geo_ids
                ORDER BY full_geoid;""",
             {'geo_ids': tuple(child_geoid_list)}
