@@ -170,7 +170,7 @@ Returns a [GeoJSON](http://geojson.org/) representation of the Census geography 
 
 Examples:
 ```bash
-$ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2016/04000US55"
+$ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2017/04000US55"
 {
     "geometry": null,
     "type": "Feature",
@@ -185,7 +185,7 @@ $ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2016/04000US55
     }
 }
 
-$ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2016/04000US55?geom=true"
+$ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2017/04000US55?geom=true"
 {
     "geometry": {
         "type": "Polygon",
@@ -227,7 +227,7 @@ This endpoint will also return the specified geography with a `relation` of `thi
 
 Examples:
 ```bash
-$ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2016/04000US55/parents"
+$ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2017/04000US55/parents"
 {
     "parents": [
         {
@@ -247,7 +247,7 @@ $ curl "https://censusapi.datadrivendetroit.org:1443/1.0/geo/tiger2016/04000US55
     ]
 }
 
-$ curl "http://api.censusreporter.org/1.0/geo/tiger2016/16000US1714000/parents"
+$ curl "http://api.censusreporter.org/1.0/geo/tiger2017/16000US1714000/parents"
 {
     "parents": [
         {
