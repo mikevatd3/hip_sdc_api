@@ -17,7 +17,7 @@ class Production(Config):
 class Development(Config):
     # For local dev, tunnel to the DB first:
     # ssh -i ~/.ssh/censusreporter.ec2_key.pem -L 5432:censusreporter.c7wefhiuybfb.us-east-1.rds.amazonaws.com:5432 ubuntu@52.71.251.119
-    SQLALCHEMY_DATABASE_URI = 'postgresql://census:censuspassword@localhost:5433/census'
+    SQLALCHEMY_DATABASE_URI = 'postgresql://census:#tk8(Z%i@localhost:5433/census'
     # or if using a local database, use this:
     # SQLALCHEMY_DATABASE_URI = 'postgresql://census:censuspassword@localhost/census'
 

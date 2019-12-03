@@ -56,6 +56,8 @@ allowed_acs = [
     'acs2012_5yr',
     'acs2012_1yr',
     'acs2011_5yr',
+    'd3_present',
+    'd3_past',
 ]
 # When expanding a container geoid shorthand (i.e. 140|05000US12127),
 # use this ACS. It should always be a 5yr release so as to include as
@@ -84,6 +86,8 @@ ACS_NAMES = {
     'acs2012_5yr': {'name': 'ACS 2017 5-year', 'years': '2008-2012'},
     'acs2012_1yr': {'name': 'ACS 2017 1-year', 'years': '2012'},
     'acs2011_5yr': {'name': 'ACS 2011 5-year', 'years': '2007-2011'},
+    'd3_present': {'name': 'Data Driven Detroit Housing Data', 'years': '2019'},
+    'd3_past': {'name': 'Data Driven Detroit Housing Data', 'years': '2014'},
 }
 
 PARENT_CHILD_CONTAINMENT = {
