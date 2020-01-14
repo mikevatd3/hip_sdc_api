@@ -54,6 +54,8 @@ allowed_acs = [
     'acs2016_5yr',
     'acs2012_5yr',
     'acs2011_5yr',
+    'd3_present',
+    'd3_past',
 ]
 # When expanding a container geoid shorthand (i.e. 140|05000US12127),
 # use this ACS. It should always be a 5yr release so as to include as
@@ -80,6 +82,8 @@ ACS_NAMES = {
     'acs2016_5yr': {'name': 'ACS 2016 5-year', 'years': '2012-2016'},
     'acs2012_5yr': {'name': 'ACS 2012 5-year', 'years': '2008-2012'},
     'acs2011_5yr': {'name': 'ACS 2011 5-year', 'years': '2007-2011'},
+    'd3_present': {'name': 'Data Driven Detroit', 'years': '2019'},
+    'd3_past': {'name': 'Data Driven Detroit', 'years': '2014'},
 }
 
 PARENT_CHILD_CONTAINMENT = {
@@ -1870,11 +1874,11 @@ def show_specified_data(acs):
                         table_for_geoid['estimate'][col_name] = value
                         table_for_geoid['error'][col_name] = moe_value
 
-                    data_for_geoid[table_id] = table_for_geoid
-                    # if this_geo_has_data:
-                    #     data_for_geoid[table_id] = table_for_geoid
-                    # else:
-                    #     raise ShowDataException("The %s release doesn't have data for table %s, geoid %s." % (get_acs_name(acs), table_id, geoid))
+                    #data_for_geoid[table_id] = table_for_geoid
+                    if this_geo_has_data:
+                        data_for_geoid[table_id] = table_for_geoid
+                    else:
+                        raise ShowDataException("The %s release doesn't have data for table %s, geoid %s." % (get_acs_name(acs), table_id, geoid))
 
                 data[geoid] = data_for_geoid
 
