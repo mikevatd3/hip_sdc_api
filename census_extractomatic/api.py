@@ -1897,7 +1897,7 @@ def show_specified_data(acs):
             return resp
         except ShowDataException as e:
             continue
-    abort(400, 'Unspecified error.')
+    abort(400, 'Unspecified error test update.')
 
 
 # Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
