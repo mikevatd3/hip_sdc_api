@@ -1843,9 +1843,9 @@ def show_specified_data(acs):
             result = db.session.execute(sql, {'geoids': tuple(valid_geo_ids)})
             data = OrderedDict()
 
-            if result.rowcount != len(valid_geo_ids):
-                returned_geo_ids = set([row['geoid'] for row in result])
-                raise ShowDataException("The %s release doesn't include GeoID(s) %s." % (get_acs_name(acs), ','.join(set(valid_geo_ids) - returned_geo_ids)))
+            # if result.rowcount != len(valid_geo_ids):
+            #     returned_geo_ids = set([row['geoid'] for row in result])
+            #     raise ShowDataException("The %s release doesn't include GeoID(s) %s." % (get_acs_name(acs), ','.join(set(valid_geo_ids) - returned_geo_ids)))
 
             for row in result:
                 row = dict(row)
