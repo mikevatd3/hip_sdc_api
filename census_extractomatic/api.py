@@ -1791,6 +1791,7 @@ def show_specified_data(acs):
         if geo['full_geoid'] in child_parent_map:
             geo_metadata[geo['full_geoid']]['parent_geoid'] = child_parent_map[geo['full_geoid']]
 
+    print_e = ''
     for acs in acs_to_try:
         try:
             db.session.execute("SET search_path=:acs, public;", {'acs': acs})
@@ -1896,8 +1897,9 @@ def show_specified_data(acs):
             resp.headers['Content-Type'] = 'application/json'
             return resp
         except ShowDataException as e:
+            print_e = e
             continue
-    abort(400, 'Unspecified error test update.')
+    abort(400, print_e)
 
 
 # Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
