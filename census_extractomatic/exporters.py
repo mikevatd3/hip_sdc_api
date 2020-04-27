@@ -6,7 +6,6 @@ from openpyxl.styles import Alignment, Font
 import logging
 
 logger = logging.getLogger('exporters')
-logging.basicConfig(filename='/tmp/api.censusreporter.org.error.log',level=logging.DEBUG)
 
 Session = sessionmaker()
 
@@ -21,12 +20,7 @@ def session(sql_url):
 
 def get_sql_config(sql_url):
     """Return a tuple of strings: (host, user, password, database)"""
-    logger.warn('sql_url: %s', sql_url)
     db_details = urlsplit(sql_url)
-    logger.warn('db_details hostname: %s', db_details.hostname)
-    logger.warn('db_details username: %s', db_details.username)
-    logger.warn('db_details password: %s', db_details.password)
-    logger.warn('db_details database: %s', db_details.path[1:])
     return (db_details.hostname,
             db_details.username,
             db_details.password,
