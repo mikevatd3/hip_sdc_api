@@ -5,7 +5,7 @@ import openpyxl
 from openpyxl.styles import Alignment, Font
 import logging
 
-logger = logging.getLogger('exporters')
+logger = logging.getLogger()
 
 Session = sessionmaker()
 
