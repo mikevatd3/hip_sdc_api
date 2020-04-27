@@ -5,7 +5,8 @@ import openpyxl
 from openpyxl.styles import Alignment, Font
 import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger('exporters')
+logging.basicConfig(filename='/tmp/api.censusreporter.org.error.log',level=logging.DEBUG)
 
 Session = sessionmaker()
 
