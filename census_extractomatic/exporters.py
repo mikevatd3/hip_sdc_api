@@ -5,13 +5,7 @@ import openpyxl
 from openpyxl.styles import Alignment, Font
 import logging
 
-app = Flask(__name__)
-
 logger = logging.getLogger('exporters')
-
-file_handler = logging.FileHandler('/tmp/api.censusreporter.org.wsgi_error.log')
-file_handler.setLevel(logging.WARNING)
-app.logger.addHandler(file_handler)
 
 Session = sessionmaker()
 
