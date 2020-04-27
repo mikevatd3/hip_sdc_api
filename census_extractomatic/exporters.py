@@ -21,7 +21,7 @@ def session(sql_url):
 def get_sql_config(sql_url):
     """Return a tuple of strings: (host, user, password, database)"""
     db_details = urlparse(sql_url)
-    logger.warn('db_details: %s', user.username)
+    logger.warn('db_details: %s', db_details)
     return (db_details.hostname,
             db_details.username,
             db_details.password,
