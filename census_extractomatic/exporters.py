@@ -6,6 +6,7 @@ from openpyxl.styles import Alignment, Font
 import logging
 
 logger = logging.getLogger('exporters')
+logging.basicConfig(filename='/tmp/api.censusreporter.org.error.log',level=logging.DEBUG)
 
 Session = sessionmaker()
 
@@ -20,6 +21,7 @@ def session(sql_url):
 
 def get_sql_config(sql_url):
     """Return a tuple of strings: (host, user, password, database)"""
+    logger.warn('sql_url: %s', sql_url)
     db_details = urlsplit(sql_url)
     return (db_details.hostname,
             db_details.username,
@@ -45,7 +47,7 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
         max_indent = 0
         # get column headers
         for column_id, column_info in table['columns'].items():
-            column_name_utf8 = column_info['name'].encode('utf-8')
+            column_name_utf8 = str(column_info['name'])
             indent = column_info['indent']
 
             header.append((column_name_utf8, indent))
@@ -159,8 +161,13 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
     driver_name = format_info['driver']
     ogr.UseExceptions()
     in_driver = ogr.GetDriverByName("PostgreSQL")
-    host, user, password, database = get_sql_config(sql_url)
-    conn = in_driver.Open("PG: host=%s dbname=%s user=%s password=%s" % (host, database, user, password))
+    #host, user, password, database = get_sql_config(sql_url) ## hardcoding this bullshit because urlparse is not working and I'm tired
+    host = ''
+    port = ''
+    database = ''
+    user = ''
+    password = ''
+    conn = in_driver.Open("PG: host=%s dbname=%s user=%s password=%s port=" % (host, database, user, password))
 
     if conn is None:
         raise Exception("Could not connect to database to generate download.")
@@ -170,12 +177,12 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
     out_srs.ImportFromEPSG(4326)
     out_data = out_driver.CreateDataSource(out_filename)
     # See http://gis.stackexchange.com/questions/53920/ogr-createlayer-returns-typeerror
-    out_layer = out_data.CreateLayer(file_ident.encode('utf-8'), srs=out_srs, geom_type=ogr.wkbMultiPolygon)
+    out_layer = out_data.CreateLayer(str(file_ident), srs=out_srs, geom_type=ogr.wkbMultiPolygon)
     out_layer.CreateField(ogr.FieldDefn('geoid', ogr.OFTString))
     out_layer.CreateField(ogr.FieldDefn('name', ogr.OFTString))
     for (table_id, table) in table_metadata.items():
         for column_id, column_info in table['columns'].items():
-            column_name_utf8 = column_id.encode('utf-8')
+            column_name_utf8 = str(column_id)
             if driver_name == "ESRI Shapefile":
                 # Work around the Shapefile column name length limits
                 out_layer.CreateField(ogr.FieldDefn(column_name_utf8, ogr.OFTReal))
@@ -188,7 +195,7 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
     sql = """SELECT geom,full_geoid,display_name
              FROM tiger2018.census_name_lookup
              WHERE full_geoid IN (%s)
-             ORDER BY full_geoid""" % ', '.join("'%s'" % g.encode('utf-8') for g in valid_geo_ids)
+             ORDER BY full_geoid""" % ', '.join("'%s'" % str(g) for g in valid_geo_ids)
     in_layer = conn.ExecuteSQL(sql)
 
     in_feat = in_layer.GetNextFeature()
@@ -203,7 +210,7 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
             table_estimates = data[geoid][table_id]['estimate']
             table_errors = data[geoid][table_id]['error']
             for column_id, column_info in table['columns'].items():
-                column_name_utf8 = column_id.encode('utf-8')
+                column_name_utf8 = str(column_id)
                 if column_id in table_estimates:
                     if format == 'shp':
                         # Work around the Shapefile column name length limits
