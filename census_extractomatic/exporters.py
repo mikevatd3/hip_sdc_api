@@ -1,4 +1,4 @@
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import openpyxl
@@ -22,7 +22,7 @@ def session(sql_url):
 def get_sql_config(sql_url):
     """Return a tuple of strings: (host, user, password, database)"""
     logger.warn('sql_url: %s', sql_url)
-    db_details = urlparse(sql_url)
+    db_details = urlsplit(sql_url)
     logger.warn('db_details hostname: %s', db_details.hostname)
     logger.warn('db_details username: %s', db_details.username)
     logger.warn('db_details password: %s', db_details.password)
