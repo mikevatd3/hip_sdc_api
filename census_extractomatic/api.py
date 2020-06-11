@@ -1861,7 +1861,7 @@ def show_specified_data(acs):
                 # See https://www.pivotaltracker.com/story/show/70906084
                 this_geo_has_data = False or acs == allowed_acs[1]
 
-                cols_iter = iter(sorted(row.items(), key=lambda tup: tup[0]))
+                cols_iter = iter(sorted(list(row.items()), key=lambda tup: tup[0]))
                 for table_id, data_iter in groupby(cols_iter, lambda x: x[0][:-3].upper()):
                     table_for_geoid = OrderedDict()
                     table_for_geoid['estimate'] = OrderedDict()
@@ -1877,7 +1877,6 @@ def show_specified_data(acs):
                         table_for_geoid['estimate'][col_name] = value
                         table_for_geoid['error'][col_name] = moe_value
 
-                    #data_for_geoid[table_id] = table_for_geoid
                     if this_geo_has_data:
                         data_for_geoid[table_id] = table_for_geoid
                     else:
