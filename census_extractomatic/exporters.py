@@ -161,12 +161,8 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
     driver_name = format_info['driver']
     ogr.UseExceptions()
     in_driver = ogr.GetDriverByName("PostgreSQL")
-    #host, user, password, database = get_sql_config(sql_url) ## hardcoding this bullshit because urlparse is not working and I'm tired
-    host = ''
-    port = ''
-    database = ''
-    user = ''
-    password = ''
+    host, user, password, database = get_sql_config(sql_url) 
+    port = '5433'
     conn = in_driver.Open("PG: host=%s dbname=%s user=%s password=%s port=" % (host, database, user, password))
 
     if conn is None:
