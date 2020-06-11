@@ -2013,6 +2013,8 @@ def download_specified_data(acs):
                     table_for_geoid['estimate'] = OrderedDict()
                     table_for_geoid['error'] = OrderedDict()
 
+                    this_geo_has_data = False or acs == allowed_acs[-1]
+
                     for (col_name, value) in data_iter:
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
