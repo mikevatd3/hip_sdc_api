@@ -163,7 +163,7 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
     in_driver = ogr.GetDriverByName("PostgreSQL")
     host, user, password, database = get_sql_config(sql_url) 
     port = '5433'
-    conn = in_driver.Open("PG: host=%s dbname=%s user=%s password=%s port=" % (host, database, user, password))
+    conn = in_driver.Open("PG: host=%s dbname=%s user=%s password=%s port=%s" % (host, database, user, password, port))
 
     if conn is None:
         raise Exception("Could not connect to database to generate download.")
