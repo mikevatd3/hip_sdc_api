@@ -922,8 +922,6 @@ def show_specified_geo_data(release):
 
 def format_table_search_result(obj, obj_type, release):
     '''internal util for formatting each object in `table_search` API response'''
-    if release == '':
-        
 
     result = {
         'type': obj_type,
