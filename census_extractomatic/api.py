@@ -922,6 +922,9 @@ def show_specified_geo_data(release):
 
 def format_table_search_result(obj, obj_type, release):
     '''internal util for formatting each object in `table_search` API response'''
+    if release == '':
+        
+
     result = {
         'type': obj_type,
         'table_id': obj['table_id'],
@@ -1050,7 +1053,7 @@ def table_search():
             else:
                 continue
             break
-        data.append(format_table_search_result(tabulation, 'table', acs))
+        data.append(format_table_search_result(tabulation, 'table', ''))
 
     # retrieve matching columns.
     if q != '*':
@@ -1069,7 +1072,7 @@ def table_search():
                ORDER BY char_length(tab.table_id), tab.table_id""" % (column_where),
             column_where_args
         )
-        data.extend([format_table_search_result(column, 'column', acs) for column in result])
+        data.extend([format_table_search_result(column, 'column', '') for column in result])
 
     text = json.dumps(data)
     resp = make_response(text)
