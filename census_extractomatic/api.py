@@ -920,7 +920,7 @@ def show_specified_geo_data(release):
 
 ## TABLE LOOKUPS ##
 
-def format_table_search_result(obj, obj_type):
+def format_table_search_result(obj, obj_type, release):
     '''internal util for formatting each object in `table_search` API response'''
     result = {
         'type': obj_type,
@@ -929,6 +929,7 @@ def format_table_search_result(obj, obj_type):
         'simple_table_name': obj['simple_table_title'],
         'topics': obj['topics'],
         'universe': obj['universe'],
+        'release': release,
     }
 
     if obj_type == 'table':
@@ -990,7 +991,7 @@ def table_search():
             )
             for row in result:
                 if row['table_id'] not in ids_found:
-                    data.append(format_table_search_result(row, 'table'))
+                    data.append(format_table_search_result(row, 'table', table_id_acs))
                     ids_found.add(row['table_id'])
             try:
                 table_id_acs = acs_to_search.pop(0)
@@ -1049,7 +1050,7 @@ def table_search():
             else:
                 continue
             break
-        data.append(format_table_search_result(tabulation, 'table'))
+        data.append(format_table_search_result(tabulation, 'table', acs))
 
     # retrieve matching columns.
     if q != '*':
@@ -1068,7 +1069,7 @@ def table_search():
                ORDER BY char_length(tab.table_id), tab.table_id""" % (column_where),
             column_where_args
         )
-        data.extend([format_table_search_result(column, 'column') for column in result])
+        data.extend([format_table_search_result(column, 'column', acs) for column in result])
 
     text = json.dumps(data)
     resp = make_response(text)
