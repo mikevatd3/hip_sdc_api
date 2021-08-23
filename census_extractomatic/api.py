@@ -51,6 +51,7 @@ except Exception as e:
 # Allowed ACS's in "best" order (newest and smallest range preferred)
 allowed_acs = [
     'd3_present',
+    'acs2019_5yr',
     'acs2018_5yr',
     'acs2017_5yr',
     'acs2016_5yr',
@@ -81,14 +82,15 @@ allowed_searches = [
 ]
 
 ACS_NAMES = {
+    'acs2019_5yr': {'name': 'ACS 2018 5-year', 'years': '2015-2019'},
     'acs2018_5yr': {'name': 'ACS 2018 5-year', 'years': '2014-2018'},
     'acs2017_5yr': {'name': 'ACS 2017 5-year', 'years': '2013-2017'},
     'acs2016_5yr': {'name': 'ACS 2016 5-year', 'years': '2012-2016'},
     'acs2013_5yr': {'name': 'ACS 2013 5-year', 'years': '2009-2013'},
     'acs2012_5yr': {'name': 'ACS 2012 5-year', 'years': '2008-2012'},
     'acs2011_5yr': {'name': 'ACS 2011 5-year', 'years': '2007-2011'},
-    'd3_present': {'name': 'Data Driven Detroit', 'years': '2019'},
-    'd3_past': {'name': 'Data Driven Detroit', 'years': '2014'},
+    'd3_present': {'name': 'Data Driven Detroit', 'years': '2020'},
+    'd3_past': {'name': 'Data Driven Detroit', 'years': '2015'},
 }
 
 PARENT_CHILD_CONTAINMENT = {
