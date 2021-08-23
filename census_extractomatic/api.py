@@ -82,7 +82,7 @@ allowed_searches = [
 ]
 
 ACS_NAMES = {
-    'acs2019_5yr': {'name': 'ACS 2018 5-year', 'years': '2015-2019'},
+    'acs2019_5yr': {'name': 'ACS 2019 5-year', 'years': '2015-2019'},
     'acs2018_5yr': {'name': 'ACS 2018 5-year', 'years': '2014-2018'},
     'acs2017_5yr': {'name': 'ACS 2017 5-year', 'years': '2013-2017'},
     'acs2016_5yr': {'name': 'ACS 2016 5-year', 'years': '2012-2016'},
