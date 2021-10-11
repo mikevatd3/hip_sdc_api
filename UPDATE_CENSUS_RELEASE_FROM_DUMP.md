@@ -45,6 +45,7 @@ https://github.com/NiJeLorg/census-table-metadata/blob/master/UPDATING_CENSUS_ME
 - On your local machine, open `api.py` in `census_extractomatic`.
 - In the array `allowed_acs`, add the name of the newest acs release (ex. `acs2019_5yr`). Add the newest release at the top, but after the `d3_present` release in the array.
 - In the array `allowed_tiger` add the name of the newest TIGER release (ex. `tiger2019`). Add the newest release at the top.
+- In the array `ACS_NAMES` add metadata of the newest ACS release (ex. `'acs2019_5yr': {'name': 'ACS 2019 5-year', 'years': '2015-2019'},`). Add the newest release at the top.
 - Once changed, push changes to github
 
 ```bash
