@@ -91,8 +91,8 @@ ACS_NAMES = {
     'acs2013_5yr': {'name': 'ACS 2013 5-year', 'years': '2009-2013'},
     'acs2012_5yr': {'name': 'ACS 2012 5-year', 'years': '2008-2012'},
     'acs2011_5yr': {'name': 'ACS 2011 5-year', 'years': '2007-2011'},
-    'd3_present': {'name': 'Data Driven Detroit', 'years': '2020'},
-    'd3_past': {'name': 'Data Driven Detroit', 'years': '2015'},
+    'd3_present': {'name': 'Data Driven Detroit', 'years': '2018-2021'},
+    'd3_past': {'name': 'Data Driven Detroit', 'years': '2015-2018'},
 }
 
 PARENT_CHILD_CONTAINMENT = {
