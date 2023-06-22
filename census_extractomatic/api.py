@@ -19,17 +19,18 @@ from math import log10, log
 from datetime import timedelta
 import re
 import os
+import sys
 import shutil
 import tempfile
 import zipfile
 import pylibmc
-import mockcache
+# import mockcache
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 from census_extractomatic.validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
 
-from census_extractomatic.exporters import create_ogr_download, create_excel_download, supported_formats
+from census_extractomatic.exporters import supported_formats
 
 app = Flask(__name__)
 app.config.from_object(os.environ.get('EXTRACTOMATIC_CONFIG_MODULE', 'census_extractomatic.config.Development'))
@@ -39,8 +40,10 @@ sentry = Sentry(app)
 if not app.debug:
     import logging
     file_handler = logging.FileHandler('/tmp/api.censusreporter.org.wsgi_error.log')
+    stream_handler = logging.StreamHandler(stream=sys.stderr)
     file_handler.setLevel(logging.WARNING)
     app.logger.addHandler(file_handler)
+    app.logger.addHandler(stream_handler)
 
 try:
     app.s3 = S3Connection()
@@ -48,9 +51,11 @@ except Exception as e:
     app.s3 = None
     app.logger.warning("S3 Configuration failed.")
 
+
 # Allowed ACS's in "best" order (newest and smallest range preferred)
 allowed_acs = [
     'd3_present',
+    'acs2021_5yr',
     'acs2019_5yr',
     'acs2018_5yr',
     'acs2017_5yr',
@@ -71,8 +76,7 @@ default_table_search_release = allowed_acs[1]
 
 # Allowed TIGER releases in newest order
 allowed_tiger = [
-    'tiger2019',
-    'tiger2018',
+    'tiger2021',
 ]
 
 allowed_searches = [
@@ -83,6 +87,7 @@ allowed_searches = [
 ]
 
 ACS_NAMES = {
+    'acs2021_5yr': {'name': 'ACS 2021 5-year', 'years': '2017-2021'},
     'acs2019_5yr': {'name': 'ACS 2019 5-year', 'years': '2015-2019'},
     'acs2018_5yr': {'name': 'ACS 2018 5-year', 'years': '2014-2018'},
     'acs2017_5yr': {'name': 'ACS 2017 5-year', 'years': '2013-2017'},
@@ -133,7 +138,7 @@ SUMLEV_NAMES = {
     "620": {"name": "state house district", "plural": "state house districts", "tiger_table": "sldl"},
     "795": {"name": "PUMA", "plural": "PUMAs", "tiger_table": "puma"},
     "850": {"name": "ZCTA3", "plural": "ZCTA3s"},
-    "860": {"name": "ZCTA5", "plural": "ZCTA5s", "tiger_table": "zcta5"},
+    "860": {"name": "ZCTA5", "plural": "ZCTA5s", "tiger_table": "zcta520"},
     "950": {"name": "elementary school district", "plural": "elementary school districts", "tiger_table": "elsd"},
     "960": {"name": "secondary school district", "plural": "secondary school districts", "tiger_table": "scsd"},
     "970": {"name": "unified school district", "plural": "unified school districts", "tiger_table": "unsd"},
@@ -457,7 +462,7 @@ def find_geoid(geoid, acs=None):
 @app.before_request
 def before_request():
     memcache_addr = app.config.get('MEMCACHE_ADDR')
-    g.cache = pylibmc.Client(memcache_addr) if memcache_addr else mockcache.Client(memcache_addr)
+    g.cache = pylibmc.Client(memcache_addr) # if memcache_addr else mockcache.Client(memcache_addr)
 
 
 def get_data_fallback(table_ids, geoids, acs=None):
@@ -546,7 +551,7 @@ def compute_profile_item_levels(geoid):
         geoid = geoid.upper()
         geoid_parts = geoid.split('US')
 
-    if len(geoid_parts) is not 2:
+    if len(geoid_parts) != 2:
         raise Exception('Invalid geoid')
 
     levels.append({
@@ -558,9 +563,9 @@ def compute_profile_item_levels(geoid):
     sumlevel = geoid_parts[0][:3]
     id_part = geoid_parts[1]
 
-    if sumlevel in ('140', '150', '160', '310', '330', '350', '860', '950', '960', '970'):
+    if sumlevel in ('140', '150', '060', '310', '330', '350', '860', '950', '960', '970'):
         result = db.session.execute(
-            """SELECT * FROM tiger2019.census_geo_containment
+            """SELECT * FROM tiger2021.census_geo_containment
                WHERE child_geoid=:geoid
                ORDER BY percent_covered ASC
             """,
@@ -665,13 +670,13 @@ def geo_search():
 
     if with_geom:
         sql = """SELECT DISTINCT geoid,sumlevel,population,display_name,full_geoid,priority,ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geom
-            FROM tiger2019.census_name_lookup
+            FROM tiger2021.census_name_lookup
             WHERE %s
             ORDER BY priority, population DESC NULLS LAST
             LIMIT 25;""" % (where)
     else:
         sql = """SELECT DISTINCT geoid,sumlevel,population,display_name,full_geoid,priority
-            FROM tiger2019.census_name_lookup
+            FROM tiger2021.census_name_lookup
             WHERE %s
             ORDER BY priority, population DESC NULLS LAST
             LIMIT 25;""" % (where)
@@ -750,6 +755,10 @@ def geo_tiles(release, sumlevel, zoom, x, y):
     resp.headers.set('Cache-Control', 'public,max-age=86400') # 1 day
     return resp
 
+@app.route("/1.0/test")
+def test():
+    return jsonify([1,2,3,4,5])
+
 
 # Example: /1.0/geo/tiger2014/04000US53
 # Example: /1.0/geo/tiger2013/04000US53
@@ -764,7 +773,7 @@ def geo_lookup(release, geoid):
 
     geoid = geoid.upper() if geoid else geoid
     geoid_parts = geoid.split('US')
-    if len(geoid_parts) is not 2:
+    if len(geoid_parts) != 2:
         abort(404, 'Invalid GeoID')
 
     cache_key = str('1.0/geo/%s/show/%s.json?geom=%s' % (release, geoid, request.qwargs.geom))
@@ -873,6 +882,7 @@ def geo_parent(release, geoid):
 })
 @crossdomain(origin='*')
 def show_specified_geo_data(release):
+
     if release not in allowed_tiger:
         abort(404, "Unknown TIGER release")
     geo_ids, child_parent_map = expand_geoids(request.qwargs.geo_ids, release_to_expand_with)
@@ -1639,7 +1649,7 @@ def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     db.session.execute("SET search_path=:acs,public;", {'acs': release})
     result = db.session.execute(
         """SELECT geoid, name
-           FROM tiger2019.census_geo_containment, geoheader
+           FROM tiger2021.census_geo_containment, geoheader
            WHERE geoheader.geoid = census_geo_containment.child_geoid
              AND census_geo_containment.parent_geoid = :parent_geoid
              AND census_geo_containment.child_geoid LIKE :child_geoids""",
@@ -1661,8 +1671,8 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     child_geoids = []
     result = db.session.execute(
         """SELECT child.full_geoid
-           FROM tiger2019.census_name_lookup parent
-           JOIN tiger2019.census_name_lookup child ON ST_Intersects(parent.geom, child.geom) AND child.sumlevel=:child_sumlevel
+           FROM tiger2021.census_name_lookup parent
+           JOIN tiger2021.census_name_lookup child ON ST_Intersects(parent.geom, child.geom) AND child.sumlevel=:child_sumlevel
            WHERE parent.full_geoid=:parent_geoid AND parent.sumlevel=:parent_sumlevel""",
         {'child_sumlevel': child_summary_level, 'parent_geoid': parent_geoid, 'parent_sumlevel': parent_sumlevel}
     )
@@ -1726,12 +1736,17 @@ def expand_geoids(geoid_list, release=None):
     # Check to make sure the geo ids the user entered are valid
     if explicit_geoids:
         db.session.execute("SET search_path=:acs,public;", {'acs': release})
-        result = db.session.execute(
-            """SELECT geoid
-               FROM geoheader
-               WHERE geoid IN :geoids;""",
-            {'geoids': tuple(explicit_geoids)}
-        )
+        try:
+            result = db.session.execute(
+                """SELECT geoid
+                   FROM acs2021_5yr.geoheader
+                   WHERE geoid IN :geoids;""",
+                {'geoids': tuple(explicit_geoids)}
+            )
+
+        except Exception as e:
+            print(e)
+
         valid_geo_ids.extend([geo['geoid'] for geo in result])
 
     invalid_geo_ids = set(expanded_geoids + explicit_geoids) - set(valid_geo_ids)
@@ -1754,6 +1769,7 @@ class ShowDataException(Exception):
 })
 @crossdomain(origin='*')
 def show_specified_data(acs):
+
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -1768,7 +1784,7 @@ def show_specified_data(acs):
     try:
         valid_geo_ids, child_parent_map = expand_geoids(requested_geo_ids, release=expand_geoids_with)
     except ShowDataException as e:
-        abort(400, str(e.message))
+        abort(400, str(e))
 
     if not valid_geo_ids:
         abort(404, 'None of the geo_ids specified were valid: %s' % ', '.join(requested_geo_ids))
@@ -1785,12 +1801,15 @@ def show_specified_data(acs):
     named_geo_ids = valid_geo_ids | parents_of_groups
 
     # Fill in the display name for the geos
-    result = db.session.execute(
-        """SELECT full_geoid,population,display_name
-           FROM tiger2019.census_name_lookup
-           WHERE full_geoid IN :geoids;""",
-        {'geoids': tuple(named_geo_ids)}
-    )
+    try:
+        result = db.session.execute(
+            """SELECT full_geoid,population,display_name
+               FROM tiger2021.census_name_lookup
+               WHERE full_geoid IN :geoids;""",
+            {'geoids': tuple(named_geo_ids)}
+        )
+    except Exception as e:
+        print(e)
 
     geo_metadata = OrderedDict()
     for geo in result:
@@ -1804,23 +1823,27 @@ def show_specified_data(acs):
 
     for acs in acs_to_try:
         try:
-            db.session.execute("SET search_path=:acs, public;", {'acs': acs})
-
-            # Check to make sure the tables requested are valid
-            result = db.session.execute(
-                """SELECT tab.table_id,
-                          tab.table_title,
-                          tab.universe,
-                          tab.denominator_column_id,
-                          col.column_id,
-                          col.column_title,
-                          col.indent
-                   FROM census_column_metadata col
-                   LEFT JOIN census_table_metadata tab USING (table_id)
-                   WHERE table_id IN :table_ids
-                   ORDER BY column_id;""",
-                {'table_ids': tuple(request.qwargs.table_ids)}
+            db.session.execute(
+                "SET search_path=:acs, public;", {'acs': acs}
             )
+            # Check to make sure the tables requested are valid
+            try:
+                result = db.session.execute(
+                    """SELECT tab.table_id,
+                              tab.table_title,
+                              tab.universe,
+                              tab.denominator_column_id,
+                              col.column_id,
+                              col.column_title,
+                              col.indent
+                       FROM census_column_metadata col
+                       LEFT JOIN census_table_metadata tab USING (table_id)
+                       WHERE table_id IN :table_ids
+                       ORDER BY column_id;""",
+                    {'table_ids': tuple(request.qwargs.table_ids)}
+                )
+            except Exception as e:
+                print(e)
 
             valid_table_ids = []
             table_metadata = OrderedDict()
@@ -1845,12 +1868,12 @@ def show_specified_data(acs):
 
             # Now fetch the actual data
             from_stmt = '%s_moe' % (valid_table_ids[0])
+
             if len(valid_table_ids) > 1:
                 from_stmt += ' '
                 from_stmt += ' '.join(['JOIN %s_moe USING (geoid)' % (table_id) for table_id in valid_table_ids[1:]])
 
             sql = 'SELECT * FROM %s WHERE geoid IN :geoids;' % (from_stmt,)
-
             result = db.session.execute(sql, {'geoids': tuple(valid_geo_ids)})
             data = OrderedDict()
 
@@ -1902,7 +1925,7 @@ def show_specified_data(acs):
             resp = make_response(resp_data)
             resp.headers['Content-Type'] = 'application/json'
             return resp
-        except ShowDataException as e:
+        except Exception as e:
             abort(400, str(e))
     abort(400, 'Unspecified error.')
 
@@ -1917,6 +1940,7 @@ def show_specified_data(acs):
 })
 @crossdomain(origin='*')
 def download_specified_data(acs):
+    app.logger.error(f"The download specified data function is called.")
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -1924,6 +1948,7 @@ def download_specified_data(acs):
         acs_to_try = allowed_acs[:3]  # The first three releases
         expand_geoids_with = release_to_expand_with
     else:
+        app.logger.error(f"ACS release {acs} isn't supported")
         abort(404, 'The %s release isn\'t supported.' % get_acs_name(acs))
 
     try:
@@ -1936,20 +1961,31 @@ def download_specified_data(acs):
         abort(400, 'You requested %s geoids. The maximum is %s. Please contact us for bulk data.' % (len(valid_geo_ids), max_geoids))
 
     # Fill in the display name for the geos
-    result = db.session.execute(
-        """SELECT full_geoid,
-                  population,
-                  display_name
-           FROM tiger2019.census_name_lookup
-           WHERE full_geoid IN :geo_ids;""",
-        {'geo_ids': tuple(valid_geo_ids)}
-    )
+    try:
+        result = db.session.execute(
+            """SELECT full_geoid,
+                      population,
+                      display_name
+               FROM tiger2021.census_name_lookup
+               WHERE full_geoid IN :geo_ids;""",
+            {'geo_ids': tuple(valid_geo_ids)}
+        )
+
+    except Exception as e:
+        app.logger.error(f"The query is failing with error {e}.")
+        abort(400, 'Query error on geography query.')
 
     geo_metadata = OrderedDict()
-    for geo in result:
-        geo_metadata[geo['full_geoid']] = {
-            "name": geo['display_name'],
-        }
+    try:
+        for geo in result:
+            geo_metadata[geo['full_geoid']] = {
+                "name": geo['display_name'],
+            }
+
+    except KeyError as e:
+        app.logger.error(f"Uable to get key from geo call, {key}.")
+        abort(400, 'Key error on geography query.')
+
 
     for acs in acs_to_try:
         try:
@@ -2036,7 +2072,16 @@ def download_specified_data(acs):
             out_filename = os.path.join(inner_path, '%s.%s' % (file_ident, request.qwargs.format))
             format_info = supported_formats.get(request.qwargs.format)
             builder_func = format_info['function']
-            builder_func(app.config['SQLALCHEMY_DATABASE_URI'], data, table_metadata, valid_geo_ids, file_ident, out_filename, request.qwargs.format)
+            builder_func(
+                    app.config['SQLALCHEMY_DATABASE_URI'], 
+                    data, 
+                    table_metadata, 
+                    valid_geo_ids, 
+                    file_ident, 
+                    out_filename, 
+                    request.qwargs.format,
+                    logger=app.logger
+                )
 
             metadata_dict = {
                 'release': {
@@ -2156,7 +2201,7 @@ def data_compare_geographies_within_parent(acs, table_id):
         # get the parent geometry and add to API response
         result = db.session.execute(
             """SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
-               FROM tiger2019.census_name_lookup
+               FROM tiger2021.census_name_lookup
                WHERE full_geoid=:geo_ids;""",
             {'geo_ids': parent_geoid}
         )
@@ -2170,7 +2215,7 @@ def data_compare_geographies_within_parent(acs, table_id):
         # get the child geometries and store for later
         result = db.session.execute(
             """SELECT geoid, ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
-               FROM tiger2019.census_name_lookup
+               FROM tiger2021.census_name_lookup
                WHERE full_geoid IN :geo_ids
                ORDER BY full_geoid;""",
             {'geo_ids': tuple(child_geoid_list)}
@@ -2244,6 +2289,7 @@ def data_compare_geographies_within_parent(acs, table_id):
 
 @app.route('/healthcheck')
 def healthcheck():
+    app.logger.exception("Healthcheck was called!")
     return 'OK'
 
 @app.route('/robots.txt')

@@ -1,4 +1,8 @@
 import os
+import tomli
+
+with open("config.toml", "rb") as f:
+    config = tomli.load(f)
 
 
 class Config(object):
@@ -17,7 +21,14 @@ class Production(Config):
 class Development(Config):
     # For local dev, tunnel to the DB first:
     # ssh -i ~/.ssh/censusreporter.ec2_key.pem -L 5432:censusreporter.c7wefhiuybfb.us-east-1.rds.amazonaws.com:5432 ubuntu@52.71.251.119
-    SQLALCHEMY_DATABASE_URI = 'postgresql://census:#tk8(Z%i@localhost:5433/census'
+    db_name=config['db']['name']
+    db_username=config['db']['username']
+    db_password=config['db']['password']
+    db_port=config['db']['port']
+    db_host=config['db']['host']
+
+    SQLALCHEMY_DATABASE_URI = f"postgresql://{db_username}:password@{db_host}:{db_port}/{db_name}?password={db_password}"
+
     # or if using a local database, use this:
     # SQLALCHEMY_DATABASE_URI = 'postgresql://census:censuspassword@localhost/census'
 

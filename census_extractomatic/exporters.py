@@ -1,14 +1,21 @@
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, unquote
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import openpyxl
 from openpyxl.styles import Alignment, Font
 import logging
+import tomli
+
 
 logger = logging.getLogger('exporters')
 logging.basicConfig(filename='/tmp/api.censusreporter.org.error.log',level=logging.DEBUG)
 
 Session = sessionmaker()
+
+
+with open('config.toml', 'rb') as f:
+    config = tomli.load(f)
+
 
 _sessions = {}
 def session(sql_url):
@@ -19,16 +26,19 @@ def session(sql_url):
         _sessions[sql_url] = Session(bind=engine.connect())
         return _sessions[sql_url]
 
-def get_sql_config(sql_url):
-    """Return a tuple of strings: (host, user, password, database)"""
-    logger.warn('sql_url: %s', sql_url)
-    db_details = urlsplit(sql_url)
-    return (db_details.hostname,
-            db_details.username,
-            db_details.password,
-            db_details.path[1:])
 
-def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ident, out_filename, format):
+def get_sql_config(*_):
+    """Return a tuple of strings: (host, user, password, database)"""
+
+    return (
+        config['db']['host'],
+        config['db']['username'],
+        unquote(config['db']['password']),
+        config['db']['name'],
+    )
+
+
+def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ident, out_filename, format, logger=logger):
     def excel_helper(sheet, table_id, table, option):
         """
         Create excel sheet.
@@ -74,7 +84,7 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
         # plus different binding when using SQLAlchemy
         result = session(sql_url).execute(
             """SELECT full_geoid,display_name
-                     FROM tiger2019.census_name_lookup
+                     FROM tiger2021.census_name_lookup
                      WHERE full_geoid IN :geoids
                      ORDER BY full_geoid""",
             {'geoids': tuple(valid_geo_ids)}
@@ -132,8 +142,6 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
                 annotation_cell.value = "* Unexpected error. Please contact Census Reporter at https://censusreporter.uservoice.com/ and let us know the page from where you downloaded this data."
 
         # Write geo headers
-        for i in range(len(geo_headers)):
-            current_col = (i + 1) * 2
             current_cell = sheet.cell(row=2, column=current_col)
             current_cell.value = geo_headers[i]
             current_cell.alignment = Alignment(horizontal='center')
@@ -154,19 +162,22 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
 
     wb.save(out_filename)
 
-def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident, out_filename, format):
-    import ogr
-    import osr
+def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident, out_filename, format, logger=logger):
+    from osgeo import ogr
+    from osgeo import osr
     format_info = supported_formats[format]
     driver_name = format_info['driver']
     ogr.UseExceptions()
     in_driver = ogr.GetDriverByName("PostgreSQL")
+
     host, user, password, database = get_sql_config(sql_url) 
-    port = '5433'
-    conn = in_driver.Open("PG: host=%s dbname=%s user=%s password=%s port=%s" % (host, database, user, password, port))
+
+    port = '5432'
+    conn = in_driver.Open(f"PG: host=localhost dbname={database} user={user} password={password} port={port}")
 
     if conn is None:
         raise Exception("Could not connect to database to generate download.")
+
 
     out_driver = ogr.GetDriverByName(driver_name)
     out_srs = osr.SpatialReference()
@@ -189,7 +200,7 @@ def create_ogr_download(sql_url, data, table_metadata, valid_geo_ids, file_ident
 
     # this SQL echoed in Excel export but no geom so copying instead of factoring out
     sql = """SELECT geom,full_geoid,display_name
-             FROM tiger2019.census_name_lookup
+             FROM tiger2021.census_name_lookup
              WHERE full_geoid IN (%s)
              ORDER BY full_geoid""" % ', '.join("'%s'" % str(g) for g in valid_geo_ids)
     in_layer = conn.ExecuteSQL(sql)
