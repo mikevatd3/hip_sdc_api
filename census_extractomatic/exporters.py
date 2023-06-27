@@ -1,3 +1,4 @@
+from typing import Optional
 from urllib.parse import urlsplit, unquote
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -36,6 +37,12 @@ def get_sql_config(*_):
         unquote(config['db']['password']),
         config['db']['name'],
     )
+
+
+def noneproof_divide(a: Optional[float], b: Optional[float]) -> Optional[float]:
+    if (a is None) or (b is None):
+        return None
+    return a / b
 
 
 def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ident, out_filename, format, logger=logger):
@@ -111,8 +118,8 @@ def create_excel_download(sql_url, data, table_metadata, valid_geo_ids, file_ide
 
                         for column_id, column_info in table['columns'].items():
                             if base_estimate is not None and base_estimate != 0:
-                                col_values.append(table_estimates[column_id] / base_estimate)
-                                col_errors.append(table_errors[column_id] / base_estimate)
+                                col_values.append(noneproof_divide(table_estimates[column_id], base_estimate))
+                                col_errors.append(noneproof_divide(table_errors[column_id], base_estimate))
                             else:
                                 any_zero_denominators = True
                                 col_values.append('*')
