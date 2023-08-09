@@ -1,0 +1,293 @@
+id,variable_name,table_name,indentation,description,parent_column,sql_aggregation_phrase,documentation
+1,b01979001,b01979,,Total 19-35 (months),,SUM(pop_19_35),
+2,b01979002,b01979,,Fully Immunized,b01979001,SUM(full_immunized),
+3,b01979003,b01979,,Partially Immunized (minus HEP-A),b01979001,SUM(partial_minus_hep_a),
+4,b01979004,b01979,,Partially Immunized (minus HEP-A and PCV),b01979001,SUM(partial_less),
+5,b01992001,b01992,,Total Births,,COUNT(*),
+6,b01992002,b01992,,White,b01992001,sum(white),
+7,b01992003,b01992,,Black,b01992001,sum(black),
+8,b01992004,b01992,,Other,b01992001,sum(other),
+9,b01992005,b01992,,Hispanic,b01992001,sum(hispanic),
+10,b01992006,b01992,,Inadeqaute Prenatal Care,b01992001,sum(inadequate_care),
+11,b01992007,b01992,,Low Birth Weight,b01992001,sum(low_weight) ,
+12,b01992008,b01992,,Pre-Term,b01992001,sum(pre_term),
+13,b01992009,b01992,,Teen Mothers,b01992001,sum(teen_mom),
+14,b01982001,b01982,,Total Hospital Visits,,SUM(total_hospital_visits),
+15,b01982002,b01982,,Hospital Visits to emergency room or urgent care,b01982001,SUM(total_er),
+16,b01982003,b01982,,ER visits under 5,b01982002,SUM(er_under_5),
+17,b01982004,b01982,,Er visits 5 to 18,b01982002,SUM(er_over_5),
+18,b01982005,b01982,,ER visits asthma,b01982002,SUM(total_a_er_visits),
+19,b01982006,b01982,,ER visits diabetes,b01982002,SUM(total_d_er_visits),
+20,b01982007,b01982,,Total Hospital Visits Under 5,b01982001,sum(hospital_under_5),
+21,b01982008,b01982,,Total Hospital Visits 5 to 18,b01982001,sum(hospital_over_5),
+22,b01983001,b01983,,Total Individuals Tested,,Count(*),
+23,b01983002,b01983,,With Elevated Bood Lead Level,b01983001,Count(*) FILTER(WHERE pb_result > 4.5),
+24,b01983003,b01983,,Total Under 18,b01983001,Count(*) FILTER(WHERE age < 18),
+25,b01983004,b01983,,Under 18 With Elevated Bood Lead Level,b01983003,Count(*) FILTER(WHERE age < 18 and pb_result > 4.5),
+26,b01983005,b01983,,Total Under 6,b01983001,Count(*) FILTER(WHERE age < 6),
+27,b01983006,b01983,,Under 6 With Elevated Bood Lead Level,b01983005,Count(*) FILTER(WHERE age < 6 and pb_result > 4.5),
+28,b01981001,b01981,,Number of Infant Deaths,,Count(*),
+29,b01981002,b01981,,Unsafe Sleep,b01981001,SUM(unsafe_sleep),
+30,b01981003,b01981,,Assault or maltreatment,b01981001,SUM(assault_mal),
+31,b01981004,b01981,,Other Cause,b01981001,Count(*) FILTER(WHERE assault_mal is null and unsafe_sleep is null),
+32,b01980001,b01980,,Number of licensed childcare facilities,,COUNT(*),
+33,b01980002,b01980,,Licensed child care centers,,COUNT(*) FILTER(WHERE license_type like 'Licensed Centers'),
+34,b01980003,b01980,,Group homes,,COUNT(*) FILTER(WHERE license_type like 'Licensed Group Homes'),
+35,b01980004,b01980,,Family homes,,COUNT(*) FILTER(WHERE license_type like 'Licensed Family Homes'),
+36,b01980005,b01980,,Early Head Start,,COUNT(*) FILTER(WHERE early_head_start = 'Yes'),
+37,b01980006,b01980,,GSRP,,COUNT(*) FILTER(WHERE great_start_readiness = 'Yes'),
+38,b01980007,b01980,,Head Start,,COUNT(*) FILTER(WHERE head_start = 'Yes'),
+39,b01980008,b01980,,Total Capacity,,SUM(capacity),
+40,b01980009,b01980,,Capacity Early Head Start,,SUM(capacity) FILTER(WHERE early_head_start = 'Yes'),
+41,b01980010,b01980,,Capacity GSRP,,SUM(capacity) FILTER(WHERE great_start_readiness = 'Yes'),
+42,b01980011,b01980,,Capacity Head Start,,SUM(capacity) FILTER(WHERE head_start = 'Yes'),
+43,b01989001,b01989,,Total Students Tested,,SUM(total_students),
+44,b01989002,b01989,,Total Above or At,,SUM(total_met),
+45,b01989003,b01989,,Average Above or At all subject,,AVG(all_subjects_score_ave),
+46,b01989004,b01989,,Average Above or At math,,AVG(math_score_ave),
+47,b01989005,b01989,,Average Above or At ebrw,,AVG(ebrw_score_ave),
+48,b01990001,b01990,,Total Students Tested,,SUM(total_students),
+49,b01990002,b01990,,Total Above or At,,SUM(total_met),
+50,b01991001,b01991,,Total Students Tested,,SUM(total_students),
+51,b01991002,b01991,,Total Above or At,,SUM(total_met),
+52,b01997001,b01997,0,Assessed Third Graders,,SUM(number_assessed),
+53,b01997002,b01997,1,Met or Exceeded Math Expectations,,SUM(total_met),
+54,b01997003,b01997,2,Attending Charter School(s),,,
+55,b01997004,b01997,2,Attending ISD School(s),,,
+56,b01997005,b01997,2,Attending Public School(s),,,
+57,b01997006,b01997,2,Attending State School(s),,,
+58,b01997007,b01997,2,Attending Special Education School(s),,,
+59,b01997008,b01997,2,Attending Vocational/CTE School(s),,,
+60,b01997009,b01997,2,Attending Alternative Education School(s),,,
+61,b01997010,b01997,2,Attending General Education School(s),,,
+62,b01996001,b01996,0,Assessed Eighth Graders,,SUM(number_assessed),
+63,b01996002,b01996,1,Met or Exceeded Math Expectations,b01996001,SUM(total_met),
+64,b01996003,b01996,2,Attending Charter School(s),b01996002,,
+65,b01996004,b01996,2,Attending ISD School(s),b01996002,,
+66,b01996005,b01996,2,Attending Public School(s),b01996002,,
+67,b01996006,b01996,2,Attending State School(s),b01996002,,
+68,b01996007,b01996,2,Attending Special Education School(s),b01996002,,
+69,b01996008,b01996,2,Attending Vocational/CTE School(s),b01996002,,
+70,b01996009,b01996,2,Attending Alternative Education School(s),b01996002,,
+71,b01996010,b01996,2,Attending General Education School(s),b01996002,,
+72,b01993001,b01993,0,Total Students,,sum(total_count),
+73,b01993002,b01993,1,Eligible for Free Lunch,b01993001,sum(free_lunch_eligible),
+74,b01993003,b01993,1,Eligible for Reduced Price Lunch,b01993001,sum(reduced_price_lunch_eligible),
+75,b01993004,b01993,2,Free Attending Charter School(s),b01993002,,
+76,b01993005,b01993,2,Free Attending ISD School(s),b01993002,,
+77,b01993006,b01993,2,Free Attending Public School(s),b01993002,,
+78,b01993007,b01993,2,Free Attending State School(s),b01993002,,
+79,b01993008,b01993,2,Reduced Attending Charter School(s),b01993003,,
+80,b01993009,b01993,2,Reduced Attending ISD School(s),b01993003,,
+81,b01993010,b01993,2,Reduced Attending Public School(s),b01993003,,
+82,b01993011,b01993,2,Reduced Attending State School(s),b01993003,,
+83,b01994001,b01994,0,Total Students in Cohort,,sum(n_cohort),
+84,b01994002,b01994,1,Students Enrolled in College,b01994001,sum(n_enroll),
+85,b01998001,b01998,0,Total Students,,,
+86,b01998002,b01998,1,Mobile,b01998001,,
+87,b01999001,b01999,0,Total Students,,,
+88,b01999002,b01999,1,Chronically Absent,b01999001,,
+100,b01986001,b01986,0,Total Properties,,COUNT(d3_id),
+101,b01986002,b01986,1,Properties Transacted,b01986001,COUNT(d3_id) FILTER(WHERE sale_date is not null),
+102,b01987001,b01987,0,Total number of transactions,,COUNT(*),
+103,b01987002,b01987,1,QC,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'QC'),
+104,b01987003,b01987,1,AFF,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'AFF'),
+105,b01987004,b01987,1,PTA,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'PTA'),
+106,b01987005,b01987,1,OTH,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'OTH'),
+107,b01987006,b01987,1,WD,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'WD'),
+108,b01987007,b01987,1,CD,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'CD'),
+109,b01987008,b01987,1,LC,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'LC'),
+110,b01987009,b01987,1,MLC,b01987001,COUNT(*) FILTER(WHERE sale_instrument = 'MLC'),
+111,b01987010,b01987,1,Average consideration amount,b01987001,AVG(sale_price),
+112,b01987011,b01987,1,Median consideration amount,b01987001,MEDIAN(sale_price),
+113,b01987012,b01987,1,Total property sales,b01987001,SUM(sale_price),
+114,b01987013,b01987,1,Maximum price sold,b01987001,MAX(sale_price),
+115,b01987014,b01987,1,Minimum price sold,b01987001,MIN(sale_price),
+116,b01987027,b01987,1,"Less than $1,000",b01987001,count(*) FILTER(WHERE sale_price < 1000),
+117,b01987028,b01987,1,"$1,000 - $4,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 1000 and 4999),
+118,b01987029,b01987,1,"$5,000 - $9,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 5000 and 9999),
+119,b01987030,b01987,1,"$10,000 - $24,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 10000 and 24999),
+120,b01987031,b01987,1,"$25,000 - $49,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 25000 and 49999),
+121,b01987032,b01987,1,"$50,000 - $99,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 50000 and 99999),
+122,b01987033,b01987,1,"$100,000 - $499,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 100000 and 499999),
+123,b01987034,b01987,1,"$500,000 - $999,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 500000 and 999999),
+124,b01987035,b01987,1,"$1,000,000 - $4,999,999",b01987001,count(*) FILTER(WHERE sale_price BETWEEN 1000 and 4999),
+125,b01987036,b01987,1,"Greater than $5,000,000",b01987001,count(*) FILTER(WHERE sale_price > 5000000),
+89,b01985001,b01985,0,Count of Units,,SUM(count),""
+90,b01985002,b01985,1,Probable Rental Units,b01985001,SUM(count) FILTER(WHERE rental=true),""
+91,b01985003,b01985,2,Lead Clearance,b01985002,COUNT(*) FILTER(WHERE rental = true and lead_clearance is not null),""
+92,b01985004,b01985,2,No Lead Clearance,b01985002,COUNT(*) FILTER(WHERE rental = true and lead_clearance is null),""
+130,b01987022,b01987,1,August,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=8),
+131,b01987024,b01987,1,October,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=10),
+132,b01987018,b01987,1,April,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=4),
+133,b01987020,b01987,1,June,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=6),
+134,b01987019,b01987,1,May,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=5),
+93,b01985005,b01985,2,Corporate Owned,b01985002,COUNT(*) FILTER(WHERE rental = true and corporate_owner = 'TRUE'),""
+94,b01985006,b01985,2,Non-Corporate,b01985002,COUNT(*) FILTER(WHERE rental = true and  corporate_owner = 'FALSE'),""
+95,b01985007,b01985,2,Rental Properties Transacted,b01985002,COUNT(*) FILTER(WHERE rental = true and properties_transacted='transacted'),""
+96,b01985008,b01985,2,Non-Transacted Rental Properties,b01985002,COUNT(*) FILTER(WHERE rental = true and properties_transacted is null),""
+97,b01985009,b01985,2,Detroit Taxpayer,b01985002,COUNT(*) FILTER(WHERE rental = true and taxpayer_location = 'in Detroit'),""
+98,b01985010,b01985,2,Michigan Taxpayer,b01985002,"COUNT(*) FILTER(WHERE rental = true and taxpayer_location = 'in Michigan, not Detroit')",""
+99,b01985011,b01985,2,Out-of-State Taxpayer,b01985002,COUNT(*) FILTER(WHERE rental = true and taxpayer_location = 'out of Michigan'),""
+251,b01985017,b01985,2,Count probabable rental properties,,count(*) FILTER(WHERE rental = true),""
+177,b25956001,b25956,0,Minimum Estimated Cost,,min(department_est_cost),""
+178,b25956002,b25956,0,Maximum Estimated Cost,,max(department_est_cost),""
+179,b25956003,b25956,0,Total Estimated Costs,,sum(department_est_cost),""
+180,b25956004,b25956,0,Median Estimated Cost,,median(department_est_cost)  FILTER(WHERE department_est_cost is NOT NULL),""
+181,b25956005,b25956,0,All Types,,count(*),""
+182,b25956006,b25956,1,Alterations,b25956005,"count(*) FILTER(WHERE permit_type in ('Alteration', 'Alter Revision'))",""
+183,b25956007,b25956,1,Change of Used,b25956005,"count(*) FILTER(WHERE permit_type in ('Change of Occupancy/Use','Change of Use'))",""
+184,b25956008,b25956,1,Fire Repairs,b25956005,count(*) FILTER(WHERE permit_type = 'Fire Repair'),""
+185,b25956009,b25956,1,New,b25956005,"count(*) FILTER(WHERE permit_type in ('New','New Revision'))",""
+186,b25956010,b25956,1,Other,b25956005,"count(*) FILTER(WHERE permit_type not in ('Alteration','Alter Revision','Change of Occupancy/Use','Change of Use','Fire Repair','New','New Revision'))",""
+187,b25958001,b25958,0,Total Number of Demolitions,,COUNT(*),
+188,b25958002,b25958,0,Median Price,,Median(price),
+189,b25960001,b25960,1,"Adamo Group, Inc.",b25958001,"COUNT(*) FILTER (Where contractor_name = 'Adamo Group, Inc.')",
+190,b25960002,b25960,1,Homrich,b25958001,COUNT(*) FILTER (Where contractor_name = 'Homrich'),
+191,b25960003,b25960,1,DMC Consultants,b25958001,COUNT(*) FILTER (Where contractor_name = 'DMC Consultants'),
+192,b25960004,b25960,1,Able Demolition,b25958001,COUNT(*) FILTER (Where contractor_name = 'Able Demolition'),
+193,b25960005,b25960,1,Rickman Enterprise Group,b25958001,COUNT(*) FILTER (Where contractor_name = 'Rickman Enterprise Group'),
+194,b25960006,b25960,1,Salenbein Trucking & Excavating,b25958001,COUNT(*) FILTER (Where contractor_name = 'Salenbien Trucking & Excavating Inc.'),
+250,b25980011,b25980,2,$10000 and Greater,B25980002,COUNT(*) FILTER(WHERE program = 'Auction' and final_sale_price >= 10000),
+157,b25975001,b25975,0,All Violations,,count(*),""
+141,b01988011,b01988,1,Tenant Represented,b01988001,COUNT(case_number) FILTER(WHERE tenant_representation is not null),""
+142,b01988012,b01988,1,Tenant Unrepresented,b01988001,COUNT(case_number) FILTER(WHERE tenant_representation is null),""
+143,b01988013,b01988,1,Landlord Represented,b01988001,COUNT(case_number) FILTER(WHERE ll_representation is not null),""
+144,b01988014,b01988,1,Landlord Unrepresented,b01988001,COUNT(case_number) FILTER(WHERE ll_representation is null),""
+145,b01988015,b01988,1,January,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=1),""
+146,b01988016,b01988,1,February,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=2),""
+147,b01988017,b01988,1,March,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=3),""
+148,b01988018,b01988,1,April,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=4),""
+149,b01988019,b01988,1,May,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=5),""
+150,b01988020,b01988,1,June,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=6),""
+151,b01988021,b01988,1,July,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=7),""
+152,b01988022,b01988,1,August,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=8),""
+153,b01988023,b01988,1,September,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=9),""
+154,b01988024,b01988,1,October,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=10),""
+155,b01988025,b01988,1,November,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=11),""
+156,b01988026,b01988,1,December,b01988001,count(*) FILTER(WHERE judgement_by = 'BY DEFAULT' and EXTRACT(MONTH FROM filed_date)=12),""
+195,b25960007,b25960,1,Other Demolitions Contractor,b25958001,"COUNT(*) FILTER (Where contractor_name not in ('Adamo Group, Inc.', 'Homrich', 'DMC Consultants', 'Able Demolition', 'Rickman Enterprise Group', 'Salenbien Trucking & Excavating Inc.'))",
+196,b25959001,b25959,1,January,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=1),
+197,b25959002,b25959,1,February,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=2),
+198,b25959003,b25959,1,March,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=3),
+199,b25959004,b25959,1,April,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=4),
+200,b25959005,b25959,1,May,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=5),
+201,b25959006,b25959,1,June,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=6),
+202,b25959007,b25959,1,July,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=7),
+203,b25959008,b25959,1,August,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=8),
+204,b25959009,b25959,1,September,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=9),
+205,b25959010,b25959,1,October,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=10),
+206,b25959011,b25959,1,November,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=11),
+207,b25959012,b25959,1,December,b25958001,count(*) FILTER(WHERE EXTRACT(MONTH FROM demolition_date)=12),
+208,b25961001,b25961,0,Total Number of Housing Units,,COUNT(*),
+209,b25961002,b25961,1,Vacant Housing Units,b25961001,COUNT(*) FILTER(Where vacancy_indicator = 'Y'),
+216,b01985014,b01985,2,Type 2,b01985002,count(*) FILTER(WHERE landlord_type = 2),""
+217,b01985016,b01985,2,Type 4,b01985002,count(*) FILTER(WHERE landlord_type = 4),""
+218,b01985012,b01985,2,Non Rental Units,b01985002,SUM(count) FILTER(WHERE rental = false),""
+219,b01985015,b01985,2,Type 3,b01985002,count(*) FILTER(WHERE landlord_type = 3),""
+220,b01985013,b01985,2,Type 1,b01985002,count(*) FILTER(WHERE landlord_type = 1),""
+223,b01987017,b01987,1,March,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=3),
+224,b01987025,b01987,1,November,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=11),
+225,b01987021,b01987,1,July,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=7),
+226,b01987023,b01987,1,September,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=9),
+227,b01987015,b01987,1,January,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=1),
+228,b01987016,b01987,1,February,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=2),
+229,b01987026,b01987,1,December,b01987001,count(*) FILTER(WHERE EXTRACT(MONTH FROM sale_date::timestamp)=12),
+230,b25980001,b25980,0,Total DLBA Sales,,COUNT(*),
+234,b25980005,b25980,1,Community Partner ,B25980001,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects'),
+235,b25980002,b25980,1,Auction,B25980001,COUNT(*) FILTER(WHERE program = 'Auction'),
+236,b25980007,b25980,2,$2000-$3999,B25980002,COUNT(*) FILTER(WHERE program = 'Auction' and final_sale_price BETWEEN 2000 and 3999),
+237,b25980006,b25980,2,$1999 and Less,B25980002,COUNT(*) FILTER(WHERE program = 'Auction' and final_sale_price < 2000),
+238,b25980008,b25980,2,$4000-$5999,B25980002,COUNT(*) FILTER(WHERE program = 'Auction' and final_sale_price BETWEEN 4000 and 5999),
+239,b25980003,b25980,1,Side Lot,B25980001,COUNT(*) FILTER(WHERE program = 'Side Lot'),
+240,b25981001,b25981,0,Total DLBA Owned Properties,,COUNT(*),
+241,b25980009,b25980,2,$6000-$7999,B25980002,COUNT(*) FILTER(WHERE program = 'Auction' and final_sale_price BETWEEN 6000 and 7999),
+242,b25980017,b25980,2,Commercial-Structure,B25980005,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects' and purchaser_type = 'Commercial-Structure'),
+243,b25980015,b25980,2,Accessory Structure,B25980005,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects' and purchaser_type = 'Accessory Structure'),
+244,b25980013,b25980,2,Residential-Lot,B25980005,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects' and purchaser_type = 'Residential-Lot'),
+245,b25980014,b25980,2,NonResidential-Lot,B25980005,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects' and purchaser_type = 'NonResidential-Lot'),
+246,b25980010,b25980,2,$8000-$9999,B25980002,COUNT(*) FILTER(WHERE program = 'Auction' and final_sale_price BETWEEN 8000 and 9999),
+247,b25980012,b25980,2,Residential-Structure,B25980005,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects' and purchaser_type = 'Residential-Structure'),
+248,b25980016,b25980,2,Industrial-Structure,B25980005,COUNT(*) FILTER(WHERE program = 'Community Partner & Projects' and purchaser_type = 'Industrial-Structure'),
+249,b25980004,b25980,1,Own it Now,B25980001,COUNT(*) FILTER(WHERE program = 'Own It Now'),
+222,b25975002,b25975,1,9-1-36(a): No certificate of compliance,b25975001,"count(*) FILTER(WHERE violation_code in ('8-15-35(a)(1)', '8-15-35','8-15-35(a)(2)','8-15-82(d)'))",""
+210,b01984001,b01984,0,Total Square Miles,,SUM(sqmiles),""
+221,b25975006,b25975,1,Other,b25975001,"count(*) FILTER(WHERE violation_code not in ('8-15-35(a)(1)', '8-15-35', '8-15-35(a)(2)','8-15-82(d)', '8-15-81(a)', '42-2-97(b)','8-15-104'))",""
+211,b01984002,b01984,0,Number of Flooding Complaints,,SUM(num_dwsd_flooding_complaints),""
+212,b01984004,b01984,0,Percent of Land Area near Toxic Hazards,,SUM(toxic_site_buffer * sqmiles) / sum(sqmiles),""
+215,b01984009,b01984,0,Walkability Score,,SUM(walkability_score * sqmiles) / SUM(sqmiles),""
+232,b01984006,b01984,0,Daily Average PM2.5 concentration,,AVG(pm25_concentration),""
+158,b25975003,b25975,1,9-1-104: Weeds and plant growth,b25975001,count(*) FILTER(WHERE violation_code = '8-15-104'),""
+159,b25975004,b25975,1,22-2-88(b): Bulk solid waste accumulation,b25975001,count(*) FILTER(WHERE violation_code = '42-2-97(b)'),""
+160,b25975005,b25975,1,9-1-81(a): No rental certificate,b25975001,count(*) FILTER(WHERE violation_code = '8-15-81(a)'),""
+161,b25975007,b25975,1,"Buildings, Safety Engineering & Env Department",b25975001,"count(*) FILTER(WHERE agency_name = 'Buildings, Safety Engineering & Env Department')",""
+162,b25975008,b25975,1,Detroit Police Department,b25975001,count(*) FILTER(WHERE agency_name = 'Detroit Police Department'),""
+163,b25975009,b25975,1,BSEED Environmental Affairs,b25975001,count(*) FILTER(WHERE agency_name = 'BSEED Environmental Affairs'),""
+164,b25975010,b25975,1,Detroit Police Department,b25975001,count(*) FILTER(WHERE agency_name = 'Detroit Police Department'),""
+165,b25975011,b25975,1,January,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=1),""
+166,b25975012,b25975,1,February,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=2),""
+167,b25975013,b25975,1,March,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=3),""
+168,b25975014,b25975,1,April,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=4),""
+169,b25975015,b25975,1,May,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=5),""
+170,b25975016,b25975,1,June,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=6),""
+171,b25975017,b25975,1,July,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=7),""
+172,b25975018,b25975,1,August,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=8),""
+173,b25975019,b25975,1,September,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=9),""
+174,b25975020,b25975,1,October,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=10),""
+175,b25975021,b25975,1,November,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=11),""
+176,b25975022,b25975,1,December,b25975001,count(*) FILTER(WHERE EXTRACT(MONTH FROM violation_date)=12),""
+231,b01984007,b01984,0,Land Area Proximity to Adaptive Amenities,,SUM(near_adaptive_amenities * sqmiles) / sum(sqmiles),""
+213,b01984005,b01984,0,Land Area Covered by Impervious Surface,,SUM(impervious_surface_coverage * sqmiles) / sum(sqmiles),""
+214,b01984008,b01984,0,Land Area Covered by CDO or GRO,,SUM(cdo_gro_coverage * sqmiles) / sum(sqmiles),""
+233,b01984003,b01984,0,Percent Covered by Tree Canopy,,SUM(tree_canopy_coverage* sqmiles) / sum(sqmiles),""
+126,b01988001,b01988,0,Total Evictions Filed,,COUNT(case_number),""
+127,b01988002,b01988,1,Land Contract,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Land Contract'),""
+128,b01988003,b01988,1,Garnishment,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Garnishment'),""
+129,b01988004,b01988,1,Appeal,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Appeal'),""
+135,b01988005,b01988,1,Termination,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Termination'),""
+136,b01988006,b01988,1,Non-payment,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Non-Payment'),""
+137,b01988007,b01988,1,Haz/inj,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Haz/inj'),""
+138,b01988008,b01988,1,Trespass,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Trespass'),""
+139,b01988009,b01988,1,Money Judgement,b01988001,COUNT(case_number) FILTER(WHERE filed_type like 'Money Judgement'),""
+140,b01988010,b01988,1,Landlord Compliance,b01988001,COUNT(case_number) FILTER(WHERE coc_issue is not null),""
+254,b01988027,b01988,1,January,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=1),""
+255,b01988028,b01988,1,February,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=2),""
+256,b01988029,b01988,1,March,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=3),""
+257,b01988030,b01988,1,April,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=4),""
+258,b01988031,b01988,1,May,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=5),""
+259,b01988032,b01988,1,June,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=6),""
+260,b01988033,b01988,1,July,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=7),""
+261,b01988034,b01988,1,August,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=8),""
+262,b01988035,b01988,1,September,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=9),""
+263,b01988036,b01988,1,October,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=10),""
+264,b01988037,b01988,1,November,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=11),""
+265,b01988038,b01988,1,December,b01988001,count(*) FILTER(WHERE EXTRACT(MONTH FROM filed_date)=12),""
+278,b25984002,b25984,1,0% Pre,b25984001,count(*) FILTER (WHERE homestead_ = 0),""
+279,b25984003,b25984,1,0.1% = 99.9% PRE,b25984001,count(*) FILTER (where homestead_ between 1 and 99),""
+280,b25984004,b25984,1,100% PRE,b25984001,count(*) FILTER (where homestead_ = 100),""
+277,b25984001,b25984,0,Total Properties,,count(*),""
+281,b25984005,b25984,1,Total SEV,b25984001,SUM(assessed_v),""
+282,b25984006,b25984,1,MEAN SEV over $0,b25984001,avg(assessed_v) FILTER (where assessed_v > 0),""
+283,b25984007,b25984,1,MEDIAN SEV over $0,b25984001,median(assessed_v) FILTER (where assessed_v > 0),""
+284,b25984008,b25984,1,Distribution of properties by SEV: 1 - 4000,b25984001,count(*) FILTER (where assessed_v between 1 and 4000),""
+285,b25984009,b25984,1,Distribution of properties by SEV: 4001 - 8000,b25984001,count(*) FILTER (where assessed_v between 4001 and 8000),""
+286,b25984010,b25984,1,Distribution of properties by SEV: 8001 - 12000,b25984001,count(*) FILTER (where assessed_v between 8001 and 12000),""
+287,b25984011,b25984,1,Distribution of properties by SEV: 12001 - 16000,b25984001,count(*) FILTER (where assessed_v between 12001 and 16000),""
+288,b25984012,b25984,1,Distribution of properties by SEV: 16001 - 20000,b25984001,count(*) FILTER (where assessed_v between 16001 and 20000),""
+294,b25984018,b25984,1,Distribution of properties by SEV: over 40000,b25984001,"count(*) FILTER (where assessed_v > 40000)
+",""
+289,b25984013,b25984,1,Distribution of properties by SEV: 20001 - 24000,b25984001, count(*) FILTER (where assessed_v between 20001 and 24000),""
+290,b25984014,b25984,1,Distribution of properties by SEV: 24001 and 28000,b25984001,count(*) FILTER (where assessed_v between 24001 and 28000),""
+291,b25984015,b25984,1,Distribution of properties by SEV: 28001 and 32000,b25984001,count(*) FILTER (where assessed_v between 28001 and 32000),""
+292,b25984016,b25984,1,Distribution of properties by SEV: 32001 and 36000,b25984001,count(*) FILTER (where assessed_v between 32001 and 36000),""
+293,b25984017,b25984,1,Distribution of properties by SEV: 36001 and 40000,b25984001,count(*) FILTER (where assessed_v between 36001 and 40000),""
+295,b25984019,b25984,1,Taxable,b25984001,count(*) FILTER (where tax_status = 'TAXABLE'),""
+297,b25984021,b25984,1,Pilot,b25984001,count(*) FILTER (where tax_status = 'PILOT'),""
+298,b25984022,b25984,1,Hospital,b25984001,count(*) FILTER (where tax_status = 'HOSPITAL'),""
+299,b25984023,b25984,1,Charity,b25984001,count(*) FILTER (where tax_status = 'BENEVOLENT/CHARITY'),""
+300,b25984024,b25984,1,Religious,b25984001,count(*) FILTER (where tax_status = 'RELIGIOUS'),""
+302,b25984026,b25984,1,Projects,b25984001,count(*) FILTER (where tax_status = 'PROJECTS'),""
+303,b25984027,b25984,1,Railroad,b25984001,count(*) FILTER (where tax_status = 'RAILROAD'),""
+304,b25984028,b25984,1,Other,b25984001,"count(*) FILTER (where tax_status not in ('TAXABLE', 'CITY LAND BANK', 'CITY OWNED', 'STATE OWNED', 'COUNTY OWNED', 'PILOT','BENEVOLENT/CHARITY','RELIGIOUS''EDUCATION/SCIENTIFIC', 'BOARD OF EDUCATION','PROJECTS','RAILROAD'))",""
+296,b25984020,b25984,1,Government,b25984001,"count(*) FILTER (where tax_status in ('CITY LAND BANK', 'CITY OWNED', 'STATE OWNED', 'COUNTY OWNED'))",""
+301,b25984025,b25984,1,Education,b25984001,"count(*) FILTER (where tax_status in ('EDUCATION/SCIENTIFIC', 'BOARD OF EDUCATION'))",""
