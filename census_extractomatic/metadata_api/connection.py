@@ -15,7 +15,7 @@ metadata_engine = create_engine(
 )
 
 
-class DataParadigm:
+class DataParadigm(Enum):
     D3 = auto()
     CR = auto()
 
@@ -26,7 +26,7 @@ MetadataSession = sessionmaker(metadata_engine)
 
 def make_data_session(year: str, paradigm: DataParadigm):
     if paradigm == DataParadigm.CR:
-        schema_string = f"acs_{year}_5yr"
+        schema_string = f"acs{year}_5yr"
     elif paradigm == DataParadigm.D3:
         if year not in ["past", "present"]:
             raise ValueError("You can only provide 'past' or 'present' as a D3 year")

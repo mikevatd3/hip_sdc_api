@@ -10,6 +10,7 @@ though it could be used for anything.
 - [x] Get API running locally
 - [x] Get app pulling data from the local API from fixtures
 - [x] Get Flask printing all requests to stdout
+- [ ] Add census_name_lookup to new tiger2021 schema
 - [ ] Get metadata response running locally with blueprint
 - [ ] Check single Geo template runs from local API
 - [ ] Figure out combining single Geo and custom Geo templates
@@ -21,3 +22,5 @@ though it could be used for anything.
 ## REFACTOR
 - [ ] Figure out installing d3metadata as a local library
 - [ ] Get flask-admin running locally
+- [ ] Add Michigan data to fixture, geoheaders
+    - [ ] Remove Michigan filter from api_client in front-end

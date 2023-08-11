@@ -10,7 +10,7 @@ fixtures_path =Path("../../fixtures")
 data_path = fixtures_path / "data"
 metadata_path = fixtures_path / "metadata"
 
-
+"""
 # Load d3 metadata
 def make_none_safe(obj: dict[str, Any]):
     return {key: val if val else None for key, val in obj.items()}
@@ -55,8 +55,16 @@ for year in ["2016", "2021"]:
             table_name = Path(table).stem
             df = pd.read_csv(data_path / f"acs{year}_5yr" / table)
             df.to_sql(table_name, db.get_bind())
+"""
 
+CRSession = make_data_session('2021', DataParadigm.CR)
 
+with CRSession() as db:
+    table_name = "geoheader"
+    df = pd.read_csv(metadata_path / "acs2021_5yr_geoheader.csv")
+    df.to_sql(table_name, db.get_bind())
+
+"""
 for year in ["present", "past"]:
     D3Session = make_data_session(year, DataParadigm.D3)
 
@@ -73,3 +81,5 @@ for year in ["present", "past"]:
             table_name = Path(table).stem
             df = pd.read_csv(data_path / f"d3_{year}" / table)
             df.to_sql(table_name, db.get_bind())
+
+"""

@@ -586,10 +586,10 @@ def compute_profile_item_levels(geoid):
 
     if sumlevel in ('140', '150', '060', '310', '330', '350', '860', '950', '960', '970'):
         result = db.session.execute(
-            """SELECT * FROM tiger2021.census_geo_containment
+            text("""SELECT * FROM tiger2021.census_geo_containment
                WHERE child_geoid=:geoid
                ORDER BY percent_covered ASC
-            """,
+            """),
             {'geoid': geoid},
         )
         for row in result:
@@ -1769,7 +1769,7 @@ def expand_geoids(geoid_list, release=None):
         except Exception as e:
             print(e)
 
-        valid_geo_ids.extend([geo['geoid'] for geo in result])
+        valid_geo_ids.extend([geo[0] for geo in result])
 
     invalid_geo_ids = set(expanded_geoids + explicit_geoids) - set(valid_geo_ids)
     if invalid_geo_ids:
@@ -1854,7 +1854,7 @@ def show_specified_data(acs):
             # Check to make sure the tables requested are valid
             try:
                 result = db.session.execute(
-                    """SELECT tab.table_id,
+                    text("""SELECT tab.table_id,
                               tab.table_title,
                               tab.universe,
                               tab.denominator_column_id,
@@ -1864,7 +1864,7 @@ def show_specified_data(acs):
                        FROM census_column_metadata col
                        LEFT JOIN census_table_metadata tab USING (table_id)
                        WHERE table_id IN :table_ids
-                       ORDER BY column_id;""",
+                       ORDER BY column_id;"""),
                     {'table_ids': tuple(request.qwargs.table_ids)}
                 )
             except Exception as e:
