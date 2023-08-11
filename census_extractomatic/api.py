@@ -1,10 +1,12 @@
 # For real division instead of sometimes-integer
 from __future__ import division
 
+
 from flask import Flask
 from flask import abort, request, g
 from flask import make_response, current_app, send_file
 from flask import jsonify, redirect
+from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
 from werkzeug.exceptions import HTTPException
@@ -20,6 +22,7 @@ from datetime import timedelta
 import re
 import os
 import sys
+from logging.config import dictConfig
 import shutil
 import tempfile
 import zipfile
@@ -31,6 +34,24 @@ from boto.exception import S3ResponseError
 from census_extractomatic.validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
 
 from census_extractomatic.exporters import supported_formats
+
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://sys.stdout',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
+
+
 
 app = Flask(__name__)
 app.config.from_object(os.environ.get('EXTRACTOMATIC_CONFIG_MODULE', 'census_extractomatic.config.Development'))
@@ -783,19 +804,19 @@ def geo_lookup(release, geoid):
     else:
         if request.qwargs.geom:
             result = db.session.execute(
-                """SELECT display_name,simple_name,sumlevel,full_geoid,population,aland,awater,
+                text("""SELECT display_name,simple_name,sumlevel,full_geoid,population,aland,awater,
                    ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.00005), 6) as geom
                    FROM %s.census_name_lookup
                    WHERE full_geoid=:geoid
-                   LIMIT 1""" % (release,),
+                   LIMIT 1""") % (release,),
                 {'geoid': geoid}
             )
         else:
             result = db.session.execute(
-                """SELECT display_name,simple_name,sumlevel,full_geoid,population,aland,awater
+                text("""SELECT display_name,simple_name,sumlevel,full_geoid,population,aland,awater
                    FROM %s.census_name_lookup
                    WHERE full_geoid=:geoid
-                   LIMIT 1""" % (release,),
+                   LIMIT 1""") % (release,),
                 {'geoid': geoid}
             )
 
@@ -994,15 +1015,15 @@ def table_search():
         ids_found = set()
         while table_id_acs:
             # Matching for table id
-            db.session.execute("SET search_path=:acs, public;", {'acs': table_id_acs})
+            db.session.execute(text("SET search_path=:acs, public;"), {'acs': table_id_acs})
             result = db.session.execute(
-                """SELECT tab.table_id,
+                text("""SELECT tab.table_id,
                           tab.table_title,
                           tab.simple_table_title,
                           tab.universe,
                           tab.topics
                    FROM census_table_metadata tab
-                   WHERE lower(table_id) like lower(:table_id)""",
+                   WHERE lower(table_id) like lower(:table_id)"""),
                 {'table_id': '{}%'.format(q)}
             )
             for row in result:
@@ -1017,7 +1038,7 @@ def table_search():
             data.sort(key=lambda x: x['unique_key'])
             return json.dumps(data)
 
-    db.session.execute("SET search_path=:acs, public;", {'acs': acs})
+    db.session.execute(text("SET search_path=:acs, public;"), {'acs': acs})
     table_where_parts = []
     table_where_args = {}
     column_where_parts = []
@@ -1045,7 +1066,7 @@ def table_search():
 
     # retrieve matching tables.
     result = db.session.execute(
-        """SELECT tab.tabulation_code,
+        text("""SELECT tab.tabulation_code,
                   tab.table_title,
                   tab.simple_table_title,
                   tab.universe,
@@ -1055,7 +1076,7 @@ def table_search():
                   tab.tables_in_five_yr
            FROM census_tabulation_metadata tab
            WHERE %s
-           ORDER BY tab.weight DESC""" % (table_where),
+           ORDER BY tab.weight DESC""" % (table_where)),
         table_where_args
     )
     for tabulation in result:
@@ -1072,7 +1093,7 @@ def table_search():
     if q != '*':
         # Special case for when we want ALL the tables (but not all the columns)
         result = db.session.execute(
-            """SELECT col.column_id,
+            text("""SELECT col.column_id,
                       col.column_title,
                       tab.table_id,
                       tab.table_title,
@@ -1082,7 +1103,7 @@ def table_search():
                FROM census_column_metadata col
                LEFT OUTER JOIN census_table_metadata tab USING (table_id)
                WHERE %s
-               ORDER BY char_length(tab.table_id), tab.table_id""" % (column_where),
+               ORDER BY char_length(tab.table_id), tab.table_id""" % (column_where)),
             column_where_args
         )
         data.extend([format_table_search_result(column, 'column', '') for column in result])
@@ -1099,9 +1120,9 @@ def table_search():
 @crossdomain(origin='*')
 def tabulation_details(tabulation_id):
     result = db.session.execute(
-        """SELECT *
+        text("""SELECT *
            FROM census_tabulation_metadata
-           WHERE tabulation_code=:tabulation""",
+           WHERE tabulation_code=:tabulation"""),
         {'tabulation': tabulation_id}
     )
 
@@ -1143,12 +1164,12 @@ def table_details(table_id):
     if cached:
         resp = make_response(cached)
     else:
-        db.session.execute("SET search_path=:acs, public;", {'acs': request.qwargs.acs})
+        db.session.execute(text("SET search_path=:acs, public;"), {'acs': request.qwargs.acs})
 
         result = db.session.execute(
-            """SELECT *
+            text("""SELECT *
                FROM census_table_metadata tab
-               WHERE table_id=:table_id""",
+               WHERE table_id=:table_id"""),
             {'table_id': table_id}
         )
         row = result.fetchone()
@@ -1167,9 +1188,9 @@ def table_details(table_id):
         ])
 
         result = db.session.execute(
-            """SELECT *
+            text("""SELECT *
                FROM census_column_metadata
-               WHERE table_id=:table_id""",
+               WHERE table_id=:table_id"""),
             {'table_id': row['table_id']}
         )
 
@@ -1212,12 +1233,13 @@ def table_details_with_release(release, table_id):
         if cached:
             resp = make_response(cached)
         else:
-            db.session.execute("SET search_path=:acs, public;", {'acs': release})
+            db.session.execute(
+                text("SET search_path=:acs, public;"), {'acs': release})
 
             result = db.session.execute(
-                """SELECT *
+                text("""SELECT *
                    FROM census_table_metadata tab
-                   WHERE table_id=:table_id""",
+                   WHERE table_id=:table_id"""),
                 {'table_id': table_id}
             )
             row = result.fetchone()
@@ -1236,10 +1258,10 @@ def table_details_with_release(release, table_id):
             ])
 
             result = db.session.execute(
-                """SELECT *
+                text("""SELECT *
                    FROM census_column_metadata
                    WHERE table_id=:table_id
-                   ORDER By line_number""",
+                   ORDER By line_number"""),
                 {'table_id': row['table_id']}
             )
 
@@ -1288,16 +1310,16 @@ def table_geo_comparison_rowcount(table_id):
     releases = sorted(releases)
 
     for acs in releases:
-        db.session.execute("SET search_path=:acs, public;", {'acs': acs})
+        db.session.execute(text("SET search_path=:acs, public;"), {'acs': acs})
         release = OrderedDict()
         release['release_name'] = ACS_NAMES[acs]['name']
         release['release_slug'] = acs
         release['results'] = 0
 
         result = db.session.execute(
-            """SELECT *
+            text("""SELECT *
                FROM census_table_metadata
-               WHERE table_id=:table_id;""",
+               WHERE table_id=:table_id;"""),
             {'table_id': table_id}
         )
         table_record = result.fetchone()
@@ -1311,9 +1333,9 @@ def table_geo_comparison_rowcount(table_id):
             if child_geoheaders:
                 child_geoids = [child['geoid'] for child in child_geoheaders]
                 result = db.session.execute(
-                    """SELECT COUNT(*)
+                    text("""SELECT COUNT(*)
                        FROM %s.%s
-                       WHERE geoid IN :geoids""" % (acs, validated_table_id),
+                       WHERE geoid IN :geoids""") % (acs, validated_table_id),
                     {'geoids': tuple(child_geoids)}
                 )
                 acs_rowcount = result.fetchone()
@@ -1361,7 +1383,7 @@ def full_text_search():
                                    relevance DESC;"""
 
         elif object_type == 'table':
-            query = """SELECT text1 AS tabulation_code,
+            query = text("""SELECT text1 AS tabulation_code,
                               text2 AS table_title,
                               text3 AS topics,
                               text4 AS simple_table_title,
@@ -1371,17 +1393,17 @@ def full_text_search():
                        FROM search_metadata
                        WHERE document @@ to_tsquery(:search_term)
                        AND type = 'table'
-                       ORDER BY relevance DESC;"""
+                       ORDER BY relevance DESC;""")
 
         elif object_type == 'topic':
-            query = """SELECT text1 as topic_name,
+            query = text("""SELECT text1 as topic_name,
                               text3 as url,
                               ts_rank(document, to_tsquery(:search_term)) AS relevance,
                               type
                        FROM search_metadata
                        WHERE document @@ to_tsquery(:search_term)
                        AND type = 'topic'
-                       ORDER BY relevance DESC;"""
+                       ORDER BY relevance DESC;""")
 
         objects = db.session.execute(query, {"search_term": q})
         return [row for row in objects]
@@ -1632,12 +1654,12 @@ def get_child_geoids(release, parent_geoid, child_summary_level):
 
 
 def get_all_child_geoids(release, child_summary_level):
-    db.session.execute("SET search_path=:acs,public;", {'acs': release})
+    db.session.execute(text("SET search_path=:acs,public;"), {'acs': release})
     result = db.session.execute(
-        """SELECT geoid,name
+        text("""SELECT geoid,name
            FROM geoheader
            WHERE sumlevel=:sumlev AND component='00' AND geoid NOT IN ('04000US72')
-           ORDER BY name""",
+           ORDER BY name"""),
         {'sumlev': int(child_summary_level)}
     )
 
@@ -1646,13 +1668,13 @@ def get_all_child_geoids(release, child_summary_level):
 
 def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     # Use the "worst"/biggest ACS to find all child geoids
-    db.session.execute("SET search_path=:acs,public;", {'acs': release})
+    db.session.execute(text("SET search_path=:acs,public;"), {'acs': release})
     result = db.session.execute(
-        """SELECT geoid, name
+        text("""SELECT geoid, name
            FROM tiger2021.census_geo_containment, geoheader
            WHERE geoheader.geoid = census_geo_containment.child_geoid
              AND census_geo_containment.parent_geoid = :parent_geoid
-             AND census_geo_containment.child_geoid LIKE :child_geoids""",
+             AND census_geo_containment.child_geoid LIKE :child_geoids"""),
         {'parent_geoid': parent_geoid, 'child_geoids': child_summary_level+'%'}
     )
 
@@ -1670,22 +1692,22 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     parent_sumlevel = parent_geoid[0:3]
     child_geoids = []
     result = db.session.execute(
-        """SELECT child.full_geoid
+        text("""SELECT child.full_geoid
            FROM tiger2021.census_name_lookup parent
            JOIN tiger2021.census_name_lookup child ON ST_Intersects(parent.geom, child.geom) AND child.sumlevel=:child_sumlevel
-           WHERE parent.full_geoid=:parent_geoid AND parent.sumlevel=:parent_sumlevel""",
+           WHERE parent.full_geoid=:parent_geoid AND parent.sumlevel=:parent_sumlevel"""),
         {'child_sumlevel': child_summary_level, 'parent_geoid': parent_geoid, 'parent_sumlevel': parent_sumlevel}
     )
     child_geoids = [r['full_geoid'] for r in result]
 
     if child_geoids:
         # Use the "worst"/biggest ACS to find all child geoids
-        db.session.execute("SET search_path=:acs,public;", {'acs': release})
+        db.session.execute(text("SET search_path=:acs,public;"), {'acs': release})
         result = db.session.execute(
-            """SELECT geoid,name
+            text("""SELECT geoid,name
                FROM geoheader
                WHERE geoid IN :child_geoids
-               ORDER BY name""",
+               ORDER BY name"""),
             {'child_geoids': tuple(child_geoids)}
         )
         return result.fetchall()
@@ -1697,13 +1719,13 @@ def get_child_geoids_by_prefix(release, parent_geoid, child_summary_level):
     child_geoid_prefix = '%s00US%s%%' % (child_summary_level, parent_geoid.upper().split('US')[1])
 
     # Use the "worst"/biggest ACS to find all child geoids
-    db.session.execute("SET search_path=:acs,public;", {'acs': release})
+    db.session.execute(text("SET search_path=:acs,public;"), {'acs': release})
     result = db.session.execute(
-        """SELECT geoid,name
+        text("""SELECT geoid,name
            FROM geoheader
            WHERE geoid LIKE :geoid_prefix
              AND name NOT LIKE :not_name
-           ORDER BY geoid""",
+           ORDER BY geoid"""),
         {'geoid_prefix': child_geoid_prefix, 'not_name': '%%not defined%%'}
     )
     return result.fetchall()
@@ -1735,12 +1757,12 @@ def expand_geoids(geoid_list, release=None):
 
     # Check to make sure the geo ids the user entered are valid
     if explicit_geoids:
-        db.session.execute("SET search_path=:acs,public;", {'acs': release})
+        db.session.execute(text("SET search_path=:acs,public;"), {'acs': release})
         try:
             result = db.session.execute(
-                """SELECT geoid
+                text("""SELECT geoid
                    FROM acs2021_5yr.geoheader
-                   WHERE geoid IN :geoids;""",
+                   WHERE geoid IN :geoids;"""),
                 {'geoids': tuple(explicit_geoids)}
             )
 
@@ -1769,6 +1791,9 @@ class ShowDataException(Exception):
 })
 @crossdomain(origin='*')
 def show_specified_data(acs):
+
+    app.logger.debug(request.qwargs.table_ids)
+    app.logger.debug(request.qwargs.geo_ids)
 
     if acs in allowed_acs:
         acs_to_try = [acs]
@@ -1803,9 +1828,9 @@ def show_specified_data(acs):
     # Fill in the display name for the geos
     try:
         result = db.session.execute(
-            """SELECT full_geoid,population,display_name
+            text("""SELECT full_geoid,population,display_name
                FROM tiger2021.census_name_lookup
-               WHERE full_geoid IN :geoids;""",
+               WHERE full_geoid IN :geoids;"""),
             {'geoids': tuple(named_geo_ids)}
         )
     except Exception as e:
@@ -1824,7 +1849,7 @@ def show_specified_data(acs):
     for acs in acs_to_try:
         try:
             db.session.execute(
-                "SET search_path=:acs, public;", {'acs': acs}
+                text("SET search_path=:acs, public;"), {'acs': acs}
             )
             # Check to make sure the tables requested are valid
             try:
