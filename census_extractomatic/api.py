@@ -1,7 +1,7 @@
 # For real division instead of sometimes-integer
 from __future__ import division
 
-
+from dataclasses import dataclass
 from flask import Flask
 from flask import abort, request, g
 from flask import make_response, current_app, send_file
@@ -1836,15 +1836,15 @@ def show_specified_data(acs):
     except Exception as e:
         print(e)
 
-    geo_metadata = OrderedDict()
-    for geo in result:
-        geo_metadata[geo['full_geoid']] = {
-            'name': geo['display_name'],
+    geo_metadata = {}
+    for full_geoid, _, display_name in result:
+        geo_metadata[full_geoid] = {
+            'name': display_name,
         }
         # let children know who their parents are to distinguish between
         # groups at the same summary level
-        if geo['full_geoid'] in child_parent_map:
-            geo_metadata[geo['full_geoid']]['parent_geoid'] = child_parent_map[geo['full_geoid']]
+        if full_geoid in child_parent_map:
+            geo_metadata[full_geoid]['parent_geoid'] = child_parent_map[full_geoid]
 
     for acs in acs_to_try:
         try:
@@ -1854,17 +1854,17 @@ def show_specified_data(acs):
             # Check to make sure the tables requested are valid
             try:
                 result = db.session.execute(
-                    text("""SELECT tab.table_id,
-                              tab.table_title,
-                              tab.universe,
-                              tab.denominator_column_id,
-                              col.column_id,
-                              col.column_title,
-                              col.indent
+                    text("""SELECT tab.table_id,          -- 0
+                              tab.table_title,            -- 1
+                              tab.universe,               -- 2
+                              tab.denominator_column_id,  -- 3
+                              col.column_id,              -- 4
+                              col.column_title,           -- 5
+                              col.indent                  -- 6
                        FROM census_column_metadata col
                        LEFT JOIN census_table_metadata tab USING (table_id)
                        WHERE table_id IN :table_ids
-                       ORDER BY column_id;"""),
+                       ORDER BY tab.table_id, col.column_id;"""),
                     {'table_ids': tuple(request.qwargs.table_ids)}
                 )
             except Exception as e:
@@ -1872,20 +1872,19 @@ def show_specified_data(acs):
 
             valid_table_ids = []
             table_metadata = OrderedDict()
-            for table, columns in groupby(result, lambda x: (x['table_id'], x['table_title'], x['universe'], x['denominator_column_id'])):
+
+            for table, columns in groupby(result, lambda col: col[:4]): # groupby table_id
                 valid_table_ids.append(table[0])
-                table_metadata[table[0]] = OrderedDict([
-                    ("title", table[1]),
-                    ("universe", table[2]),
-                    ("denominator_column_id", table[3]),
-                    ("columns", OrderedDict([(
-                        column['column_id'],
-                        OrderedDict([
-                            ("name", column['column_title']),
-                            ("indent", column['indent'])
-                        ])
-                    ) for column in columns]))
-                ])
+                table_metadata[table[0]] = {
+                    "title": table[1],
+                    "universe": table[2],
+                    "denominator_column_id": table[3],
+                    "columns": {
+                        column[4]: {
+                            "name": column[5],
+                            "indent": column[6],
+                        } for column in columns}
+                }
 
             invalid_table_ids = set(request.qwargs.table_ids) - set(valid_table_ids)
             if invalid_table_ids:
@@ -1898,9 +1897,12 @@ def show_specified_data(acs):
                 from_stmt += ' '
                 from_stmt += ' '.join(['JOIN %s_moe USING (geoid)' % (table_id) for table_id in valid_table_ids[1:]])
 
-            sql = 'SELECT * FROM %s WHERE geoid IN :geoids;' % (from_stmt,)
-            result = db.session.execute(sql, {'geoids': tuple(valid_geo_ids)})
-            data = OrderedDict()
+            sql = text('SELECT * FROM %s WHERE geoid IN :geoids;' % (from_stmt,))
+
+            resp = db.session.execute(sql, {'geoids': tuple(valid_geo_ids)})
+            keys = resp.keys()
+            result = [{key: value for value, key in zip(row, keys) if key != "index"} for row in resp]
+            data = {}
 
             # if result.rowcount != len(valid_geo_ids):
             #     returned_geo_ids = set([row['geoid'] for row in result])
@@ -1909,7 +1911,7 @@ def show_specified_data(acs):
             for row in result:
                 row = dict(row)
                 geoid = row.pop('geoid')
-                data_for_geoid = OrderedDict()
+                data_for_geoid = {}
 
                 # If we end up at the 'most complete' release, we should include every bit of
                 # data we can instead of erroring out on the user.

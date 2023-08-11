@@ -9,11 +9,14 @@ with open("keys.toml", "rb") as f:
     config = tomli.load(f)
 """
 
+public_engine = create_engine(
+    "postgresql+psycopg2://michael@localhost:5432/hip_sdc_api",
+)
+
 metadata_engine = create_engine(
     "postgresql+psycopg2://michael@localhost:5432/hip_sdc_api",
     connect_args={'options': '-csearch_path=d3_metadata'}
 )
-
 
 class DataParadigm(Enum):
     D3 = auto()
