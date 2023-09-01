@@ -1,13 +1,13 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models import (
+from .models import (
     D3EditionMetadata,
     D3TableMetadata,
     D3VariableMetadata,
 )
 
-from schemas import (
+from .schemas import (
     TableMetadata,
     VariableMetadata,
     EditionMetadata,
@@ -25,22 +25,41 @@ def build_variable_metadata(var: D3VariableMetadata) -> VariableMetadata:
     )
 
 
-def build_edition_metadata(ed: D3EditionMetadata) -> EditionMetadata:
+def build_edition_metadata(ed: D3EditionMetadata) -> EditionMetadata | None:
+    if ed is None:
+        return None
     return EditionMetadata(
         edition=ed.edition,
     )
 
 
-def build_table_metadata(table_names: list[str], db: Session) -> MetadataReference:
-    stmt = (
-        select(D3TableMetadata)
-        .where(D3TableMetadata.table_name.in_(table_names))
+def grab_primary_editions(table, db: Session):
+    """
+    This is slow, and it sucks.
+    """
+
+    past_edition = table.past(db)
+    present_edition = table.present(db)
+
+    return ComparisonEditions(
+        past=build_edition_metadata(past_edition),
+        present=build_edition_metadata(present_edition),
+    )
+
+
+def build_table_metadata(
+    table_names: list[str], db: Session
+) -> MetadataReference:
+    stmt = select(D3TableMetadata).where(
+        D3TableMetadata.table_name.in_(table_names)
     )
 
     tables = db.scalars(stmt)
 
     if not tables:
-        raise FileNotFoundError("No tables were found in the metadata dictionary.")
+        raise FileNotFoundError(
+            "No tables were found in the metadata dictionary."
+        )
 
     metadata_reference = MetadataReference()
 
@@ -49,13 +68,15 @@ def build_table_metadata(table_names: list[str], db: Session) -> MetadataReferen
             var.variable_name: build_variable_metadata(var)
             for var in table.variables
         }
-        editions = list(sorted(
-            [build_edition_metadata(edition) for edition in table.all_editions], key=lambda ed: ed.edition
-        ))
-        
-        comparisons = ComparisonEditions(
-            present=editions[-1],
-            past=editions[0],
+        editions = list(
+            sorted(
+                [
+                    build_edition_metadata(edition)
+                    for edition in table.all_editions
+                    if edition is not None
+                ],
+                key=lambda ed: ed.edition,
+            )
         )
 
         metadata_reference.tables[table.table_name] = TableMetadata(
@@ -71,6 +92,7 @@ def build_table_metadata(table_names: list[str], db: Session) -> MetadataReferen
             documentation=table.documentation,
             variables=variables,
             all_editions=editions,
-            comparison_editions=comparisons,
+            comparison_editions=grab_primary_editions(table, db),
         )
+
     return metadata_reference

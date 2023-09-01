@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base
+from .models import Base
 # import tomli
 
 """
@@ -22,10 +22,10 @@ class DataParadigm(Enum):
     D3 = auto()
     CR = auto()
 
-
 Base.metadata.create_all(metadata_engine)
 
 MetadataSession = sessionmaker(metadata_engine)
+PublicSession = sessionmaker(public_engine)
 
 def make_data_session(year: str, paradigm: DataParadigm):
     if paradigm == DataParadigm.CR:

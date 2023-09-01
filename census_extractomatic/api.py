@@ -14,7 +14,6 @@ from functools import update_wrapper
 from itertools import groupby
 import simplejson as json
 from collections import OrderedDict
-import decimal
 import operator
 import math
 from math import log10, log
@@ -22,11 +21,11 @@ from datetime import timedelta
 import re
 import os
 import sys
-from logging.config import dictConfig
 import shutil
 import tempfile
 import zipfile
 import pylibmc
+
 # import mockcache
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -34,27 +33,17 @@ from boto.exception import S3ResponseError
 from census_extractomatic.validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
 
 from census_extractomatic.exporters import supported_formats
-
-dictConfig({
-    'version': 1,
-    'formatters': {'default': {
-        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-    }},
-    'handlers': {'wsgi': {
-        'class': 'logging.StreamHandler',
-        'stream': 'ext://sys.stdout',
-        'formatter': 'default'
-    }},
-    'root': {
-        'level': 'INFO',
-        'handlers': ['wsgi']
-    }
-})
-
-
+from census_extractomatic.metadata_api.src import metadata_api
+from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
 
 app = Flask(__name__)
 app.config.from_object(os.environ.get('EXTRACTOMATIC_CONFIG_MODULE', 'census_extractomatic.config.Development'))
+
+# Set up metadata endpoint
+app.register_blueprint(metadata_api, url_prefix="/metadata")
+register_d3_metadata_admin(app)
+
+
 db = SQLAlchemy(app)
 sentry = Sentry(app)
 
@@ -775,11 +764,6 @@ def geo_tiles(release, sumlevel, zoom, x, y):
     resp.headers.set('Content-Type', 'application/json')
     resp.headers.set('Cache-Control', 'public,max-age=86400') # 1 day
     return resp
-
-@app.route("/1.0/test")
-def test():
-    return jsonify([1,2,3,4,5])
-
 
 # Example: /1.0/geo/tiger2014/04000US53
 # Example: /1.0/geo/tiger2013/04000US53
