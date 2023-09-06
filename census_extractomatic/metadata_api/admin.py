@@ -1,7 +1,9 @@
 import secrets
 
 from sqlalchemy import inspect
+from flask import redirect, url_for, request
 from flask_admin import Admin
+from flask_login import current_user
 from flask_admin.contrib.sqla import ModelView
 
 from .models import D3EditionMetadata, D3TableMetadata, D3VariableMetadata, D3VariableGroup
@@ -17,6 +19,13 @@ def make_view(table_metadata_class):
         column_hide_backrefs = False
         column_list = [c_attr.key for c_attr in inspect(table_metadata_class).mapper.column_attrs]
 
+        def is_accessible(self):
+            return current_user.is_authenticated
+
+        def inaccessible_callback(self, name, **kwargs):
+            # redirect to login page if user doesn't have access
+            return redirect(url_for('login', next=request.url))
+
     return VerboseView
 
 
@@ -26,6 +35,12 @@ class TableView(ModelView):
     column_hide_backrefs = False
     column_list = [c_attr.key for c_attr in inspect(D3TableMetadata).mapper.column_attrs]
 
+    def is_accessible(self):
+        return current_user.is_authenticated
+
+    def inaccessible_callback(self, name, **kwargs):
+        # redirect to login page if user doesn't have access
+        return redirect(url_for('login', next=request.url))
 
 
 VariableView = make_view(D3VariableMetadata)

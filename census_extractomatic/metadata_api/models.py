@@ -62,7 +62,6 @@ class D3TableMetadata(Base):
 
     __repr__ = __str__
 
-    
     def select_timeframe(self, timeframe: str, db):
         stmt = (
             select(D3EditionMetadata)
@@ -290,6 +289,5 @@ def get_edition_metadata(
 
 if __name__ == "__main__":
     from connection import metadata_engine
-
     Base.metadata.create_all(metadata_engine)
 
