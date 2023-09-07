@@ -24,7 +24,7 @@ def make_view(table_metadata_class):
 
         def inaccessible_callback(self, name, **kwargs):
             # redirect to login page if user doesn't have access
-            return redirect(url_for('login', next=request.url))
+            return redirect(url_for('auth.login', next=request.url))
 
     return VerboseView
 
@@ -40,7 +40,7 @@ class TableView(ModelView):
 
     def inaccessible_callback(self, name, **kwargs):
         # redirect to login page if user doesn't have access
-        return redirect(url_for('login', next=request.url))
+        return redirect(url_for('auth.login', next=request.url))
 
 
 VariableView = make_view(D3VariableMetadata)
