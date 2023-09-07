@@ -32,7 +32,6 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 from census_extractomatic.validation import (
-<<<<<<< HEAD
     qwarg_validate,
     NonemptyString,
     FloatRange,
@@ -40,15 +39,6 @@ from census_extractomatic.validation import (
     Bool,
     OneOf,
     ClientRequestValidationException,
-=======
-    qwarg_validate, 
-    NonemptyString, 
-    FloatRange, 
-    StringList, 
-    Bool, 
-    OneOf, 
-    ClientRequestValidationException
->>>>>>> c2308bb46556c5c1d435376a2397dce25adaa71d
 )
 
 from census_extractomatic.exporters import supported_formats
