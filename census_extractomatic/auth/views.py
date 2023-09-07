@@ -11,7 +11,7 @@ from ..metadata_api.connection import PublicSession
 def login():
     nologin = False
     if current_user.is_authenticated:
-        return redirect("/metadata")
+        return redirect("/admin")
     form = LoginForm()
     if form.validate_on_submit():
         with PublicSession() as db:
