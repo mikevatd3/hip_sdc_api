@@ -7,7 +7,7 @@ import tomli
 with open("config.toml", "rb") as f:
     config = tomli.load(f)
 
-DBNAME, USERNAME, PASSWORD, HOST, PORT = config.values()
+DBNAME, USERNAME, PASSWORD, HOST, PORT = config["db"].values()
 
 public_engine = create_engine(
     f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}",
