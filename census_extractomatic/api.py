@@ -30,7 +30,15 @@ import pylibmc
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
-from census_extractomatic.validation import qwarg_validate, NonemptyString, FloatRange, StringList, Bool, OneOf, ClientRequestValidationException
+from census_extractomatic.validation import (
+    qwarg_validate, 
+    NonemptyString, 
+    FloatRange, 
+    StringList, 
+    Bool, 
+    OneOf, 
+    ClientRequestValidationException
+)
 
 from census_extractomatic.exporters import supported_formats
 from census_extractomatic.metadata_api.src import metadata_api
@@ -577,13 +585,13 @@ def compute_profile_item_levels(geoid):
         result = db.session.execute(
             text("""SELECT * FROM tiger2021.census_geo_containment
                WHERE child_geoid=:geoid
-               ORDER BY percent_covered ASC
-            """),
+               ORDER BY percent_covered ASC;
+            """,
             {'geoid': geoid},
         )
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(row['parent_geoid'][:3])['name']
-            if not row['parent_geoid'] == '01000US':
+            if row['parent_geoid'] not in {'01000US', '31000US'}:
                 levels.append({
                     'relation': parent_sumlevel_name,
                     'geoid': row['parent_geoid'],
