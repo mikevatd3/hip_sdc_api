@@ -2,19 +2,19 @@ from enum import Enum, auto
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from .models import Base
-# import tomli
+import tomli
 
-"""
 with open("keys.toml", "rb") as f:
     config = tomli.load(f)
-"""
+
+DBNAME, USERNAME, PASSWORD, HOST, PORT = config.values()
 
 public_engine = create_engine(
-    "postgresql+psycopg2://michael@localhost:5432/hip_sdc_api",
+    f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}",
 )
 
 metadata_engine = create_engine(
-    "postgresql+psycopg2://michael@localhost:5432/hip_sdc_api",
+    f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}",
     connect_args={'options': '-csearch_path=d3_metadata'}
 )
 
@@ -38,7 +38,7 @@ def make_data_session(year: str, paradigm: DataParadigm):
         raise ValueError("Invalid paradigm, please use DataParadigm enum.")
 
     engine = create_engine(
-        "postgresql+psycopg2://michael@localhost:5432/hip_sdc_api",
+        f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}",
         connect_args={'options': f'-csearch_path={schema_string}'}
     )
 
