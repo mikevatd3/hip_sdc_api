@@ -32,6 +32,7 @@ from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 from boto.exception import S3ResponseError
 from census_extractomatic.validation import (
+<<<<<<< HEAD
     qwarg_validate,
     NonemptyString,
     FloatRange,
@@ -39,6 +40,15 @@ from census_extractomatic.validation import (
     Bool,
     OneOf,
     ClientRequestValidationException,
+=======
+    qwarg_validate, 
+    NonemptyString, 
+    FloatRange, 
+    StringList, 
+    Bool, 
+    OneOf, 
+    ClientRequestValidationException
+>>>>>>> c2308bb46556c5c1d435376a2397dce25adaa71d
 )
 
 from census_extractomatic.exporters import supported_formats
@@ -749,63 +759,40 @@ def compute_profile_item_levels(geoid):
             text(
                 """SELECT * FROM tiger2021.census_geo_containment
                WHERE child_geoid=:geoid
-               ORDER BY percent_covered ASC
-            """
-            ),
-            {"geoid": geoid},
+               ORDER BY percent_covered ASC;
+            """),
+            {'geoid': geoid},
         )
+
         for row in result:
-            parent_sumlevel_name = SUMLEV_NAMES.get(row["parent_geoid"][:3])[
-                "name"
-            ]
-            if not row["parent_geoid"] == "01000US":
-                levels.append(
-                    {
-                        "relation": parent_sumlevel_name,
-                        "geoid": row["parent_geoid"],
-                        "coverage": row["percent_covered"],
-                    }
-                )
+            parent_sumlevel_name = SUMLEV_NAMES.get(row._mapping['parent_geoid'][:3])['name']
+            if row._mapping['parent_geoid'] not in {'01000US', '31000US'}:
+                levels.append({
+                    'relation': parent_sumlevel_name,
+                    'geoid': row._mapping['parent_geoid'],
+                    'coverage': row._mapping['percent_covered'],
+                })
 
-    if sumlevel in ("060", "140", "150"):
-        levels.append(
-            {
-                "relation": "county",
-                "geoid": "05000US" + id_part[:5],
-                "coverage": 100.0,
-            }
-        )
+    if sumlevel in ('060', '140', '150'):
+        levels.append({
+            'relation': 'county',
+            'geoid': '05000US' + id_part[:5],
+            'coverage': 100.0,
+        })
 
-    if sumlevel in (
-        "050",
-        "060",
-        "140",
-        "150",
-        "160",
-        "500",
-        "610",
-        "620",
-        "795",
-        "950",
-        "960",
-        "970",
-    ):
-        levels.append(
-            {
-                "relation": "state",
-                "geoid": "04000US" + id_part[:2],
-                "coverage": 100.0,
-            }
-        )
+    if sumlevel in ('050', '060', '140', '150', '160', '500', '610', '620', '795', '950', '960', '970'):
+        levels.append({
+            'relation': 'state',
+            'geoid': '04000US' + id_part[:2],
+            'coverage': 100.0,
+        })
 
-    if sumlevel in ("314"):
-        levels.append(
-            {
-                "relation": "CBSA",
-                "geoid": "31000US" + id_part[:5],
-                "coverage": 100.0,
-            }
-        )
+    if sumlevel in ('314'):
+        levels.append({
+            'relation': 'CBSA',
+            'geoid': '31000US' + id_part[:5],
+            'coverage': 100.0,
+            })
 
     # if sumlevel != '010':
     #     levels.append({
