@@ -1,6 +1,7 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import Mapped, MappedColumn, DeclarativeBase
 from sqlalchemy import Integer, String, select
+from  sqlalchemy.exc import IntegrityError
 from flask_login import UserMixin
 from ..api import login
 from ..metadata_api.connection import public_engine, PublicSession
@@ -10,7 +11,8 @@ class Base(DeclarativeBase):
 
 
 class User(UserMixin, Base):
-    __tablename__ = 'users'
+    __tablename__ = 'auth_users'
+
     id: Mapped[int] = MappedColumn(Integer, primary_key=True)
     username: Mapped[str] = MappedColumn(String(64), index=True, unique=True)
     email: Mapped[str] = MappedColumn(String(128), index=True, unique=True)
