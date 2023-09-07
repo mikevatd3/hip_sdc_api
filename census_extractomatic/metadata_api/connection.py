@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from .models import Base
 import tomli
 
-with open("keys.toml", "rb") as f:
+with open("config.toml", "rb") as f:
     config = tomli.load(f)
 
 DBNAME, USERNAME, PASSWORD, HOST, PORT = config.values()
