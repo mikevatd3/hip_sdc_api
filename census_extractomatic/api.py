@@ -40,8 +40,13 @@ from census_extractomatic.validation import (
     OneOf,
     ClientRequestValidationException,
 )
+import tomli
 
 from census_extractomatic.exporters import supported_formats
+
+with open('config.toml', 'rb') as f:
+    config = tomli.load(f)
+
 
 app = Flask(__name__)
 app.config.from_object(
@@ -49,6 +54,7 @@ app.config.from_object(
         "EXTRACTOMATIC_CONFIG_MODULE", "census_extractomatic.config.Development"
     )
 )
+app.config["SECRET_KEY"] = config['sessions']['secret_key']
 
 db = SQLAlchemy(app)
 login = LoginManager(app)
