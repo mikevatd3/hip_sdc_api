@@ -10,7 +10,8 @@ from .models import D3EditionMetadata, D3TableMetadata, D3VariableMetadata, D3Va
 from .connection import MetadataSession
 
 
-db = MetadataSession()
+def get_db():
+    return MetadataSession()
 
 
 def make_view(table_metadata_class):
@@ -54,6 +55,6 @@ def register_d3_metadata_admin(app):
     app.config['SECRET_KEY'] = secret_key
 
     admin = Admin(app, name='D3 Data Pipeline', template_mode='bootstrap3')
-    admin.add_view(TableView(D3TableMetadata, db))
-    admin.add_view(VariableView(D3VariableMetadata, db))
-    admin.add_view(EditionView(D3EditionMetadata, db))
+    admin.add_view(TableView(D3TableMetadata, get_db()))
+    admin.add_view(VariableView(D3VariableMetadata, get_db()))
+    admin.add_view(EditionView(D3EditionMetadata, get_db()))
