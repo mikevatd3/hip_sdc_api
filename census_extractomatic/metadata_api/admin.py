@@ -52,7 +52,6 @@ def register_d3_metadata_admin(app):
     # set optional bootswatch theme
     app.config['FLASK_ADMIN_SWATCH'] = 'slate'
     secret_key = secrets.token_hex(16)
-    app.config['SECRET_KEY'] = secret_key
 
     admin = Admin(app, name='D3 Data Pipeline', template_mode='bootstrap3')
     admin.add_view(TableView(D3TableMetadata, get_db()))
