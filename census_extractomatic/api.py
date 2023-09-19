@@ -1795,7 +1795,7 @@ def expand_geoids(geoid_list, release=None):
         if len(geoid_split) == 2 and len(geoid_split[0]) == 3:
             (child_summary_level, parent_geoid) = geoid_split
             child_geoid_list = [
-                child_geoid["geoid"]
+                child_geoid._mapping["geoid"]
                 for child_geoid in get_child_geoids(
                     release, parent_geoid, child_summary_level
                 )
