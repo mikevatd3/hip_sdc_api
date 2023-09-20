@@ -15,12 +15,11 @@ def get_db():
 
 
 def make_view(table_metadata_class, column_list: list[str] | None = None):
-    if column_list is None:
-        column_list = [c_attr.key for c_attr in inspect(table_metadata_class).mapper.column_attrs]
 
     class VerboseView(ModelView):
         column_hide_backrefs = False
-        column_list = column_list
+        column_list = [c_attr.key for c_attr in inspect(table_metadata_class).mapper.column_attrs]
+
 
         def is_accessible(self):
             return current_user.is_authenticated
