@@ -14,11 +14,13 @@ def get_db():
     return MetadataSession()
 
 
-def make_view(table_metadata_class):
-    class VerboseView(ModelView):
-        column_display_pk = True # optional, but I like to see the IDs in the list
-        column_hide_backrefs = False
+def make_view(table_metadata_class, column_list: list[str] | None = None):
+    if column_list is None:
         column_list = [c_attr.key for c_attr in inspect(table_metadata_class).mapper.column_attrs]
+
+    class VerboseView(ModelView):
+        column_hide_backrefs = False
+        column_list = column_list
 
         def is_accessible(self):
             return current_user.is_authenticated
@@ -34,7 +36,7 @@ class TableView(ModelView):
     inline_models = (D3VariableMetadata, D3EditionMetadata, D3VariableGroup)
     column_display_pk = True # optional, but I like to see the IDs in the list
     column_hide_backrefs = False
-    column_list = [c_attr.key for c_attr in inspect(D3TableMetadata).mapper.column_attrs]
+    column_list = ["table_name", "description", "category", "table_topics", "universe"]
 
     def is_accessible(self):
         return current_user.is_authenticated
