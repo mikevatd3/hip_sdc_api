@@ -2319,7 +2319,7 @@ def download_specified_data(acs):
             resp = send_file(
                 zfile_path,
                 as_attachment=True,
-                attachment_filename=file_ident + ".zip",
+                download_name=file_ident + ".zip",
             )
 
             shutil.rmtree(temp_path)
