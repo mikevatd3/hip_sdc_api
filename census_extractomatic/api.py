@@ -1236,7 +1236,7 @@ def table_search():
         while table_id_acs:
             # Matching for table id
             db.session.execute(
-                text("SET search_path=:acs, public;"), {"acs": table_id_acs}
+                text("SET search_path TO :acs, public;"), {"acs": table_id_acs}
             )
             result = db.session.execute(
                 text(
@@ -1264,7 +1264,7 @@ def table_search():
             data.sort(key=lambda x: x["unique_key"])
             return json.dumps(data)
 
-    db.session.execute(text("SET search_path=:acs, public;"), {"acs": acs})
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
     table_where_parts = []
     table_where_args = {}
     column_where_parts = []
@@ -1407,7 +1407,7 @@ def table_details(table_id):
 
     table_id = table_id.upper() if table_id else table_id
     db.session.execute(
-        text("SET search_path=:acs, public;"), {"acs": request.qwargs.acs}
+        text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs}
     )
 
     result = db.session.execute(
@@ -1491,7 +1491,7 @@ def table_details_with_release(release, table_id):
 
     for release in acs_to_try:
         db.session.execute(
-            text("SET search_path=:acs, public;"), {"acs": release}
+            text("SET search_path TO :acs, public;"), {"acs": release}
         )
 
         result = db.session.execute(
@@ -1587,7 +1587,7 @@ def table_geo_comparison_rowcount(table_id):
     releases = sorted(releases)
 
     for acs in releases:
-        db.session.execute(text("SET search_path=:acs, public;"), {"acs": acs})
+        db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
         release = dict()
         release["release_name"] = ACS_NAMES[acs]["name"]
         release["release_slug"] = acs
@@ -1682,7 +1682,7 @@ def get_child_geoids(release, parent_geoid, child_summary_level):
 
 
 def get_all_child_geoids(release, child_summary_level):
-    db.session.execute(text("SET search_path=:acs,public;"), {"acs": release})
+    db.session.execute(text("SET search_path TO :acs,public;"), {"acs": release})
     result = db.session.execute(
         text(
             """SELECT geoid,name
@@ -1698,7 +1698,7 @@ def get_all_child_geoids(release, child_summary_level):
 
 def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     # Use the "worst"/biggest ACS to find all child geoids
-    db.session.execute(text("SET search_path=:acs,public;"), {"acs": release})
+    db.session.execute(text("SET search_path TO :acs,public;"), {"acs": release})
     result = db.session.execute(
         text(
             """SELECT geoid, name
@@ -1744,7 +1744,7 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     if child_geoids:
         # Use the "worst"/biggest ACS to find all child geoids
         db.session.execute(
-            text("SET search_path=:acs,public;"), {"acs": release}
+            text("SET search_path TO :acs,public;"), {"acs": release}
         )
         result = db.session.execute(
             text(
@@ -1767,7 +1767,7 @@ def get_child_geoids_by_prefix(release, parent_geoid, child_summary_level):
     )
 
     # Use the "worst"/biggest ACS to find all child geoids
-    db.session.execute(text("SET search_path=:acs,public;"), {"acs": release})
+    db.session.execute(text("SET search_path TO :acs,public;"), {"acs": release})
     result = db.session.execute(
         text(
             """SELECT geoid,name
@@ -1813,7 +1813,7 @@ def expand_geoids(geoid_list, release=None):
     # Check to make sure the geo ids the user entered are valid
     if explicit_geoids:
         db.session.execute(
-            text("SET search_path=:acs,public;"), {"acs": release}
+            text("SET search_path TO :acs,public;"), {"acs": release}
         )
         try:
             result = db.session.execute(
@@ -1931,7 +1931,7 @@ def show_specified_data(acs):
     for acs in acs_to_try:
         try:
             db.session.execute(
-                text("SET search_path=:acs, public;"), {"acs": acs}
+                text("SET search_path TO :acs, public;"), {"acs": acs}
             )
             # Check to make sure the tables requested are valid
             try:
@@ -2343,7 +2343,7 @@ def data_compare_geographies_within_parent(acs, table_id):
     # make sure we support the requested ACS release
     if acs not in allowed_acs:
         abort(404, "The %s release isn't supported." % get_acs_name(acs))
-    db.session.execute(text("SET search_path=:acs, public;"), {"acs": acs})
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
 
     parent_geoid = request.qwargs.within
     child_summary_level = request.qwargs.sumlevel
