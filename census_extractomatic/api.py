@@ -2077,7 +2077,6 @@ def show_specified_data(acs):
 )
 @crossdomain(origin="*")
 def download_specified_data(acs):
-    app.logger.error(f"The download specified data function is called.")
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -2134,7 +2133,7 @@ def download_specified_data(acs):
     for acs in acs_to_try:
         try:
             db.session.execute(
-                text("SET search_path=:acs, public;"), {"acs": acs}
+                text("SET search_path TO :acs, public;"), {"acs": acs}
             )
 
             # Check to make sure the tables requested are valid
