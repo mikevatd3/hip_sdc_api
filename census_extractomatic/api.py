@@ -762,7 +762,7 @@ def compute_profile_item_levels(geoid):
 
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(row._mapping['parent_geoid'][:3])['name']
-            if row._mapping['parent_geoid'] not in {'01000US', '31000US'}:
+            if row._mapping['parent_geoid'][:7] not in {'01000US', '31000US'}:
                 levels.append({
                     'relation': parent_sumlevel_name,
                     'geoid': row._mapping['parent_geoid'],
@@ -2227,9 +2227,7 @@ def download_specified_data(acs):
             data = OrderedDict()
 
             if result.rowcount != len(valid_geo_ids):
-                returned_geo_ids = set(
-                    [row._mapping["geoid"] for row in result]
-                )
+                returned_geo_ids = {row._mapping["geoid"] for row in result}
                 raise ShowDataException(
                     "The %s release doesn't include GeoID(s) %s."
                     % (
