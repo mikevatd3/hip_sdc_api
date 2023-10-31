@@ -1251,7 +1251,7 @@ def table_search():
                 {"table_id": "{}%".format(q)},
             )
             for row in result:
-                if row["table_id"] not in ids_found:
+                if row._mapping["table_id"] not in ids_found:
                     data.append(
                         format_table_search_result(row, "table", table_id_acs)
                     )
