@@ -1733,7 +1733,7 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     child_geoids = []
     result = db.session.execute(
         text("""
-            SELECT child_geoid
+            SELECT child_geoid as full_geoid
             FROM tiger2021.census_geo_containment parent
             WHERE parent_geoid = :parent_geoid
             AND child_geoid LIKE :child_sumlevel
