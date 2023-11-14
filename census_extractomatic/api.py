@@ -1732,16 +1732,16 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     parent_sumlevel = parent_geoid[0:3]
     child_geoids = []
     result = db.session.execute(
-        text(
-            """SELECT child.full_geoid
-           FROM tiger2021.census_name_lookup parent
-           JOIN tiger2021.census_name_lookup child ON ST_Intersects(parent.geom, child.geom) AND child.sumlevel=:child_sumlevel
-           WHERE parent.full_geoid=:parent_geoid AND parent.sumlevel=:parent_sumlevel"""
-        ),
+        text("""
+            SELECT child_geoid
+            FROM tiger2021.census_geo_containment parent
+            WHERE parent_geoid = :parent_geoid
+            AND child_geoid LIKE :child_sumlevel
+            AND percent_covered > 10;
+         """),
         {
-            "child_sumlevel": child_summary_level,
+            "child_sumlevel": child_summary_level + '%',
             "parent_geoid": parent_geoid,
-            "parent_sumlevel": parent_sumlevel,
         },
     )
     child_geoids = [r._mapping["full_geoid"] for r in result]
