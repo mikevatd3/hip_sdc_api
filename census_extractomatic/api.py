@@ -1200,6 +1200,7 @@ def format_table_search_result(obj, obj_type, release):
     return result
 
 
+
 # Example: /1.0/table/search?q=norweg
 # Example: /1.0/table/search?q=norweg&topics=age,sex
 # Example: /1.0/table/search?topics=housing,poverty
@@ -1355,6 +1356,8 @@ def table_search():
     resp.headers.set("Content-Type", "application/json")
 
     return resp
+
+
 
 
 # Example: /1.0/tabulation/01001
@@ -1706,7 +1709,8 @@ def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
            FROM tiger2021.census_geo_containment, geoheader
            WHERE geoheader.geoid = census_geo_containment.child_geoid
              AND census_geo_containment.parent_geoid = :parent_geoid
-             AND census_geo_containment.child_geoid LIKE :child_geoids"""
+             AND census_geo_containment.child_geoid LIKE :child_geoids
+             AND census_geo_containment.percent_covered > 10"""
         ),
         {
             "parent_geoid": parent_geoid,
