@@ -1196,28 +1196,28 @@ def format_table_search_result(obj, obj_type, release):
 
     result = {
         "type": obj_type,
-        "table_id": obj["table_id"],
-        "table_name": obj["table_title"],
-        "simple_table_name": obj["simple_table_title"],
-        "topics": obj["topics"],
-        "universe": obj["universe"],
+        "table_id": obj.table_id,
+        "table_name": obj.table_title,
+        "simple_table_name": obj.simple_table_title,
+        "topics": obj.topics,
+        "universe": obj.universe,
         "release": release,
     }
 
     if obj_type == "table":
         result.update(
             {
-                "id": obj["table_id"],
-                "unique_key": obj["table_id"],
+                "id": obj.table_id,
+                "unique_key": obj.table_id,
             }
         )
     elif obj_type == "column":
         result.update(
             {
-                "id": obj["column_id"],
-                "unique_key": "%s|%s" % (obj["table_id"], obj["column_id"]),
-                "column_id": obj["column_id"],
-                "column_name": obj["column_title"],
+                "id": obj.column_id,
+                "unique_key": "%s|%s" % (obj.table_id, obj.column_id),
+                "column_id": obj.column_id,
+                "column_name": obj.column_title,
             }
         )
 
@@ -2002,7 +2002,7 @@ def show_specified_data(acs):
     }
 )
 @crossdomain(origin="*")
-def download_specified_data(_):
+def download_specified_data(acs):
     try:
         valid_geoids = expand_geoids(
             request.qwargs.geo_ids, release="acs2021_5yr"
