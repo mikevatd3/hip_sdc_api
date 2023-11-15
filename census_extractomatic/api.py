@@ -1267,6 +1267,9 @@ def table_search():
         data.sort(key=lambda x: x["unique_key"])
         return json.dumps(data)
 
+    else:
+        abort(404, f"No table found matching query.")
+
 
 # ------ END TABLE SEARCH ------------------------------------------ #
 
