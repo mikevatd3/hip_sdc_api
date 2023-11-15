@@ -44,7 +44,7 @@ import tomli
 
 from census_extractomatic.exporters import supported_formats
 
-with open('config.toml', 'rb') as f:
+with open("config.toml", "rb") as f:
     config = tomli.load(f)
 
 
@@ -54,7 +54,7 @@ app.config.from_object(
         "EXTRACTOMATIC_CONFIG_MODULE", "census_extractomatic.config.Development"
     )
 )
-app.config["SECRET_KEY"] = config['sessions']['secret_key']
+app.config["SECRET_KEY"] = config["sessions"]["secret_key"]
 
 db = SQLAlchemy(app)
 login = LoginManager(app)
@@ -63,10 +63,12 @@ login = LoginManager(app)
 
 from census_extractomatic.metadata_api.src import metadata_api
 from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
+
 app.register_blueprint(metadata_api, url_prefix="/metadata")
 register_d3_metadata_admin(app)
 
 from census_extractomatic.auth import auth
+
 app.register_blueprint(auth, url_prefix="/auth")
 
 
@@ -449,7 +451,7 @@ def rateify(val):
 
 def moe_add(moe_a, moe_b):
     # From http://www.census.gov/acs/www/Downloads/handbooks/ACSGeneralHandbook.pdf
-    return math.sqrt(moe_a ** 2 + moe_b ** 2)
+    return math.sqrt(moe_a**2 + moe_b**2)
 
 
 def moe_ratio(numerator, denominator, numerator_moe, denominator_moe):
@@ -457,7 +459,7 @@ def moe_ratio(numerator, denominator, numerator_moe, denominator_moe):
     estimated_ratio = numerator / denominator
     return (
         math.sqrt(
-            numerator_moe ** 2 + (estimated_ratio ** 2 * denominator_moe ** 2)
+            numerator_moe**2 + (estimated_ratio**2 * denominator_moe**2)
         )
         / denominator
     )
@@ -599,7 +601,6 @@ def find_geoid(geoid, acs=None):
         acs_to_search = allowed_acs
 
     for acs in acs_to_search:
-
         result = db.session.execute(
             """SELECT geoid
                FROM %s.geoheader
@@ -756,39 +757,63 @@ def compute_profile_item_levels(geoid):
                 """SELECT * FROM tiger2021.census_geo_containment
                WHERE child_geoid=:geoid
                ORDER BY percent_covered ASC;
-            """),
-            {'geoid': geoid},
+            """
+            ),
+            {"geoid": geoid},
         )
 
         for row in result:
-            parent_sumlevel_name = SUMLEV_NAMES.get(row._mapping['parent_geoid'][:3])['name']
-            if row._mapping['parent_geoid'][:7] not in {'01000US', '31000US'}:
-                levels.append({
-                    'relation': parent_sumlevel_name,
-                    'geoid': row._mapping['parent_geoid'],
-                    'coverage': row._mapping['percent_covered'],
-                })
+            parent_sumlevel_name = SUMLEV_NAMES.get(
+                row._mapping["parent_geoid"][:3]
+            )["name"]
+            if row._mapping["parent_geoid"][:7] not in {"01000US", "31000US"}:
+                levels.append(
+                    {
+                        "relation": parent_sumlevel_name,
+                        "geoid": row._mapping["parent_geoid"],
+                        "coverage": row._mapping["percent_covered"],
+                    }
+                )
 
-    if sumlevel in ('060', '140', '150'):
-        levels.append({
-            'relation': 'county',
-            'geoid': '05000US' + id_part[:5],
-            'coverage': 100.0,
-        })
+    if sumlevel in ("060", "140", "150"):
+        levels.append(
+            {
+                "relation": "county",
+                "geoid": "05000US" + id_part[:5],
+                "coverage": 100.0,
+            }
+        )
 
-    if sumlevel in ('050', '060', '140', '150', '160', '500', '610', '620', '795', '950', '960', '970'):
-        levels.append({
-            'relation': 'state',
-            'geoid': '04000US' + id_part[:2],
-            'coverage': 100.0,
-        })
+    if sumlevel in (
+        "050",
+        "060",
+        "140",
+        "150",
+        "160",
+        "500",
+        "610",
+        "620",
+        "795",
+        "950",
+        "960",
+        "970",
+    ):
+        levels.append(
+            {
+                "relation": "state",
+                "geoid": "04000US" + id_part[:2],
+                "coverage": 100.0,
+            }
+        )
 
-    if sumlevel in ('314'):
-        levels.append({
-            'relation': 'CBSA',
-            'geoid': '31000US' + id_part[:5],
-            'coverage': 100.0,
-            })
+    if sumlevel in ("314"):
+        levels.append(
+            {
+                "relation": "CBSA",
+                "geoid": "31000US" + id_part[:5],
+                "coverage": 100.0,
+            }
+        )
 
     # if sumlevel != '010':
     #     levels.append({
@@ -885,7 +910,7 @@ def geo_search():
 
 
 def num2deg(xtile, ytile, zoom):
-    n = 2.0 ** zoom
+    n = 2.0**zoom
     lon_deg = xtile / n * 360.0 - 180.0
     lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
     lat_deg = math.degrees(lat_rad)
@@ -909,7 +934,7 @@ def geo_tiles(release, sumlevel, zoom, x, y):
     (miny, minx) = num2deg(x, y, zoom)
     (maxy, maxx) = num2deg(x + 1, y + 1, zoom)
 
-    tiles_across = 2 ** zoom
+    tiles_across = 2**zoom
     deg_per_tile = 360.0 / tiles_across
     deg_per_pixel = deg_per_tile / 256
     tile_buffer = 10 * deg_per_pixel  # ~ 10 pixel buffer
@@ -1104,7 +1129,6 @@ def geo_parent(release, geoid):
 )
 @crossdomain(origin="*")
 def show_specified_geo_data(release):
-
     if release not in allowed_tiger:
         abort(404, "Unknown TIGER release")
     geo_ids, child_parent_map = expand_geoids(
@@ -1200,6 +1224,7 @@ def format_table_search_result(obj, obj_type, release):
     return result
 
 
+# ------ START TABLE SEARCH ------------------------------------------ #
 
 # Example: /1.0/table/search?q=norweg
 # Example: /1.0/table/search?q=norweg&topics=age,sex
@@ -1217,145 +1242,33 @@ def format_table_search_result(obj, obj_type, release):
 )
 @crossdomain(origin="*")
 def table_search():
-    # allow choice of release, default to allowed_acs[0]
-    acs = request.qwargs.acs
-    q = request.qwargs.q
-    topics = request.qwargs.topics
-
-    if not (q or topics):
-        abort(400, "Must provide a query term or topics for filtering.")
-
     data = []
 
-    if re.match(r"^\w\d{2,}$", q, flags=re.IGNORECASE):
-        # we need to search 'em all because not every table is in every release...
-        # might be better to have a shared table like census_tabulation_metadata?
-        table_id_acs = acs
-        acs_to_search = allowed_acs[:]
-        acs_to_search.remove(table_id_acs)
-        ids_found = set()
-        while table_id_acs:
-            # Matching for table id
-            db.session.execute(
-                text("SET search_path TO :acs, public;"), {"acs": table_id_acs}
-            )
-            result = db.session.execute(
-                text(
-                    """SELECT tab.table_id,
-                          tab.table_title,
-                          tab.simple_table_title,
-                          tab.universe,
-                          tab.topics
-                   FROM census_table_metadata tab
-                   WHERE lower(table_id) like lower(:table_id)"""
-                ),
-                {"table_id": "{}%".format(q)},
-            )
-            for row in result:
-                row = row._mapping
-                if row["table_id"] not in ids_found:
-                    data.append(
-                        format_table_search_result(row, "table", table_id_acs)
-                    )
-                    ids_found.add(row["table_id"])
-            try:
-                table_id_acs = acs_to_search.pop(0)
-            except IndexError:
-                table_id_acs = None
-        if data:
-            data.sort(key=lambda x: x["unique_key"])
-            return json.dumps(data)
-
-    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
-    table_where_parts = []
-    table_where_args = {}
-    column_where_parts = []
-    column_where_args = {}
-
-    if q and q != "*":
-        q = "%%%s%%" % q
-        table_where_parts.append("lower(tab.table_title) LIKE lower(:query)")
-        table_where_args["query"] = q
-        column_where_parts.append("lower(col.column_title) LIKE lower(:query)")
-        column_where_args["query"] = q
-
-    if topics:
-        table_where_parts.append("tab.topics @> :topics")
-        table_where_args["topics"] = topics
-        column_where_parts.append("tab.topics @> :topics")
-        column_where_args["topics"] = topics
-
-    if table_where_parts:
-        table_where = " AND ".join(table_where_parts)
-        column_where = " AND ".join(column_where_parts)
-    else:
-        table_where = "TRUE"
-        column_where = "TRUE"
-
-    # retrieve matching tables.
+    # Matching for table id
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs})
     result = db.session.execute(
         text(
-            """SELECT tab.tabulation_code,
+            """SELECT tab.table_id,
                   tab.table_title,
                   tab.simple_table_title,
                   tab.universe,
-                  tab.topics,
-                  tab.tables_in_one_yr,
-                  tab.tables_in_three_yr,
-                  tab.tables_in_five_yr
-           FROM census_tabulation_metadata tab
-           WHERE %s
-           ORDER BY tab.weight DESC"""
-            % (table_where)
+                  tab.topics
+           FROM census_table_metadata tab
+           WHERE lower(table_id) like lower(:table_id)"""
         ),
-        table_where_args,
+        {"table_id": "{}%".format(request.qwargs.q)},
     )
-    for tabulation in result:
-        tabulation = dict(tabulation)
-        for tables_for_release_col in (
-            "tables_in_one_yr",
-            "tables_in_three_yr",
-            "tables_in_five_yr",
-        ):
-            if tabulation[tables_for_release_col]:
-                tabulation["table_id"] = tabulation[tables_for_release_col][0]
-            else:
-                continue
-            break
-        data.append(format_table_search_result(tabulation, "table", acs))
-
-    # retrieve matching columns.
-    if q != "*":
-        # Special case for when we want ALL the tables (but not all the columns)
-        result = db.session.execute(
-            text(
-                """SELECT col.column_id,
-                      col.column_title,
-                      tab.table_id,
-                      tab.table_title,
-                      tab.simple_table_title,
-                      tab.universe,
-                      tab.topics
-               FROM census_column_metadata col
-               LEFT OUTER JOIN census_table_metadata tab USING (table_id)
-               WHERE %s
-               ORDER BY char_length(tab.table_id), tab.table_id"""
-                % (column_where)
-            ),
-            column_where_args,
-        )
-        data.extend(
-            [
-                format_table_search_result(column._mapping, "column", "")
-                for column in result
-            ]
+    for row in result:
+        data.append(
+            format_table_search_result(row, "table", request.qwargs.acs)
         )
 
-    json_string = json.dumps(data)
-    resp = make_response(json_string)
-    resp.headers.set("Content-Type", "application/json")
+    if data:
+        data.sort(key=lambda x: x["unique_key"])
+        return json.dumps(data)
 
-    return resp
+
+# ------ END TABLE SEARCH ------------------------------------------ #
 
 
 
@@ -1591,7 +1504,9 @@ def table_geo_comparison_rowcount(table_id):
     releases = sorted(releases)
 
     for acs in releases:
-        db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
+        db.session.execute(
+            text("SET search_path TO :acs, public;"), {"acs": acs}
+        )
         release = dict()
         release["release_name"] = ACS_NAMES[acs]["name"]
         release["release_slug"] = acs
@@ -1645,6 +1560,7 @@ def table_geo_comparison_rowcount(table_id):
 
 ## DATA RETRIEVAL ##
 
+
 # get geoheader data for children at the requested summary level
 def get_child_geoids(release, parent_geoid, child_summary_level):
     parent_sumlevel = parent_geoid[0:3]
@@ -1686,7 +1602,9 @@ def get_child_geoids(release, parent_geoid, child_summary_level):
 
 
 def get_all_child_geoids(release, child_summary_level):
-    db.session.execute(text("SET search_path TO :acs,public;"), {"acs": release})
+    db.session.execute(
+        text("SET search_path TO :acs,public;"), {"acs": release}
+    )
     result = db.session.execute(
         text(
             """SELECT geoid,name
@@ -1702,7 +1620,9 @@ def get_all_child_geoids(release, child_summary_level):
 
 def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     # Use the "worst"/biggest ACS to find all child geoids
-    db.session.execute(text("SET search_path TO :acs,public;"), {"acs": release})
+    db.session.execute(
+        text("SET search_path TO :acs,public;"), {"acs": release}
+    )
     result = db.session.execute(
         text(
             """SELECT geoid, name
@@ -1732,15 +1652,17 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
     parent_sumlevel = parent_geoid[0:3]
     child_geoids = []
     result = db.session.execute(
-        text("""
+        text(
+            """
             SELECT child_geoid as full_geoid
             FROM tiger2021.census_geo_containment parent
             WHERE parent_geoid = :parent_geoid
             AND child_geoid LIKE :child_sumlevel
             AND percent_covered > 10;
-         """),
+         """
+        ),
         {
-            "child_sumlevel": child_summary_level + '%',
+            "child_sumlevel": child_summary_level + "%",
             "parent_geoid": parent_geoid,
         },
     )
@@ -1772,7 +1694,9 @@ def get_child_geoids_by_prefix(release, parent_geoid, child_summary_level):
     )
 
     # Use the "worst"/biggest ACS to find all child geoids
-    db.session.execute(text("SET search_path TO :acs,public;"), {"acs": release})
+    db.session.execute(
+        text("SET search_path TO :acs,public;"), {"acs": release}
+    )
     result = db.session.execute(
         text(
             """SELECT geoid,name
@@ -1862,7 +1786,6 @@ class ShowDataException(Exception):
 )
 @crossdomain(origin="*")
 def show_specified_data(acs):
-
     app.logger.debug(request.qwargs.table_ids)
     app.logger.debug(request.qwargs.geo_ids)
 
@@ -2036,7 +1959,7 @@ def show_specified_data(acs):
                     table_for_geoid["estimate"] = OrderedDict()
                     table_for_geoid["error"] = OrderedDict()
 
-                    for (col_name, value) in data_iter:
+                    for col_name, value in data_iter:
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
 
@@ -2070,8 +1993,6 @@ def show_specified_data(acs):
     abort(400, "Unspecified error.")
 
 
-# Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
-# Example: /1.0/data/download/latest?table_ids=B01001&geo_ids=160|04000US17,04000US56
 @app.route("/1.0/data/download/<acs>")
 @qwarg_validate(
     {
@@ -2081,7 +2002,52 @@ def show_specified_data(acs):
     }
 )
 @crossdomain(origin="*")
-def download_specified_data(acs):
+def download_specified_data(_):
+    try:
+        valid_geoids = expand_geoids(
+            request.qwargs.geo_ids, release="acs2021_5yr"
+        )
+
+    except ShowDataException as e:
+        abort(400, e.message)
+
+    if (num_geoids := len(valid_geoids)) > current_app.config.get(
+        "MAX_GEOIDS_TO_DOWNLOAD", 500
+    ):
+        abort(
+            400,
+            f"You requested {num_geoids} geoids which is beyond our limit of 500.",
+        )
+
+    try:
+        result = db.session.execute(
+            text(
+                """SELECT full_geoid,
+                      population,
+                      display_name
+               FROM tiger2021.census_name_lookup
+               WHERE full_geoid IN :geo_ids;"""
+            ),
+            {"geo_ids": tuple(valid_geo_ids)},
+        )
+
+    except Exception as e:
+        app.logger.error(f"The query is failing with error {e}.")
+        abort(400, "Query error on geography query.")
+
+
+# Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
+# Example: /1.0/data/download/latest?table_ids=B01001&geo_ids=160|04000US17,04000US56
+@app.route("/1.0/data/_download/<acs>")
+@qwarg_validate(
+    {
+        "table_ids": {"valid": StringList(), "required": True},
+        "geo_ids": {"valid": StringList(), "required": True},
+        "format": {"valid": OneOf(supported_formats), "required": True},
+    }
+)
+@crossdomain(origin="*")
+def _download_specified_data(acs):
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -2257,7 +2223,7 @@ def download_specified_data(acs):
 
                     data_iter = list(data_iter)
 
-                    # The variables and moes are arranged consecutively, so use zip 
+                    # The variables and moes are arranged consecutively, so use zip
                     # and slice notation to iterate over two cols at a time.
                     for (col_name, value), (_, moe_value) in zip(
                         data_iter[:-1:2], data_iter[1::2]
