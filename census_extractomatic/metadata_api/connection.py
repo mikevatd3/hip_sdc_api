@@ -10,11 +10,16 @@ with open("config.toml", "rb") as f:
 DBNAME, USERNAME, PASSWORD, HOST, PORT = config["db"].values()
 
 public_engine = create_engine(
-    f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}",
+    f"postgresql+psycopg2://{USERNAME}@{HOST}:{PORT}/{DBNAME}",
+)
+
+tiger_engine = create_engine(
+    f"postgresql+psycopg2://{USERNAME}@{HOST}:{PORT}/{DBNAME}",
+    connect_args={'options': '-csearch_path=tiger2021'}
 )
 
 metadata_engine = create_engine(
-    f"postgresql+psycopg2://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DBNAME}",
+    f"postgresql+psycopg2://{USERNAME}@{HOST}:{PORT}/{DBNAME}",
     connect_args={'options': '-csearch_path=d3_metadata'}
 )
 

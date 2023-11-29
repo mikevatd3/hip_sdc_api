@@ -1,9 +1,13 @@
 from typing import Any
 from pathlib import Path
 import csv
+import os
+
+import pandas as pd
+
 from models import D3TableMetadata, D3VariableMetadata, D3EditionMetadata
 from connection import MetadataSession, DataParadigm, make_data_session, public_engine
-import pandas as pd
+
 
 fixtures_path =Path("../../fixtures")
 data_path = fixtures_path / "data"
@@ -42,7 +46,6 @@ with MetadataSession() as db:
         db.bulk_insert_mappings(D3EditionMetadata, safe_objs)
         db.commit()
 
-"""
 for year in ["2016", "2021"]:
     CRSession = make_data_session(year, DataParadigm.CR)
 

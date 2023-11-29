@@ -1,0 +1,84 @@
+@app.route("/1.0/geo/search")
+@qwarg_validate(
+    {
+        "lat": {"valid": FloatRange(-90.0, 90.0)},
+--
+@app.route(
+    "/1.0/geo/<release>/tiles/<sumlevel>/<int:zoom>/<int:x>/<int:y>.geojson"
+)
+@crossdomain(origin="*")
+--
+@app.route("/1.0/geo/<release>/<geoid>")
+@qwarg_validate({"geom": {"valid": Bool(), "default": False}})
+@crossdomain(origin="*")
+def geo_lookup(release, geoid):
+--
+@app.route("/1.0/geo/<release>/<geoid>/parents")
+@crossdomain(origin="*")
+def geo_parent(release, geoid):
+    if release not in allowed_tiger:
+--
+@app.route("/1.0/geo/show/<release>")
+@qwarg_validate(
+    {
+        "geo_ids": {"valid": StringList(), "required": True},
+--
+@app.route("/1.0/table/search")
+@qwarg_validate(
+    {
+        "acs": {
+--
+@app.route("/1.0/tabulation/<tabulation_id>")
+@crossdomain(origin="*")
+def tabulation_details(tabulation_id):
+    result = db.session.execute(
+--
+@app.route("/1.0/table/<table_id>")
+@qwarg_validate(
+    {
+        "acs": {
+--
+@app.route("/2.0/table/<release>/<table_id>")
+@crossdomain(origin="*")
+def table_details_with_release(release, table_id):
+    if release in allowed_acs:
+--
+@app.route("/1.0/table/compare/rowcounts/<table_id>")
+@qwarg_validate(
+    {
+        "year": {"valid": NonemptyString()},
+--
+@app.route("/1.0/data/show/<acs>")
+@qwarg_validate(
+    {
+        "table_ids": {"valid": StringList(), "required": True},
+--
+@app.route("/1.0/data/download/<acs>")
+@qwarg_validate(
+    {
+        "table_ids": {"valid": StringList(), "required": True},
+--
+@app.route("/1.0/data/_download/<acs>")
+@qwarg_validate(
+    {
+        "table_ids": {"valid": StringList(), "required": True},
+--
+@app.route("/1.0/data/compare/<acs>/<table_id>")
+@qwarg_validate(
+    {
+        "within": {"valid": NonemptyString(), "required": True},
+--
+@app.route("/healthcheck")
+def healthcheck():
+    app.logger.exception("Healthcheck was called!")
+    return "OK"
+--
+@app.route("/robots.txt")
+def robots_txt():
+    response = make_response("User-agent: *\nDisallow: /\n")
+    response.headers["Content-type"] = "text/plain"
+--
+@app.route("/")
+def index():
+    return redirect("https://www.datadrivendetroit.org")
+
