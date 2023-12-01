@@ -923,7 +923,6 @@ def format_table_search_result(obj, obj_type, release):
 )
 @crossdomain(origin="*")
 def table_search():
-    data = []
 
     # Matching for table id
     db.session.execute(
@@ -941,6 +940,8 @@ def table_search():
         ),
         {"table_id": "{}%".format(request.qwargs.q)},
     )
+
+    data = []
     for row in result:
         data.append(
             format_table_search_result(row, "table", request.qwargs.acs)

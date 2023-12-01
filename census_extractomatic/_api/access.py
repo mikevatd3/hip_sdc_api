@@ -24,7 +24,7 @@ logger = logging.getLogger()
 
 
 def convert_row_to_dict(row):
-    return {col.name: getattr(row, col) for col in row._fields}
+    return {col: getattr(row, col) for col in row._fields}
 
 
 def grab_remaining_geoid_info(geoids: tuple[str, ...], db) -> Result:
@@ -242,22 +242,109 @@ def prepare_download():
             abort(400, "Query error due to requested table ids.")"""
 
 
-def search_geos_by_point(lat, lon, db):
+# Geography queries -----------------------------------------------------------
+# ~ 285 lines - maybe place in a separate module
+# TODO break out the query build step to greatly simplify this
+# All query the same table, most using geoids
+
+
+def get_geography_info(geoids, db, with_geom=False, fetchone=False):
+    """
+    This is almost identical to the functions below.
+
+    TODO see if the query build can be nicely refactored.
+    """
+    select = [
+        "SELECT display_name",
+        "       simple_name",
+        "       sumlevel",
+        "       full_geoid",
+        "       population",
+        "       aland",
+        "       awater",
+    ]
+
+    if with_geom:
+        select.append(
+            "       ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.00005), 6) as geom"
+        )
+
+    select_compiled = ",\n".join(select)
+
+    result = db.execute(
+        text(
+            dedent(
+                f"""
+                {select_compiled}
+                FROM tiger2021.census_name_lookup
+                WHERE full_geoid IN :geoids
+                LIMIT 1
+                """
+            )
+        ),
+        {"geoid": geoids},
+    )
+
+    if fetchone:
+        return result.fetchone()
+
+    return result
+
+
+def search_geos_by_point(
+    lat,
+    lon,
+    db,
+    with_geom=False,
+    limit=15,
+    offset=0,
+    sumlevs: tuple[str, ...] | None = None,
+):
+    select = [
+        "SELECT DISTINCT geoid",
+        "                sumlevel",
+        "                population",
+        "                display_name",
+        "                full_geoid",
+        "                priority",
+    ]
+
+    if with_geom:
+        select.append(
+            "       ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.0001), 6) as geom"
+        )
+
+    select_compiled = ",\n".join(select)
+
+    where_clause = [
+        "WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(:lon, :lat),4326))",
+    ]
+
+    if sumlevs is not None:
+        where_clause.append("AND sumlevel IN :sumlevs")
+
+    where_compiled = "\n".join(where_clause)
+
     return db.execute(
         text(
-            """
-                SELECT DISTINCT geoid,
-                                sumlevel,
-                                population,
-                                display_name,
-                                full_geoid,priority,
-                                ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geom
-            FROM tiger2021.census_name_lookup
-            WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(:lon, :lat),4326))
-            ORDER BY priority, population DESC NULLS LAST
-            LIMIT 25;"""
+            dedent(
+                f"""
+                {select_compiled}
+                FROM tiger2021.census_name_lookup
+                {where_compiled}
+                ORDER BY priority, population DESC NULLS LAST
+                LIMIT :limit
+                OFFSET :offset;
+                """
+            )
         ),
-        {"lon": lon, "lat": lat},
+        {
+            "lon": lon,
+            "lat": lat,
+            "limit": limit,
+            "offset": offset,
+            "sumlevs": sumlevs,
+        },
     )
 
 
@@ -265,7 +352,14 @@ def prep_q_for_text_search(q):
     return q.replace(" ", " | ")
 
 
-def search_geos_by_query(q, db, limit=15, offset=0):
+def search_geos_by_query(
+    q,
+    db,
+    with_geom=False,
+    limit=15,
+    offset=0,
+    sumlevs: tuple[str, ...] | None = None,
+):
     """
     For this to work correctly it requires specific setup in the
     database. First there must be a text search column added to the tiger2021 table:
@@ -279,41 +373,46 @@ def search_geos_by_query(q, db, limit=15, offset=0):
         CREATE INDEX display_name_search_idx ON tiger2021.census_name_lookup USING GIN (searchable_geo_name);
     """
 
+    select = [
+        "SELECT DISTINCT geoid",
+        "                sumlevel",
+        "                population",
+        "                display_name",
+        "                full_geoid",
+        "                priority",
+    ]
+
+    if with_geom:
+        select.append(
+            "       ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.0001), 6) as geom"
+        )
+
+    select_compiled = ",\n".join(select)
+
+    where_clause = [
+        "WHERE ST_Intersects(geom, ST_SetSRID(ST_Point(:lon, :lat),4326))",
+    ]
+
+    if sumlevs is not None:
+        where_clause.append("AND sumlevel IN :sumlevs")
+
+    where_compiled = "\n".join(where_clause)
+
     prepped_q = prep_q_for_text_search(q)
 
     return db.execute(
         text(
-            """
-            SELECT DISTINCT geoid,
-                            sumlevel,
-                            population,
-                            display_name,
-                            full_geoid,
-                            priority,
-                            ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.01), 5) as geom
+            f"""
+            {select_compiled}
             FROM tiger2021.census_name_lookup
-            WHERE searchable_geo_name @@ to_tsquery(:q)
+            {where_compiled}
             ORDER BY sumlevel ASC, population DESC NULLS LAST
             LIMIT :limit
             OFFSET :offset;
             """
         ),
-        {"q": prepped_q, "limit": limit, "offset": offset},
+        {"q": prepped_q, "limit": limit, "offset": offset, "sumlevs": sumlevs},
     )
-
-
-def get_all_child_geoids(child_summary_level, db):
-    result = db.execute(
-        text(
-            """SELECT geoid,name
-           FROM geoheader
-           WHERE sumlevel=:sumlev AND component='00' AND geoid NOT IN ('04000US72')
-           ORDER BY name"""
-        ),
-        {"sumlev": int(child_summary_level)},
-    )
-
-    return result.fetchall()
 
 
 @dataclass
@@ -324,7 +423,7 @@ class ViewportLocation:
 
     @property
     def tiles_across(self):
-        return 2 ** self.zoom
+        return 2**self.zoom
 
     @property
     def lat_lon(self):
@@ -405,13 +504,56 @@ def get_neighboring_boundaries(sumlevel, loc: ViewportLocation, db):
     return result
 
 
+def get_details_for_geoids(geoids, db):
+    result = db.execute(
+        text(
+            """
+            SELECT display_name,sumlevel,full_geoid
+            FROM tiger2021.census_name_lookup
+            WHERE full_geoid IN :geoids
+            ORDER BY sumlevel DESC;
+            """
+        ),
+        {"geoids": geoids},
+    )
+
+    return {
+        row.full_geoid: {
+            "display_name": row.display_name,
+            "sum_level": row.sumlevel,
+            "geoid": row.full_geoid,
+        }
+        for row in result
+    }
+
+
+
+# END Geography queries -------------------------------------------------------
+
+
+# Trying to understand why we'd need this?
+def get_all_child_geoids(child_summary_level, db):
+    result = db.execute(
+        text(
+            """SELECT geoid,name
+           FROM geoheader
+           WHERE sumlevel=:sumlev AND component='00' AND geoid NOT IN ('04000US72')
+           ORDER BY name"""
+        ),
+        {"sumlev": int(child_summary_level)},
+    )
+
+    return result.fetchall()
+
+
 def get_geo_parents_from_db(geoid: str, db):
     result = db.execute(
         text(
             """
             SELECT parent_geoid as geoid, display_name
             FROM tiger2021.census_geo_containment cgc
-            JOIN tiger2021.census_name_lookup cnl ON cgc.parent_geoid = cnl.full_geoid
+            JOIN tiger2021.census_name_lookup cnl 
+                 ON cgc.parent_geoid = cnl.full_geoid
             WHERE cgc.child_geoid = (:geoid)::varchar
             AND percent_covered > 5;
             """
@@ -424,8 +566,8 @@ def get_geo_parents_from_db(geoid: str, db):
 
 def infer_parent_geoids(short_geoid, sum_level):
     """
-    The short geoid is that which doesn't include the sum_level identifier 
-    information. The Detroit county subdivision's short_geoid is 
+    The short geoid is that which doesn't include the sum_level identifier
+    information. The Detroit county subdivision's short_geoid is
     2616322000, for example.
     """
 
@@ -519,29 +661,6 @@ def get_parent_geoids(geoid, db):
             )
 
     return levels
-
-
-def get_details_for_geoids(geoids, db):
-    result = db.execute(
-        text(
-            """
-            SELECT display_name,sumlevel,full_geoid
-            FROM tiger2021.census_name_lookup
-            WHERE full_geoid IN :geoids
-            ORDER BY sumlevel DESC;
-            """
-        ),
-        {"geoids": geoids},
-    )
-
-    return {
-        row.full_geoid: {
-            "display_name": row.display_name,
-            "sum_level": row.sumlevel,
-            "geoid": row.full_geoid,
-        }
-        for row in result
-    }
 
 
 def get_child_geoids_by_coverage(parent_geoid, child_summary_level, db):
@@ -664,7 +783,7 @@ def find_explicit_geoids(release, explicit_geoids, db):
 
     except Exception as e:
         print(e)
-    
+
     return result
 
 
@@ -675,7 +794,7 @@ def corral_geoid_strings(geoids):
     two types into separate lists.
     """
     explicit_geoids: list[str] = []
-    expandable_geoids: list[tuple[str,str]] = []
+    expandable_geoids: list[tuple[str, str]] = []
 
     for geoid in geoids:
         try:
@@ -707,7 +826,7 @@ def expand_expandable_geoids(expandable_geoids, release, db):
 
 def expand_geoids(geoid_list: list[str], release: str, db):
     explicit_geoids, expandable_geoids = corral_geoid_strings(geoid_list)
-    
+
     expanded_geoids, child_parent_map = expand_expandable_geoids(
         expandable_geoids, release, db
     )
@@ -732,57 +851,85 @@ def expand_geoids(geoid_list: list[str], release: str, db):
     return set(valid_geo_ids), child_parent_map
 
 
-def get_geography_info(geoids, db, with_geom=False, fetchone=False):
-    select = [
-        "SELECT display_name",
-        "       simple_name",
-        "       sumlevel",
-        "       full_geoid",
-        "       population",
-        "       aland",
-        "       awater"
-    ]
-
-    if with_geom:
-        select.append(
-            "       ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.00005), 6) as geom"
-        )
-    
-    select_compiled = ",\n".join(select) 
-
-    result = db.execute(
-        text(
-           dedent(f"""
-           {select_compiled}
-           FROM tiger2021.census_name_lookup
-           WHERE full_geoid IN :geoids
-           LIMIT 1
-           """)
-        ),
-        {"geoid": geoids},
-    )
-
-    if fetchone:
-        return result.fetchone()
-
-    return result
-
-
 def get_data_fallback(
     table_ids: list[str], geoids: list[str], db, acs="acs2021_5yr"
 ):
     stmt = build_fetch_query(table_ids)
     result = db.execute(stmt, {"geoids", geoids})
 
-    data = {
-        row.geoid: convert_row_to_dict(row)
-        for row in result.fetchall()
-    }
+    data = {row.geoid: convert_row_to_dict(row) for row in result.fetchall()}
 
     return data, acs
 
 
-def get_table_data(table_ids, db):
+def wrap_up_columns(column_rows):
+    table_metadata = {}
+    valid_table_ids = []
+    for table, columns in groupby(
+        column_rows, lambda col: col[:4]
+    ):  # groupby table_id
+        valid_table_ids.append(table[0])
+        table_metadata[table[0]] = {
+            "title": table[1],
+            "universe": table[2],
+            "denominator_column_id": table[3],
+            "columns": {
+                column[4]: {
+                    "name": column[5],
+                    "indent": column[6],
+                }
+                for column in columns
+            },
+        }
+
+    return table_metadata, valid_table_ids
+
+
+
+def get_table_data(table_ids, db, include_columns=False):
+    select = [
+        "SELECT tab.table_id",
+        "          tab.table_title",
+        "         tab.universe",
+        "         tab.denominator_column_id",
+    ]
+
+    _from = [
+        "FROM census_table_metadata tab"
+    ]
+
+    order_by = ["tab.table_id"] 
+
+    if include_columns:
+        select.extend([
+            "         col.column_id",
+            "         col.column_title",
+            "         col.indent"
+        ])
+
+        _from.append("LEFT JOIN census_column_metadata col USING (table_id)")
+
+        order_by.append("col.column_id")
+    
+    select_compiled = ",\n".join(select)
+    from_compiled = "\n".join(_from)
+    order_by_compiled = ", ".join(order_by)
+
+    stmt = dedent(
+        f"""
+        {select_compiled}
+        {from_compiled}
+        WHERE table_id IN :table_ids
+        {order_by_compiled};
+        """
+    )
+
+    result = db.session.execute(text(stmt), {"table_ids": tuple(table_ids)})
+
+    return result
+
+
+def get_column_data(table_ids, db):
     result = db.session.execute(
         text(
             """SELECT tab.table_id,
@@ -802,25 +949,4 @@ def get_table_data(table_ids, db):
 
     return result
 
-
-def wrap_up_columns(column_rows):
-    table_metadata = {}
-    for table, columns in groupby(
-        columns_rows, lambda col: col[:4]
-    ):  # groupby table_id
-        valid_table_ids.append(table[0])
-        table_metadata[table[0]] = {
-            "title": table[1],
-            "universe": table[2],
-            "denominator_column_id": table[3],
-            "columns": {
-                column[4]: {
-                    "name": column[5],
-                    "indent": column[6],
-                }
-                for column in columns
-            },
-        }
-
-    return table_metadata
 

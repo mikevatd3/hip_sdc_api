@@ -61,7 +61,7 @@ class StringList(Validation):
         self._item_validator = item_validator
 
     def validate(self, raw):
-        return [self._item_validator.validate(r) for r in raw.split(self._sep)]
+        return tuple(self._item_validator.validate(r) for r in raw.split(self._sep))
 
     def help_text(self):
         return "A list of strings separated by %s" % (self._sep)

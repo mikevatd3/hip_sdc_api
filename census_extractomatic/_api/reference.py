@@ -1,3 +1,17 @@
+ALLOWED_ACS = [
+    "d3_present",
+    "acs2021_5yr",
+    "acs2019_5yr",
+    "acs2018_5yr",
+    "acs2017_5yr",
+    "acs2016_5yr",
+    "acs2014_5yr",
+    "acs2013_5yr",
+    "acs2012_5yr",
+    "acs2011_5yr",
+    "d3_past",
+]
+
 PARENT_CHILD_CONTAINMENT = {
     "040": [
         "050",
@@ -220,3 +234,19 @@ state_fips = {
     "72": "Puerto Rico",
     "78": "United States Virgin Islands",
 }
+
+# When expanding a container geoid shorthand (i.e. 140|05000US12127),
+# use this ACS. It should always be a 5yr release so as to include as
+# many geos as possible.
+release_to_expand_with = ALLOWED_ACS[1]
+# When table searches happen without a specified release, use this
+# release to do the table search.
+default_table_search_release = ALLOWED_ACS[1]
+
+# Allowed TIGER releases in newest order
+ALLOWED_TIGER = [
+    "tiger2021",
+]
+
+allowed_searches = ["table", "profile", "topic", "all"]
+supported_formats = ['csv', 'geojson', 'shapefile', 'excel']

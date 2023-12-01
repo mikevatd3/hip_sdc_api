@@ -2,10 +2,12 @@ import os
 import json
 
 from flask import Flask, jsonify, make_response, abort
+from flask import abort, request, g, current_app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
+import pylibmc
 import tomli
 
 from ..validation import (
@@ -13,6 +15,7 @@ from ..validation import (
     NonemptyString,
     FloatRange,
     StringList,
+    Integer as ValidInteger,
     Bool,
     OneOf,
     ClientRequestValidationException,
@@ -28,9 +31,17 @@ from .access import (
     wrap_up_columns,
     fetch_data,
     expand_geoids,
+    search_geos_by_point,
+    search_geos_by_query,
 )
 from .http_utils import crossdomain
-from .reference import SUMLEV_NAMES, allowed_acs
+from .reference import (
+    SUMLEV_NAMES,
+    ALLOWED_ACS,
+    default_table_search_release,
+    supported_formats,
+)
+
 
 with open("config.toml", "rb") as f:
     config = tomli.load(f)
@@ -63,11 +74,45 @@ def before_request():
         "q": {"valid": NonemptyString()},
         "sumlevs": {"valid": StringList(item_validator=OneOf(SUMLEV_NAMES))},
         "geom": {"valid": Bool()},
+        "limit": {"valid": ValidInteger()},
+        "offset": {"valid": ValidInteger()},
     }
 )
 @crossdomain(origin="*")
 def geo_search():
-    pass
+    # PREPARE QWARGS
+    # Load defaults if not present in qwargs
+    if not (limit := request.qwargs.limit):
+        limit = 15
+
+    limit = min((current_app.config.get("MAX_GEOIDS_TO_SHOW", 500), limit))
+
+    if not (offset := request.qwargs.offset):
+        offset = 0
+
+    # Call db functions -- TODO include geom bool
+    if request.qwargs.lat and request.qwargs.lon:
+        result = search_geos_by_point(
+            request.qwargs.lat,
+            request.qwargs.lon,
+            db.session,
+            limit=limit,
+            offset=offset,
+            sumlevs=request.qwargs.sumlevs,
+        )
+
+    elif request.qwargs.q:
+        result = search_geos_by_query(
+            request.qwargs.q,
+            db.session,
+            limit=limit,
+            offset=offset,
+            sumlevs=request.qwargs.sumlevs,
+        )
+    else:
+        abort(400, "Must provide either a lat/lon OR a query term.")
+
+    return jsonify([convert_row_to_dict(row) for row in result])
 
 
 @app.route(
@@ -168,7 +213,7 @@ def geo_parent(release, geoid):
 @qwarg_validate(
     {
         "acs": {
-            "valid": OneOf(allowed_acs),
+            "valid": OneOf(ALLOWED_ACS),
             "default": default_table_search_release,
         },
         "q": {"valid": NonemptyString()},
@@ -177,7 +222,38 @@ def geo_parent(release, geoid):
 )
 @crossdomain(origin="*")
 def table_search():
-    pass
+    # Matching for table id
+    db.session.execute(
+        text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs}
+    )
+    result = db.session.execute(
+        text(
+            """SELECT tab.table_id,
+                  tab.table_title,
+                  tab.simple_table_title,
+                  tab.universe,
+                  tab.topics
+           FROM census_table_metadata tab
+           WHERE lower(table_id) like lower(:table_id)"""
+        ),
+        {"table_id": "{}%".format(request.qwargs.q)},
+    )
+
+    data = []
+    for row in result:
+        data.append(
+            format_table_search_result(row, "table", request.qwargs.acs)
+        )
+
+    if data:
+        data.sort(key=lambda x: x["unique_key"])
+        return json.dumps(data)
+
+    else:
+        abort(404, f"No table found matching query.")
+
+
+
 
 
 @app.route("/1.0/tabulation/<tabulation_id>")
@@ -190,7 +266,7 @@ def tabulation_details(tabulation_id):
 @qwarg_validate(
     {
         "acs": {
-            "valid": OneOf(allowed_acs),
+            "valid": OneOf(ALLOWED_ACS),
             "default": default_table_search_release,
         }
     }
@@ -234,7 +310,7 @@ def show_specified_data(acs):
     app.logger.debug(request.qwargs.table_ids)
     app.logger.debug(request.qwargs.geo_ids)
 
-    if acs not in allowed_acs:
+    if acs not in ALLOWED_ACS:
         abort(404, "The {acs} release isn't supported.")
 
     # valid_geo_ids only contains geos for which we want data
@@ -296,11 +372,13 @@ def show_specified_data(acs):
     except (ProgrammingError, OperationalError) as e:
         raise e
 
-    table_metadata = wrap_up_columns(columns)
+    table_metadata, valid_table_ids = wrap_up_columns(columns)
     data = fetch_data(list(table_ids.keys()), valid_geoids, db.session)
 
     table_metadata * 10
     data * 100
+
+
 
 
 @app.route("/1.0/data/download/<acs>")
