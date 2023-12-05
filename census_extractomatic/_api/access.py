@@ -6,6 +6,7 @@ import logging
 import math
 import os
 
+from icecream import ic
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from returns.result import Result, Success, Failure
@@ -141,11 +142,38 @@ def build_fetch_query(table_ids: list[str]):
     )
 
 
+def pack_tables(row):
+    variables = [col for col in row._fields if col not in {"index", "geoid"}]
+
+    result = {}
+    for table, vars in groupby(variables, lambda col: col[:6]):
+        result[table.upper()] = {
+            "estimate": {
+                var.upper(): getattr(row, var)
+                for var in vars
+                if not var.endswith("_moe")
+            },
+            "error": {
+                var[:9].upper(): getattr(row, var)
+                for var in vars
+                if var.endswith("_moe")
+            },
+        }
+
+    return result
+
+
+# 'data' -> geoid -> tableid -> estimate | error -> variable
+
+# Redesign
+# 'data' -> geoid -> tableid -> variable -> estimate & error
+
+
 def fetch_data(table_ids, geoids, db):
     try:
         sql = text(build_fetch_query(table_ids))
-        result = db.execute(sql, {"geoids": geoids})
-        if result.count() < 1:
+        result = db.execute(sql, {"geoids": tuple(geoids)}).all()
+        if len(result) < 1:
             return Failure("Query returned no data.")
 
         return Success(result)
@@ -282,12 +310,11 @@ def get_geography_info(geoids, db, with_geom=False, fetchone=False):
                 """
             )
         ),
-        {"geoid": geoids},
+        {"geoids": ic(tuple(geoids))},
     )
 
     if fetchone:
         return result.fetchone()
-
     return result
 
 
@@ -423,7 +450,7 @@ class ViewportLocation:
 
     @property
     def tiles_across(self):
-        return 2**self.zoom
+        return 2 ** self.zoom
 
     @property
     def lat_lon(self):
@@ -525,7 +552,6 @@ def get_details_for_geoids(geoids, db):
         }
         for row in result
     }
-
 
 
 # END Geography queries -------------------------------------------------------
@@ -769,20 +795,16 @@ class ShowDataException(Exception):
 
 def find_explicit_geoids(release, explicit_geoids, db):
     db.execute(text("SET search_path TO :acs,public;"), {"acs": release})
-    try:
-        result = db.execute(
-            text(
-                """
-                SELECT geoid
-                FROM acs2021_5yr.geoheader
-                WHERE geoid IN :geoids;
-                """
-            ),
-            {"geoids": tuple(explicit_geoids)},
-        )
-
-    except Exception as e:
-        print(e)
+    result = db.execute(
+        text(
+            """
+            SELECT geoid
+            FROM acs2021_5yr.geoheader
+            WHERE geoid IN :geoids;
+            """
+        ),
+        {"geoids": tuple(explicit_geoids)},
+    )
 
     return result
 
@@ -837,7 +859,7 @@ def expand_geoids(geoid_list: list[str], release: str, db):
 
     # Check to make sure the geo ids the user entered are valid
     if explicit_geoids:
-        result = find_explicit_geoids(release, valid_geo_ids, db)
+        result = find_explicit_geoids(release, explicit_geoids, db)
         valid_geo_ids.extend([geo[0] for geo in result])
 
     invalid_geo_ids = set(expanded_geoids + explicit_geoids) - set(
@@ -866,17 +888,17 @@ def wrap_up_columns(column_rows):
     table_metadata = {}
     valid_table_ids = []
     for table, columns in groupby(
-        column_rows, lambda col: col[:4]
+        column_rows, lambda col: col["table_id"]
     ):  # groupby table_id
-        valid_table_ids.append(table[0])
-        table_metadata[table[0]] = {
-            "title": table[1],
-            "universe": table[2],
-            "denominator_column_id": table[3],
+        valid_table_ids.append(ic(table)["table_id"])
+        table_metadata[table["table_id"]] = {
+            "title": table["table_title"],
+            "universe": table["universe"],
+            "denominator_column_id": table["denominator_column_id"],
             "columns": {
-                column[4]: {
-                    "name": column[5],
-                    "indent": column[6],
+                column["column_id"]: {
+                    "name": column["column_title"],
+                    "indent": column["indent"],
                 }
                 for column in columns
             },
@@ -885,32 +907,69 @@ def wrap_up_columns(column_rows):
     return table_metadata, valid_table_ids
 
 
+def format_table_search_result(obj, include_columns, release):
+    """internal util for formatting each object in `table_search` API response"""
 
-def get_table_data(table_ids, db, include_columns=False):
-    select = [
-        "SELECT tab.table_id",
-        "          tab.table_title",
-        "         tab.universe",
-        "         tab.denominator_column_id",
-    ]
-
-    _from = [
-        "FROM census_table_metadata tab"
-    ]
-
-    order_by = ["tab.table_id"] 
+    result = {
+        "table_id": obj.table_id,
+        "table_name": obj.table_title,
+        "simple_table_name": obj.simple_table_title,
+        "topics": obj.topics,
+        "universe": obj.universe,
+        "release": release,
+    }
 
     if include_columns:
-        select.extend([
-            "         col.column_id",
-            "         col.column_title",
-            "         col.indent"
-        ])
+        result.update(
+            {
+                "id": obj.column_id,
+                "type": "column",
+                "unique_key": f"{obj.table_id}|{obj.column_id}",
+                "column_id": obj.column_id,
+                "column_name": obj.column_title,
+            }
+        )
+
+        return result
+
+    result.update(
+        {
+            "id": obj.table_id,
+            "type": "table",
+            "unique_key": obj.table_id,
+        }
+    )
+
+    return result
+
+
+def get_table_metadata(table_ids, release, db, include_columns=False):
+    select = [
+        "SELECT tab.table_id",
+        "       tab.table_title",
+        "       tab.simple_table_title",
+        "       tab.universe",
+        "       tab.denominator_column_id",
+        "       tab.topics",
+    ]
+
+    _from = ["FROM census_table_metadata tab"]
+
+    order_by = ["tab.table_id"]
+
+    if include_columns:
+        select.extend(
+            [
+                "         col.column_id",
+                "         col.column_title",
+                "         col.indent",
+            ]
+        )
 
         _from.append("LEFT JOIN census_column_metadata col USING (table_id)")
 
         order_by.append("col.column_id")
-    
+
     select_compiled = ",\n".join(select)
     from_compiled = "\n".join(_from)
     order_by_compiled = ", ".join(order_by)
@@ -920,33 +979,22 @@ def get_table_data(table_ids, db, include_columns=False):
         {select_compiled}
         {from_compiled}
         WHERE table_id IN :table_ids
-        {order_by_compiled};
+        ORDER BY {order_by_compiled};
         """
     )
 
-    result = db.session.execute(text(stmt), {"table_ids": tuple(table_ids)})
+    result = db.execute(text(stmt), {"table_ids": tuple(table_ids)})
 
     return result
 
 
-def get_column_data(table_ids, db):
-    result = db.session.execute(
+def get_tabulation(tabulation_id, db):
+    return db.execute(
         text(
-            """SELECT tab.table_id,
-                      tab.table_title,
-                      tab.universe,
-                      tab.denominator_column_id,
-                      col.column_id,
-                      col.column_title,
-                      col.indent
-           FROM census_column_metadata col
-           LEFT JOIN census_table_metadata tab USING (table_id)
-           WHERE table_id IN :table_ids
-           ORDER BY tab.table_id, col.column_id;"""
+            """SELECT *
+            FROM census_tabulation_metadata
+            WHERE tabulation_code=:tabulation
+            """
         ),
-        {"table_ids": tuple(table_ids)},
-    )
-
-    return result
-
-
+        {"tabulation": tabulation_id},
+    ).fetchone()

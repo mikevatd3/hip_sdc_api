@@ -1498,13 +1498,12 @@ def _download_specified_data(acs):
         abort(404, "The %s release isn't supported." % get_acs_name(acs))
 
     ## end wrangling ACS
-
     try:
         valid_geo_ids, _ = expand_geoids(
             request.qwargs.geo_ids, release=expand_geoids_with, db=db
         )
     except ShowDataException as e:
-        abort(400, e.message)
+        abort(400, e)
 
     max_geoids = current_app.config.get("MAX_GEOIDS_TO_DOWNLOAD", 1000)
     if len(valid_geo_ids) > max_geoids:

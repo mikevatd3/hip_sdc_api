@@ -3,6 +3,7 @@ from collections import namedtuple
 import os
 import tempfile
 
+from flask import abort
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from returns.result import Result, Success, Failure

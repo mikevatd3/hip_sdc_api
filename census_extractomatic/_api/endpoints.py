@@ -9,6 +9,8 @@ from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
 import pylibmc
 import tomli
+from returns.result import Result, Success, Failure
+from icecream import ic
 
 from ..validation import (
     qwarg_validate,
@@ -28,16 +30,21 @@ from .access import (
     get_parent_geoids,
     get_details_for_geoids,
     convert_row_to_dict,
-    wrap_up_columns,
+    get_table_metadata,
+    group_tables,
+    pack_tables,
     fetch_data,
     expand_geoids,
     search_geos_by_point,
     search_geos_by_query,
+    get_tabulation,
 )
+from ._access.tables import search_tables
 from .http_utils import crossdomain
 from .reference import (
     SUMLEV_NAMES,
     ALLOWED_ACS,
+    ACS_NAMES,
     default_table_search_release,
     supported_formats,
 )
@@ -162,7 +169,7 @@ def geo_lookup(release, geoid):
         abort(404, "Invalid GeoID")
 
     result = get_geography_info(
-        geoid, db.session, with_geom=request.qwargs.geom, fetchone=True
+        (geoid,), db.session, with_geom=request.qwargs.geom, fetchone=True
     )
 
     if not result:
@@ -196,12 +203,12 @@ def geo_parent(release, geoid):
         tuple(level["geoid"] for level in levels), db.session
     )
 
-    result = json.dumps(
-        {
-            level["geoid"]: {**level, **details[level["geoid"]]}
+    result = json.dumps({
+        "parents": [
+            {**level, **ic(details).get(level["geoid"], {})}
             for level in levels
-        }
-    )
+        ]
+    })
 
     response = make_response(result)
     response.headers.set("Content-Type", "application/json")
@@ -226,24 +233,13 @@ def table_search():
     db.session.execute(
         text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs}
     )
-    result = db.session.execute(
-        text(
-            """SELECT tab.table_id,
-                  tab.table_title,
-                  tab.simple_table_title,
-                  tab.universe,
-                  tab.topics
-           FROM census_table_metadata tab
-           WHERE lower(table_id) like lower(:table_id)"""
-        ),
-        {"table_id": "{}%".format(request.qwargs.q)},
-    )
 
-    data = []
-    for row in result:
-        data.append(
-            format_table_search_result(row, "table", request.qwargs.acs)
-        )
+    data = get_table_metadata(
+        request.qwargs.topics,
+        request.qwargs.acs,
+        db.session,
+        include_columns=False,
+    )
 
     if data:
         data.sort(key=lambda x: x["unique_key"])
@@ -253,13 +249,73 @@ def table_search():
         abort(404, f"No table found matching query.")
 
 
+@app.route("/1.0/table/ts")
+@qwarg_validate(
+    {
+        "acs": {
+            "valid": OneOf(ALLOWED_ACS),
+            "default": default_table_search_release,
+        },
+        "q": {"valid": NonemptyString()},
+        "limit": {"valid": ValidInteger()},
+        "offset": {"valid": ValidInteger()},
+    }
+)
+@crossdomain(origin="*")
+def table_ts():
+    # Matching for table id
+    ic(request.qwargs.q)
+    if not (limit := request.qwargs.limit):
+        limit = 5
 
+    if not (offset := request.qwargs.offset):
+        offset = 0
+
+    result = search_tables(
+        request.qwargs.q,
+        request.qwargs.acs,
+        db.session,
+        limit=limit,
+        offset=offset,
+    )
+
+    if not result:
+        abort(404, f"No table found matching query.")
+
+    dicts = [convert_row_to_dict(row) for row in result]
+    json_dicts = json.dumps(dicts)
+
+    response = make_response(json_dicts)
+
+    response.headers.set("Content-Type", "application/json")
+    response.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
+
+    return response
 
 
 @app.route("/1.0/tabulation/<tabulation_id>")
 @crossdomain(origin="*")
 def tabulation_details(tabulation_id):
-    pass
+    row = get_tabulation(tabulation_id, db.session)
+
+    if not row:
+        abort(404, "Tabulation %s not found." % tabulation_id)
+
+    row = convert_row_to_dict(row)
+
+    row["tables_by_release"] = {
+        "one_yr": row.pop("tables_in_one_yr", []),
+        "three_yr": row.pop("tables_in_three_yr", []),
+        "five_yr": row.pop("tables_in_five_yr", []),
+    }
+
+    row.pop("weight", None)
+
+    json_text = json.dumps(row)
+    resp = make_response(json_text)
+    resp.headers.set("Content-Type", "application/json")
+
+    return resp
 
 
 @app.route("/1.0/table/<table_id>")
@@ -273,7 +329,8 @@ def tabulation_details(tabulation_id):
 )
 @crossdomain(origin="*")
 def table_details(table_id):
-    pass
+    result = get_table_metadata((table_id,), result.qwargs.acs, db.session)
+    row = result.fetchone()
 
 
 @app.route("/2.0/table/<release>/<table_id>")
@@ -316,7 +373,7 @@ def show_specified_data(acs):
     # valid_geo_ids only contains geos for which we want data
     try:
         valid_geo_ids, child_parent_map = expand_geoids(
-            request.qwargs.geo_ids, release=acs, db=db
+            request.qwargs.geo_ids, release=acs, db=db.session
         )
     except ShowDataException as e:
         abort(400, e)
@@ -328,7 +385,7 @@ def show_specified_data(acs):
             % ", ".join(request.qwargs.geo_ids),
         )
 
-    if (id_count := valid_geo_ids) > max_geoids:
+    if (id_count := len(valid_geo_ids)) > max_geoids:
         abort(
             400,
             f"You requested {id_count} geoids. The maximum is {max_geoids}. Please contact us for bulk data.",
@@ -338,7 +395,7 @@ def show_specified_data(acs):
     # expand_geoids has validated parents of groups by getting children;
     # this will include those parent names in the reponse `geography` list
     # but leave them out of the response `data` list
-    grouped_geo_ids = [item for item in request.qwargs.geoids if "|" in item]
+    grouped_geo_ids = [item for item in request.qwargs.geo_ids if "|" in item]
     parents_of_groups = set(
         [item_group.split("|")[1] for item_group in grouped_geo_ids]
     )
@@ -346,21 +403,21 @@ def show_specified_data(acs):
 
     # Fill in the display name for the geos
     try:
-        result = get_geography_info(named_geo_ids, db)
+        result = get_geography_info(named_geo_ids, db.session)
     except Exception as e:
         print(e)
         abort(400, f"There was an error processing your request.")
 
     geo_metadata = {}
-    for full_geoid, _, display_name in result:
-        geo_metadata[full_geoid] = {
-            "name": display_name,
+    for row in result:
+        geo_metadata[row.full_geoid] = {
+            "name": row.display_name,
         }
         # let children know who their parents are to distinguish between
         # groups at the same summary level
-        if full_geoid in child_parent_map:
-            geo_metadata[full_geoid]["parent_geoid"] = child_parent_map[
-                full_geoid
+        if row.full_geoid in child_parent_map:
+            geo_metadata[row.full_geoid]["parent_geoid"] = child_parent_map[
+                row.full_geoid
             ]
 
         db.session.execute(
@@ -368,17 +425,36 @@ def show_specified_data(acs):
         )
 
     try:
-        columns = get_table_data(request.kwargs.table_ids, db.session)
+        columns = get_table_metadata(request.qwargs.table_ids, request.qwargs.acs, db.session, include_columns=True)
     except (ProgrammingError, OperationalError) as e:
         raise e
 
-    table_metadata, valid_table_ids = wrap_up_columns(columns)
-    data = fetch_data(list(table_ids.keys()), valid_geoids, db.session)
+    valid_table_ids, table_metadata  = group_tables(columns)
+    result = fetch_data(valid_table_ids, valid_geo_ids, db.session)
 
-    table_metadata * 10
-    data * 100
+    match result:
+        case Failure(e):
+            ic(e)
+            abort(404, f"Unable to fetch data due to {e}")
 
+        case Success(data):
+            release = ACS_NAMES[acs].copy()
+            release["id"] = acs
 
+            response = {
+                "tables": table_metadata,
+                "geography": {geoid: geo_metadata[geoid] for geoid in valid_geo_ids},
+                "release": release,
+                "data": {row.geoid: pack_tables(row) for row in data},
+            }
+
+            response = json.dumps(response)
+            resp = make_response(response)
+
+            resp.headers.set("Content-Type", "application/json")
+            resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
+
+            return resp
 
 
 @app.route("/1.0/data/download/<acs>")
@@ -404,22 +480,28 @@ def download_specified_data(*args, **kwargs):
 )
 @crossdomain(origin="*")
 def data_compare_geographies_within_parent(acs, table_id):
-    pass
+    resp = make_response(json.dumps({}))
+    resp.headers.set("Content-Type", "application/json")
+    resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
+    return resp
 
 
 @app.route("/healthcheck")
 def healthcheck():
-    pass
+    app.logger.exception("Healthcheck was called!")
+    return "OK"
 
 
 @app.route("/robots.txt")
 def robots_txt():
-    pass
+    response = make_response("User-agent: *\nDisallow: /\n")
+    response.headers["Content-type"] = "text/plain"
+    return response
 
 
 @app.route("/")
 def index():
-    pass
+    return redirect("https://www.datadrivendetroit.org")
 
 
 @app.errorhandler(400)
