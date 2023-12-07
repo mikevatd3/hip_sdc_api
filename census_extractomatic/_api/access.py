@@ -945,6 +945,30 @@ def format_table_search_result(obj, include_columns, release):
     return result
 
 
+
+def query_table_metadata(q, acs, db):
+    result = db.execute(
+        text(
+            """SELECT tab.table_id,
+                  tab.table_title,
+                  tab.simple_table_title,
+                  tab.universe,
+                  tab.topics
+           FROM census_table_metadata tab
+           WHERE lower(table_id) like lower(:query)"""
+        ),
+        {"query": f"{q}%"},
+    )
+
+    data = []
+    for row in result:
+        data.append(
+            format_table_search_result(row, False, acs)
+        )
+
+    return data
+
+
 def get_table_metadata(table_ids, release, db, include_columns=False):
     select = [
         "SELECT tab.table_id",

@@ -1,9 +1,6 @@
 import os
 import json
-import csv
-import io
-import zipfile
-import datetime
+from collections import OrderedDict
 
 from flask import Flask, jsonify, make_response, abort
 from flask import abort, request, g, current_app, send_file
@@ -34,22 +31,24 @@ from .access import (
     get_neighboring_boundaries,
     get_geography_info,
     get_parent_geoids,
+    get_child_geoids,
     convert_row_to_dict,
     get_table_metadata,
     group_tables,
-    pack_tables,
     fetch_data,
     expand_geoids,
+    query_table_metadata,
     search_geos_by_point,
     search_geos_by_query,
     get_tabulation,
     show_col_builder,
 )
-
+from ..download_specified_data import check_table_requests
 from .download_data import (
     prepare_csv_response,
     prepare_excel_response,
     prepare_shape_response,
+    prepare_json_response,
     prepare_geojson_response,
 )
 
@@ -59,6 +58,7 @@ from .http_utils import crossdomain
 from .reference import (
     SUMLEV_NAMES,
     ALLOWED_ACS,
+    ALLOWED_TIGER,
     ACS_NAMES,
     default_table_search_release,
     supported_formats,
@@ -273,15 +273,14 @@ def table_search():
         text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs}
     )
 
-    data = get_table_metadata(
-        request.qwargs.topics,
+    data = query_table_metadata(
+        request.qwargs.q,
         request.qwargs.acs,
         db.session,
-        include_columns=False,
     )
 
     if data:
-        data.sort(key=lambda x: x["unique_key"])
+        data = sorted(data, key=lambda x: x["unique_key"])
         return json.dumps(data)
 
     else:
@@ -390,6 +389,7 @@ def table_details(table_id):
 @app.route("/2.0/table/<release>/<table_id>")
 @crossdomain(origin="*")
 def table_details_with_release(release, table_id):
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": release})
     column_rows = get_table_metadata(
         (table_id,), release, db.session, include_columns=True
     )
@@ -412,7 +412,73 @@ def table_details_with_release(release, table_id):
 )
 @crossdomain(origin="*")
 def table_geo_comparison_rowcount(table_id):
-    pass
+    """
+    This is yet to be refactored.
+    """
+    years = request.qwargs.year.split(",")
+    child_summary_level = request.qwargs.sumlevel
+    parent_geoid = request.qwargs.within
+
+    data = {}
+
+    releases = []
+    for year in years:
+        releases += [name for name in ALLOWED_ACS if year in name]
+    releases = sorted(releases)
+
+    for acs in releases:
+        db.session.execute(
+            text("SET search_path TO :acs, public;"), {"acs": acs}
+        )
+        release = dict()
+        release["release_name"] = ACS_NAMES[acs]["name"]
+        release["release_slug"] = acs
+        release["results"] = 0
+
+        result = db.session.execute(
+            text(
+                """SELECT *
+               FROM census_table_metadata
+               WHERE table_id=:table_id;"""
+            ),
+            {"table_id": table_id},
+        )
+        table_record = result.fetchone()
+        if table_record:
+            table_record = table_record._mapping
+            validated_table_id = table_record["table_id"]
+            release["table_name"] = table_record["table_title"]
+            release["table_universe"] = table_record["universe"]
+
+            child_geoheaders = get_child_geoids(
+                acs, parent_geoid, child_summary_level, db.session
+            )
+
+            if child_geoheaders:
+                child_geoids = [
+                    child._mapping["geoid"] for child in child_geoheaders
+                ]
+                result = db.session.execute(
+                    text(
+                        """SELECT COUNT(*)
+                       FROM %s.%s
+                       WHERE geoid IN :geoids"""
+                        % (acs, validated_table_id)
+                    ),
+                    {"geoids": tuple(child_geoids)},
+                )
+                acs_rowcount = result.fetchone()
+                release["results"] = acs_rowcount._mapping["count"]
+
+        data[acs] = release
+
+    json_string = json.dumps(data)
+    resp = make_response(json_string)
+    resp.headers.set("Content-Type", "application/json")
+
+    return resp
+
+
 
 
 def data_pull(table_ids, geoids, acs, db):
@@ -493,29 +559,33 @@ def data_pull(table_ids, geoids, acs, db):
     )
 
 
-def prepare_geojson_response(
-    acs, table_metadata, geo_metadata, valid_geo_ids, data
-):
-    release = ACS_NAMES[acs].copy()
-    release["id"] = acs
-
-    response = {
-        "tables": table_metadata,
-        "geography": {
-            geoid: geo_metadata.get(geoid, {"geoid": geoid})
-            for geoid in valid_geo_ids
-        },
-        "release": release,
-        "data": {row.geoid: pack_tables(row) for row in data},
+@app.route("/1.0/geo/show/<release>")
+@qwarg_validate(
+    {
+        "geo_ids": {"valid": StringList(), "required": True},
     }
+)
+def show_specified_geo_data(release):
+    if release not in ALLOWED_TIGER:
+        abort(404, "Unknown TIGER release")
 
-    response = json.dumps(response)
-    resp = make_response(response)
+    geoids, child_parent_map = expand_geoids(
+        request.qwargs.geo_ids, release, db.session
+    )
 
-    resp.headers.set("Content-Type", "application/json")
-    resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
+    geo_metadata = get_geography_info(
+        geoids,
+        db.session,
+        with_geom=True,
+    )
 
-    return resp
+    return prepare_geojson_response(
+        release,
+        None,
+        geo_metadata,
+        None,
+    )
+    
 
 
 @app.route("/1.0/data/show/<acs>")
@@ -540,7 +610,7 @@ def show_specified_data(acs):
             abort(404, f"Unable to fetch data due to {e}")
 
         case Success(data):
-            response = prepare_geojson_response(
+            response = prepare_json_response(
                 acs, table_metadata, geo_metadata, valid_geo_ids, data
             )
             return response
@@ -592,10 +662,218 @@ def download_specified_data(acs):
 )
 @crossdomain(origin="*")
 def data_compare_geographies_within_parent(acs, table_id):
-    resp = make_response(json.dumps({}))
-    resp.headers.set("Content-Type", "application/json")
-    resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
-    return resp
+    # make sure we support the requested ACS release
+    if acs not in ALLOWED_ACS:
+        abort(404, "The %s release isn't supported." % acs)
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
+
+    parent_geoid = request.qwargs.within
+    child_summary_level = request.qwargs.sumlevel
+
+    # create the containers we need for our response
+    comparison = {}
+    table = {}
+    parent_geography = {}
+    child_geographies = {}
+
+    # add some basic metadata about the comparison and data table requested.
+    comparison["child_summary_level"] = child_summary_level
+    comparison["child_geography_name"] = SUMLEV_NAMES.get(
+        child_summary_level, {}
+    ).get("name")
+    comparison["child_geography_name_plural"] = SUMLEV_NAMES.get(
+        child_summary_level, {}
+    ).get("plural")
+    
+    result = check_table_requests((table_id,), db.session)
+
+    match result:
+        case Success(rows):
+            table_metadata = rows.fetchall()
+
+        case Failure(error):
+            ic(error)
+            abort(
+                404,
+                "Table %s isn't available in the %s release."
+                % (table_id.upper(), acs),
+            )
+
+    validated_table_id = table_metadata[0]._mapping["table_id"]
+
+    # get the basic table record, and add a map of columnID -> column name
+    table_record = table_metadata[0]._mapping
+    column_map = {}
+    for record in table_metadata:
+        record = record._mapping
+        if record["column_id"]:
+            column_map[record["column_id"]] = {}
+            column_map[record["column_id"]]["name"] = record["column_title"]
+            column_map[record["column_id"]]["indent"] = record["indent"]
+
+    table["census_release"] = ACS_NAMES.get(acs).get("name")
+    table["table_id"] = validated_table_id
+    table["table_name"] = table_record["table_title"]
+    table["table_universe"] = table_record["universe"]
+    table["denominator_column_id"] = table_record["denominator_column_id"]
+    table["columns"] = column_map
+
+    # add some data about the parent geography
+    result = db.session.execute(
+        text("SELECT * FROM geoheader WHERE geoid=:geoid;"),
+        {"geoid": parent_geoid},
+    )
+    parent_geoheader = result.fetchone()
+    parent_sumlevel = "%03d" % parent_geoheader._mapping["sumlevel"]
+
+    parent_geography["geography"] = OrderedDict()
+    parent_geography["geography"]["name"] = parent_geoheader._mapping["name"]
+    parent_geography["geography"]["summary_level"] = parent_sumlevel
+
+    comparison["parent_summary_level"] = parent_sumlevel
+    comparison["parent_geography_name"] = SUMLEV_NAMES.get(
+        parent_sumlevel, {}
+    ).get("name")
+    comparison["parent_name"] = parent_geoheader._mapping["name"]
+    comparison["parent_geoid"] = parent_geoid
+
+    child_geoheaders = get_child_geoids(
+        acs, parent_geoid, child_summary_level, db.session
+    )
+
+    # start compiling child data for our response
+    child_geoid_list = [
+        geoheader._mapping["geoid"] for geoheader in child_geoheaders
+    ]
+    child_geoid_names = dict(
+        [
+            (geoheader._mapping["geoid"], geoheader._mapping["name"])
+            for geoheader in child_geoheaders
+        ]
+    )
+
+    # get geographical data if requested
+    child_geodata_map = {}
+    if request.qwargs.geom:
+        # get the parent geometry and add to API response
+        result = db.session.execute(
+            text(
+                """SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
+               FROM tiger2021.census_name_lookup
+               WHERE full_geoid=:geo_ids;"""
+            ),
+            {"geo_ids": parent_geoid},
+        )
+        parent_geometry = result.fetchone()
+        try:
+            parent_geography._mapping["geography"]["geometry"] = json.loads(
+                parent_geometry._mapping["geometry"]
+            )
+        except:
+            # we may not have geometries for all sumlevs
+            pass
+
+        # get the child geometries and store for later
+        result = db.session.execute(
+            text(
+                """SELECT geoid, ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
+               FROM tiger2021.census_name_lookup
+               WHERE full_geoid IN :geo_ids
+               ORDER BY full_geoid;"""
+            ),
+            {"geo_ids": ic(tuple(child_geoid_list))},
+        )
+        child_geodata = result.fetchall()
+        child_geodata_map = dict(
+            [
+                (
+                    record._mapping["geoid"],
+                    json.loads(record._mapping["geometry"]),
+                )
+                for record in child_geodata
+            ]
+        )
+
+    # make the where clause and query the requested census data table
+    # get parent data first...
+    result = db.session.execute(
+        text("SELECT * FROM %s_moe WHERE geoid=:geoid" % (validated_table_id)),
+        {"geoid": parent_geoheader._mapping["geoid"]},
+    )
+    parent_data = dict(result.fetchone()._mapping)
+    parent_data.pop("geoid", None)
+    column_data = []
+    column_moe = []
+    sorted_data = list(sorted(parent_data.items(), key=lambda tup: tup[0]))
+
+    for (k, v), (_, moe_v) in zip(sorted_data[:-1:2], sorted_data[1::2]):
+        column_data.append((k.upper(), v))
+        column_moe.append((k.upper(), moe_v))
+
+    parent_geography["data"] = OrderedDict(column_data)
+    parent_geography["error"] = OrderedDict(column_moe)
+
+    if child_geoheaders:
+        # ... and then children so we can loop through with cursor
+        child_geoids = [child._mapping["geoid"] for child in child_geoheaders]
+        result = db.session.execute(
+            text(
+                "SELECT * FROM %s_moe WHERE geoid IN :geo_ids"
+                % (validated_table_id)
+            ),
+            {"geo_ids": tuple(child_geoids)},
+        )
+
+        # grab one row at a time
+        for record in result:
+            record = dict(record._mapping)
+            child_geoid = record.pop("geoid")
+
+            child_data = OrderedDict()
+            this_geo_has_data = False
+
+            # build the child item
+            child_data["geography"] = OrderedDict()
+            child_data["geography"]["name"] = child_geoid_names[child_geoid]
+            child_data["geography"]["summary_level"] = child_summary_level
+
+            column_data = []
+            column_moe = []
+            sorted_data = list(sorted(record.items(), key=lambda tup: tup[0]))
+            for (k, v), (_, moe_v) in zip(
+                sorted_data[:-1:2], sorted_data[1::2]
+            ):
+                if v is not None and moe_v is not None:
+                    this_geo_has_data = True
+
+                column_data.append((k.upper(), v))
+                column_moe.append((k.upper(), moe_v))
+            child_data["data"] = OrderedDict(column_data)
+            child_data["error"] = OrderedDict(column_moe)
+
+            if child_geodata_map:
+                try:
+                    child_data["geography"]["geometry"] = child_geodata_map[
+                        child_geoid.split("US")[1]
+                    ]
+                except:
+                    # we may not have geometries for all sumlevs
+                    pass
+
+            if this_geo_has_data:
+                child_geographies[child_geoid] = child_data
+
+            # TODO Do we really need this?
+            comparison["results"] = len(child_geographies)
+    else:
+        comparison["results"] = 0
+
+    return jsonify(
+        comparison=comparison,
+        table=table,
+        parent_geography=parent_geography,
+        child_geographies=child_geographies,
+    )
 
 
 @app.route("/healthcheck")

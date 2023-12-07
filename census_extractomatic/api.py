@@ -1,3 +1,7 @@
+# For real division instead of sometimes-integer
+from __future__ import division
+
+from dataclasses import dataclass
 from flask import Flask
 from flask import abort, request, g
 from flask import make_response, current_app, send_file
@@ -11,7 +15,9 @@ from functools import update_wrapper
 from itertools import groupby
 import simplejson as json
 from collections import OrderedDict
+import operator
 import math
+from math import log10, log
 from datetime import timedelta
 import re
 import os
@@ -20,9 +26,11 @@ import shutil
 import tempfile
 import zipfile
 import pylibmc
-from returns.result import Success, Failure
 
-
+# import mockcache
+from boto.s3.connection import S3Connection
+from boto.s3.key import Key
+from boto.exception import S3ResponseError
 from census_extractomatic.validation import (
     qwarg_validate,
     NonemptyString,
@@ -34,11 +42,7 @@ from census_extractomatic.validation import (
 )
 import tomli
 
-from .download_specified_data import prepare_download, check_table_requests
-from ._api.access import get_child_geoids, expand_geoids, ShowDataException
-
 from census_extractomatic.exporters import supported_formats
-
 
 with open("config.toml", "rb") as f:
     config = tomli.load(f)
@@ -60,8 +64,7 @@ login = LoginManager(app)
 from census_extractomatic.metadata_api.src import metadata_api
 from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
 
-# app.register_blueprint(metadata_api, url_prefix="/metadata")
-
+app.register_blueprint(metadata_api, url_prefix="/metadata")
 register_d3_metadata_admin(app)
 
 from census_extractomatic.auth import auth
@@ -81,6 +84,12 @@ if not app.debug:
     file_handler.setLevel(logging.WARNING)
     app.logger.addHandler(file_handler)
     app.logger.addHandler(stream_handler)
+
+try:
+    app.s3 = S3Connection()
+except Exception as e:
+    app.s3 = None
+    app.logger.warning("S3 Configuration failed.")
 
 
 # Allowed ACS's in "best" order (newest and smallest range preferred)
@@ -126,6 +135,24 @@ ACS_NAMES = {
     "d3_past": {"name": "Data Driven Detroit", "years": "2015-2018"},
 }
 
+PARENT_CHILD_CONTAINMENT = {
+    "040": [
+        "050",
+        "060",
+        "101",
+        "140",
+        "150",
+        "500",
+        "610",
+        "620",
+        "950",
+        "960",
+        "970",
+    ],
+    "050": ["060", "101", "140", "150"],
+    "140": ["101", "150"],
+    "150": ["101"],
+}
 
 SUMLEV_NAMES = {
     "010": {"name": "nation", "plural": ""},
@@ -304,6 +331,46 @@ state_fips = {
 }
 
 
+def get_from_cache(cache_key, try_s3=True):
+    # Try memcache first
+    cached = g.cache.get(cache_key)
+
+    if not cached and try_s3 and current_app.s3 is not None:
+        # Try S3 next
+        b = current_app.s3.get_bucket(
+            "embed.censusreporter.org", validate=False
+        )
+        k = Key(b)
+        k.key = cache_key
+        try:
+            cached = k.get_contents_as_string()
+        except S3ResponseError:
+            cached = None
+
+        # TODO Should stick the S3 thing back in memcache
+
+    return cached
+
+
+def put_in_cache(
+    cache_key,
+    value,
+    memcache=True,
+    try_s3=True,
+    content_type="application/json",
+):
+    if memcache:
+        g.cache.set(cache_key, value)
+
+    if try_s3 and current_app.s3 is not None:
+        b = current_app.s3.get_bucket(
+            "embed.censusreporter.org", validate=False
+        )
+        k = Key(b, cache_key)
+        k.metadata["Content-Type"] = content_type
+        k.set_contents_from_string(value, policy="public-read")
+
+
 def crossdomain(
     origin=None,
     methods=None,
@@ -370,6 +437,183 @@ def jsonify_error_handler(error):
     return resp
 
 
+def maybe_int(i):
+    return int(i) if i else i
+
+
+def percentify(val):
+    return val * 100
+
+
+def rateify(val):
+    return val * 1000
+
+
+def moe_add(moe_a, moe_b):
+    # From http://www.census.gov/acs/www/Downloads/handbooks/ACSGeneralHandbook.pdf
+    return math.sqrt(moe_a**2 + moe_b**2)
+
+
+def moe_ratio(numerator, denominator, numerator_moe, denominator_moe):
+    # From http://www.census.gov/acs/www/Downloads/handbooks/ACSGeneralHandbook.pdf
+    estimated_ratio = numerator / denominator
+    return (
+        math.sqrt(
+            numerator_moe**2 + (estimated_ratio**2 * denominator_moe**2)
+        )
+        / denominator
+    )
+
+
+ops = {
+    "+": operator.add,
+    "-": operator.sub,
+    "/": operator.truediv,
+    "%": percentify,
+    "%%": rateify,
+}
+moe_ops = {
+    "+": moe_add,
+    "-": moe_add,
+    "/": moe_ratio,
+    "%": percentify,
+    "%%": rateify,
+}
+
+
+def value_rpn_calc(data, rpn_string):
+    stack = []
+    moe_stack = []
+    numerator = None
+    numerator_moe = None
+
+    for token in rpn_string.split():
+        if token in ops:
+            b = stack.pop()
+            b_moe = moe_stack.pop()
+
+            if token in ("%", "%%"):
+                # Single-argument operators
+                if b is None:
+                    c = None
+                    c_moe = None
+                else:
+                    c = ops[token](b)
+                    c_moe = moe_ops[token](b_moe)
+            else:
+                a = stack.pop()
+                a_moe = moe_stack.pop()
+
+                if a is None or b is None:
+                    c = None
+                    c_moe = None
+                elif token == "/":
+                    # Broken out because MOE ratio needs both MOE and estimates
+
+                    # We're dealing with ratios, not pure division.
+                    if a == 0 or b == 0:
+                        c = 0
+                        c_moe = 0
+                    else:
+                        c = ops[token](a, b)
+                        c_moe = moe_ratio(a, b, a_moe, b_moe)
+                    numerator = a
+                    numerator_moe = round(a_moe, 1)
+                else:
+                    c = ops[token](a, b)
+                    c_moe = moe_ops[token](a_moe, b_moe)
+        elif token.startswith("b"):
+            c = data[token]
+            c_moe = data[token + "_moe"]
+        else:
+            c = float(token)
+            c_moe = float(token)
+        stack.append(c)
+        moe_stack.append(c_moe)
+
+    value = stack.pop()
+    error = moe_stack.pop()
+
+    return (value, error, numerator, numerator_moe)
+
+
+def build_item(name, data, parents, rpn_string):
+    val = OrderedDict(
+        [
+            ("name", name),
+            ("values", dict()),
+            ("error", dict()),
+            ("numerators", dict()),
+            ("numerator_errors", dict()),
+        ]
+    )
+
+    for parent in parents:
+        label = parent["relation"]
+        geoid = parent["geoid"]
+        data_for_geoid = data.get(geoid) if data else {}
+
+        value = None
+        error = None
+        numerator = None
+        numerator_moe = None
+
+        if data_for_geoid:
+            (value, error, numerator, numerator_moe) = value_rpn_calc(
+                data_for_geoid, rpn_string
+            )
+
+        # provide 2 decimals of precision, let client decide how much to use
+        if value is not None:
+            value = round(value, 2)
+            error = round(error, 2)
+
+        if numerator is not None:
+            numerator = round(numerator, 2)
+            numerator_moe = round(numerator_moe, 2)
+
+        val["values"][label] = value
+        val["error"][label] = error
+        val["numerators"][label] = numerator
+        val["numerator_errors"][label] = numerator_moe
+
+    return val
+
+
+def add_metadata(dictionary, table_id, universe, acs_release):
+    val = dict(
+        table_id=table_id,
+        universe=universe,
+        acs_release=acs_release,
+    )
+
+    dictionary["metadata"] = val
+
+
+def find_geoid(geoid, acs=None):
+    "Find the best acs to use for a given geoid or None if the geoid is not found."
+
+    if acs:
+        if acs not in allowed_acs:
+            abort(404, "We don't have data for that release.")
+        acs_to_search = [acs]
+    else:
+        acs_to_search = allowed_acs
+
+    for acs in acs_to_search:
+        result = db.session.execute(
+            """SELECT geoid
+               FROM %s.geoheader
+               WHERE geoid=:geoid"""
+            % acs,
+            {"geoid": geoid},
+        )
+        if result.rowcount == 1:
+            result = result.first()
+            return (acs, result["geoid"])
+    return (None, None)
+
+
 @app.before_request
 def before_request():
     memcache_addr = app.config.get("MEMCACHE_ADDR")
@@ -378,7 +622,13 @@ def before_request():
     )  # if memcache_addr else mockcache.Client(memcache_addr)
 
 
-def get_data_fallback(table_ids: list[str], geoids: list[str], acs=None):
+def get_data_fallback(table_ids, geoids, acs=None):
+    if type(geoids) != list:
+        geoids = [geoids]
+
+    if type(table_ids) != list:
+        table_ids = [table_ids]
+
     from_stmt = "%%(acs)s.%s_moe" % (table_ids[0])
     if len(table_ids) > 1:
         from_stmt += " "
@@ -395,25 +645,89 @@ def get_data_fallback(table_ids: list[str], geoids: list[str], acs=None):
     if acs in allowed_acs:
         sql = sql % {"acs": acs}
         result = db.session.execute(
-            text(sql),
+            sql,
             {"geoids": tuple(geoids)},
         )
         data = {}
         for row in result.fetchall():
-            geoid = row.geoid
-            data[geoid] = {col.name: getattr(row, col) for col in row.__table__.columns}
+            row = dict(row)
+            geoid = row.pop("geoid")
+            data[geoid] = dict([(col, val) for (col, val) in row.iteritems()])
 
         return data, acs
+
+    else:
+        # otherwise we'll start at the best/most recent acs and move down til we have the data we want
+        for acs in allowed_acs:
+            sql = sql % {"acs": acs}
+            result = db.session.execute(
+                sql,
+                {"geoids": tuple(geoids)},
+            )
+            data = {}
+            for row in result.fetchall():
+                row = dict(row)
+                geoid = row.pop("geoid")
+                data[geoid] = dict(
+                    [(col, val) for (col, val) in row.iteritems()]
+                )
+
+            # Check to see if this release has our data
+            data_with_values = filter(
+                lambda geoid_data: geoid_data.values()[0] is not None,
+                data.values(),
+            )
+            if len(geoids) == len(data) and len(geoids) == len(
+                data_with_values
+            ):
+                return data, acs
+            else:
+                # Doesn't contain data for all geoids, so keep going.
+                continue
+
+    return None, acs
+
+
+def special_case_parents(geoid, levels):
+    """
+    Update/adjust the parents list for special-cased geographies.
+    """
+    if geoid == "16000US1150000":
+        # compare Washington, D.C., to "parent" state of VA,
+        # rather than comparing to self as own parent state
+
+        target = (
+            index
+            for (index, d) in enumerate(levels)
+            if d["geoid"] == "04000US11"
+        ).next()
+        levels[target].update(
+            {"coverage": 0, "display_name": "Virginia", "geoid": "04000US51"}
+        )
+
+    # Louisville is not in Census 160 data but 170 consolidated city is equivalent
+    # we could try to convert 160 L-ville into 170, but that would overlap with
+    # 050 Jefferson  which should already be in there so we'll just pluck it out.
+    levels = [
+        level for level in levels if not level["geoid"] == "16000US2148000"
+    ]
+
+    # remove US as a parent -- this geoid does not exist in the SDC API
+    levels = [level for level in levels if not level["geoid"] == "01000US"]
+
+    return levels
 
 
 def compute_profile_item_levels(geoid):
     levels = []
+    geoid_parts = []
 
-    geoid = geoid.upper()
-    geoid_parts = geoid.split("US")
+    if geoid:
+        geoid = geoid.upper()
+        geoid_parts = geoid.split("US")
 
     if len(geoid_parts) != 2:
-        raise ValueError("Invalid geoid")
+        raise Exception("Invalid geoid")
 
     levels.append(
         {
@@ -427,30 +741,37 @@ def compute_profile_item_levels(geoid):
     id_part = geoid_parts[1]
 
     if sumlevel in (
-        "160", "310", "330", "350", "860", "950", "960", "970",
+        "140",
+        "150",
+        "060",
+        "310",
+        "330",
+        "350",
+        "860",
+        "950",
+        "960",
+        "970",
     ):
-        # Get parents directly
         result = db.session.execute(
             text(
-                """
-                SELECT * FROM tiger2021.census_geo_containment
-                WHERE child_geoid=:geoid
-                ORDER BY percent_covered ASC;
-                """
+                """SELECT * FROM tiger2021.census_geo_containment
+               WHERE child_geoid=:geoid
+               ORDER BY percent_covered ASC;
+            """
             ),
             {"geoid": geoid},
         )
 
         for row in result:
             parent_sumlevel_name = SUMLEV_NAMES.get(
-                row.parent_geoid[:3]
+                row._mapping["parent_geoid"][:3]
             )["name"]
-            if row.parent_geoid[:7] not in {"01000US", "31000US"}:
+            if row._mapping["parent_geoid"][:7] not in {"01000US", "31000US"}:
                 levels.append(
                     {
                         "relation": parent_sumlevel_name,
-                        "geoid": row.parent_geoid,
-                        "coverage": row.percent_covered,
+                        "geoid": row._mapping["parent_geoid"],
+                        "coverage": row._mapping["percent_covered"],
                     }
                 )
 
@@ -464,8 +785,18 @@ def compute_profile_item_levels(geoid):
         )
 
     if sumlevel in (
-        "050", "060", "140", "150", "160", "500", "610", "620", "795", "950", 
-        "960", "970",
+        "050",
+        "060",
+        "140",
+        "150",
+        "160",
+        "500",
+        "610",
+        "620",
+        "795",
+        "950",
+        "960",
+        "970",
     ):
         levels.append(
             {
@@ -483,6 +814,15 @@ def compute_profile_item_levels(geoid):
                 "coverage": 100.0,
             }
         )
+
+    # if sumlevel != '010':
+    #     levels.append({
+    #         'relation': 'nation',
+    #         'geoid': '01000US',
+    #         'coverage': 100.0,
+    #     })
+
+    levels = special_case_parents(geoid, levels)
 
     return levels
 
@@ -569,40 +909,30 @@ def geo_search():
     return jsonify(results=[convert_row(row._mapping) for row in result])
 
 
+def num2deg(xtile, ytile, zoom):
+    n = 2.0**zoom
+    lon_deg = xtile / n * 360.0 - 180.0
+    lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * ytile / n)))
+    lat_deg = math.degrees(lat_rad)
+    return (lat_deg, lon_deg)
+
+
 # Example: /1.0/geo/tiger2014/tiles/160/10/261/373.geojson
 # Example: /1.0/geo/tiger2013/tiles/160/10/261/373.geojson
 @app.route(
     "/1.0/geo/<release>/tiles/<sumlevel>/<int:zoom>/<int:x>/<int:y>.geojson"
 )
 @crossdomain(origin="*")
-def geo_tiles(sumlevel, zoom, x, y):
-    def num_to_deg(x, y, zoom):
-        """
-        Guessing at what this does. It takes the x, y input which is in 'tiles'
-        units and converts to lat, lon.
-        
-        In the outer function the 2**zoom is named 'tiles_across' but not sure if this is 
-        true since the number is often pretty large, eg. 2**11 == 2048.
-
-        Example: Livonia, MI calls the tiles endpoint that are the outer product 
-        of 548-552 (x) and 756-758 (y).
-        """
-
-        n = 2.0**zoom
-        lon_deg = x / n * 360.0 - 180.0
-        lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * y / n)))
-        lat_deg = math.degrees(lat_rad)
-
-        return (lat_deg, lon_deg)
-
-
+def geo_tiles(release, sumlevel, zoom, x, y):
+    if release not in allowed_tiger:
+        abort(404, "Unknown TIGER release")
     if sumlevel not in SUMLEV_NAMES:
         abort(404, "Unknown sumlevel")
     if sumlevel == "010":
         abort(400, "Don't support US tiles")
 
-    (miny, minx) = num_to_deg(x, y, zoom)
-    (maxy, maxx) = num_to_deg(x + 1, y + 1, zoom)
+    (miny, minx) = num2deg(x, y, zoom)
+    (maxy, maxx) = num2deg(x + 1, y + 1, zoom)
 
     tiles_across = 2**zoom
     deg_per_tile = 360.0 / tiles_across
@@ -610,7 +940,7 @@ def geo_tiles(sumlevel, zoom, x, y):
     tile_buffer = 10 * deg_per_pixel  # ~ 10 pixel buffer
     simplify_threshold = deg_per_pixel / 5
 
-    result = db.execute(
+    result = db.session.execute(
         text(
             """SELECT
             ST_AsGeoJSON(ST_SimplifyPreserveTopology(
@@ -618,11 +948,12 @@ def geo_tiles(sumlevel, zoom, x, y):
                 %f), 5) as geom,
             full_geoid,
             display_name
-           FROM tiger2021.census_name_lookup
+           FROM %s.census_name_lookup
            WHERE sumlevel=:sumlev AND ST_Intersects(ST_MakeEnvelope(:minx, :miny, :maxx, :maxy, 4326), geom)"""
             % (
                 tile_buffer,
                 simplify_threshold,
+                release,
             )
         ),
         {
@@ -666,44 +997,34 @@ def geo_tiles(sumlevel, zoom, x, y):
 @qwarg_validate({"geom": {"valid": Bool(), "default": False}})
 @crossdomain(origin="*")
 def geo_lookup(release, geoid):
-    geoid_parts = geoid.upper().split("US")
+    if release not in allowed_tiger:
+        abort(404, "Unknown TIGER release")
+
+    geoid = geoid.upper() if geoid else geoid
+    geoid_parts = geoid.split("US")
     if len(geoid_parts) != 2:
         abort(404, "Invalid GeoID")
 
     if request.qwargs.geom:
         result = db.session.execute(
             text(
-                """
-                SELECT display_name,
-                       simple_name,
-                       sumlevel,
-                       full_geoid,
-                       population,
-                       aland,
-                       awater,
-                       ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.00005), 6) as geom
-               FROM tiger2021.census_name_lookup
+                """SELECT display_name,simple_name,sumlevel,full_geoid,population,aland,awater,
+               ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom, 0.00005), 6) as geom
+               FROM %s.census_name_lookup
                WHERE full_geoid=:geoid
-               LIMIT 1
-               """
+               LIMIT 1"""
+                % (release,)
             ),
             {"geoid": geoid},
         )
     else:
         result = db.session.execute(
             text(
-                """
-                SELECT display_name,
-                       simple_name,
-                       sumlevel,
-                       full_geoid,
-                       population,
-                       aland,
-                       awater
-               FROM tiger2021.census_name_lookup
+                """SELECT display_name,simple_name,sumlevel,full_geoid,population,aland,awater
+               FROM %s.census_name_lookup
                WHERE full_geoid=:geoid
-               LIMIT 1
-               """
+               LIMIT 1"""
+                % (release,)
             ),
             {"geoid": geoid},
         )
@@ -810,9 +1131,8 @@ def geo_parent(release, geoid):
 def show_specified_geo_data(release):
     if release not in allowed_tiger:
         abort(404, "Unknown TIGER release")
-
     geo_ids, child_parent_map = expand_geoids(
-        request.qwargs.geo_ids, release_to_expand_with, db
+        request.qwargs.geo_ids, release_to_expand_with
     )
 
     max_geoids = current_app.config.get("MAX_GEOIDS_TO_SHOW", 3000)
@@ -865,7 +1185,6 @@ def show_specified_geo_data(release):
 
     resp = make_response(resp_data)
     resp.headers["Content-Type"] = "application/json"
-
     return resp
 
 
@@ -907,7 +1226,6 @@ def format_table_search_result(obj, obj_type, release):
 
 # ------ START TABLE SEARCH ------------------------------------------ #
 
-
 # Example: /1.0/table/search?q=norweg
 # Example: /1.0/table/search?q=norweg&topics=age,sex
 # Example: /1.0/table/search?topics=housing,poverty
@@ -924,11 +1242,10 @@ def format_table_search_result(obj, obj_type, release):
 )
 @crossdomain(origin="*")
 def table_search():
+    data = []
 
     # Matching for table id
-    db.session.execute(
-        text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs}
-    )
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs})
     result = db.session.execute(
         text(
             """SELECT tab.table_id,
@@ -941,8 +1258,6 @@ def table_search():
         ),
         {"table_id": "{}%".format(request.qwargs.q)},
     )
-
-    data = []
     for row in result:
         data.append(
             format_table_search_result(row, "table", request.qwargs.acs)
@@ -957,6 +1272,9 @@ def table_search():
 
 
 # ------ END TABLE SEARCH ------------------------------------------ #
+
+
+
 
 # Example: /1.0/tabulation/01001
 @app.route("/1.0/tabulation/<tabulation_id>")
@@ -1150,6 +1468,7 @@ def table_details_with_release(release, table_id):
         data["columns"] = OrderedDict(rows)
 
         result = json.dumps(data)
+
         resp = make_response(result)
 
         resp.headers.set("Content-Type", "application/json")
@@ -1212,7 +1531,7 @@ def table_geo_comparison_rowcount(table_id):
             release["table_universe"] = table_record["universe"]
 
             child_geoheaders = get_child_geoids(
-                acs, parent_geoid, child_summary_level, db
+                acs, parent_geoid, child_summary_level
             )
 
             if child_geoheaders:
@@ -1245,6 +1564,220 @@ def table_geo_comparison_rowcount(table_id):
 ## DATA RETRIEVAL ##
 
 
+# get geoheader data for children at the requested summary level
+def get_child_geoids(release, parent_geoid, child_summary_level):
+    parent_sumlevel = parent_geoid[0:3]
+    if parent_sumlevel == "010":
+        return get_all_child_geoids(release, child_summary_level)
+    elif (
+        parent_sumlevel in PARENT_CHILD_CONTAINMENT
+        and child_summary_level in PARENT_CHILD_CONTAINMENT[parent_sumlevel]
+    ):
+        return get_child_geoids_by_prefix(
+            release, parent_geoid, child_summary_level
+        )
+    elif parent_sumlevel == "160" and child_summary_level in ("140", "150"):
+        return get_child_geoids_by_coverage(
+            release, parent_geoid, child_summary_level
+        )
+    elif parent_sumlevel == "310" and child_summary_level in ("160", "860"):
+        return get_child_geoids_by_coverage(
+            release, parent_geoid, child_summary_level
+        )
+    elif parent_sumlevel == "040" and child_summary_level in ("310", "860"):
+        return get_child_geoids_by_coverage(
+            release, parent_geoid, child_summary_level
+        )
+    elif parent_sumlevel == "050" and child_summary_level in (
+        "160",
+        "860",
+        "950",
+        "960",
+        "970",
+    ):
+        return get_child_geoids_by_coverage(
+            release, parent_geoid, child_summary_level
+        )
+    else:
+        return get_child_geoids_by_gis(
+            release, parent_geoid, child_summary_level
+        )
+
+
+def get_all_child_geoids(release, child_summary_level):
+    db.session.execute(
+        text("SET search_path TO :acs,public;"), {"acs": release}
+    )
+    result = db.session.execute(
+        text(
+            """SELECT geoid,name
+           FROM geoheader
+           WHERE sumlevel=:sumlev AND component='00' AND geoid NOT IN ('04000US72')
+           ORDER BY name"""
+        ),
+        {"sumlev": int(child_summary_level)},
+    )
+
+    return result.fetchall()
+
+
+def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
+    # Use the "worst"/biggest ACS to find all child geoids
+    db.session.execute(
+        text("SET search_path TO :acs,public;"), {"acs": release}
+    )
+    result = db.session.execute(
+        text(
+            """SELECT geoid, name
+           FROM tiger2021.census_geo_containment, geoheader
+           WHERE geoheader.geoid = census_geo_containment.child_geoid
+             AND census_geo_containment.parent_geoid = :parent_geoid
+             AND census_geo_containment.child_geoid LIKE :child_geoids
+             AND census_geo_containment.percent_covered > 10"""
+        ),
+        {
+            "parent_geoid": parent_geoid,
+            "child_geoids": child_summary_level + "%",
+        },
+    )
+
+    rowdicts = []
+    seen_geoids = set()
+    for row in result:
+        if not row["geoid"] in seen_geoids:
+            rowdicts.append(row)
+            seen_geoids.add(row["geoid"])
+
+    return rowdicts
+
+
+def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
+    parent_sumlevel = parent_geoid[0:3]
+    child_geoids = []
+    result = db.session.execute(
+        text(
+            """
+            SELECT child_geoid as full_geoid
+            FROM tiger2021.census_geo_containment parent
+            WHERE parent_geoid = :parent_geoid
+            AND child_geoid LIKE :child_sumlevel
+            AND percent_covered > 10;
+         """
+        ),
+        {
+            "child_sumlevel": child_summary_level + "%",
+            "parent_geoid": parent_geoid,
+        },
+    )
+    child_geoids = [r._mapping["full_geoid"] for r in result]
+
+    if child_geoids:
+        # Use the "worst"/biggest ACS to find all child geoids
+        db.session.execute(
+            text("SET search_path TO :acs,public;"), {"acs": release}
+        )
+        result = db.session.execute(
+            text(
+                """SELECT geoid,name
+               FROM geoheader
+               WHERE geoid IN :child_geoids
+               ORDER BY name"""
+            ),
+            {"child_geoids": tuple(child_geoids)},
+        )
+        return result.fetchall()
+    else:
+        return []
+
+
+def get_child_geoids_by_prefix(release, parent_geoid, child_summary_level):
+    child_geoid_prefix = "%s00US%s%%" % (
+        child_summary_level,
+        parent_geoid.upper().split("US")[1],
+    )
+
+    # Use the "worst"/biggest ACS to find all child geoids
+    db.session.execute(
+        text("SET search_path TO :acs,public;"), {"acs": release}
+    )
+    result = db.session.execute(
+        text(
+            """SELECT geoid,name
+           FROM geoheader
+           WHERE geoid LIKE :geoid_prefix
+             AND name NOT LIKE :not_name
+           ORDER BY geoid"""
+        ),
+        {"geoid_prefix": child_geoid_prefix, "not_name": "%%not defined%%"},
+    )
+    return result.fetchall()
+
+
+def expand_geoids(geoid_list, release=None):
+    if not release:
+        release = expand_geoids_with
+
+    # Look for geoid "groups" of the form `child_sumlevel|parent_geoid`.
+    # These will expand into a list of geoids like the old comparison endpoint used to
+    expanded_geoids = []
+    explicit_geoids = []
+    child_parent_map = {}
+    for geoid_str in geoid_list:
+        geoid_split = geoid_str.split("|")
+        if len(geoid_split) == 2 and len(geoid_split[0]) == 3:
+            (child_summary_level, parent_geoid) = geoid_split
+            child_geoid_list = [
+                child_geoid._mapping["geoid"]
+                for child_geoid in get_child_geoids(
+                    release, parent_geoid, child_summary_level
+                )
+            ]
+            expanded_geoids.extend(child_geoid_list)
+            for child_geoid in child_geoid_list:
+                child_parent_map[child_geoid] = parent_geoid
+        else:
+            explicit_geoids.append(geoid_str)
+
+    # Since the expanded geoids were sourced from the database they don't need to be checked
+    valid_geo_ids = []
+    valid_geo_ids.extend(expanded_geoids)
+
+    # Check to make sure the geo ids the user entered are valid
+    if explicit_geoids:
+        db.session.execute(
+            text("SET search_path TO :acs,public;"), {"acs": release}
+        )
+        try:
+            result = db.session.execute(
+                text(
+                    """SELECT geoid
+                   FROM acs2021_5yr.geoheader
+                   WHERE geoid IN :geoids;"""
+                ),
+                {"geoids": tuple(explicit_geoids)},
+            )
+
+        except Exception as e:
+            print(e)
+
+        valid_geo_ids.extend([geo[0] for geo in result])
+
+    invalid_geo_ids = set(expanded_geoids + explicit_geoids) - set(
+        valid_geo_ids
+    )
+    if invalid_geo_ids:
+        raise ShowDataException(
+            "The %s release doesn't include GeoID(s) %s."
+            % (get_acs_name(release), ",".join(invalid_geo_ids))
+        )
+
+    return set(valid_geo_ids), child_parent_map
+
+
+class ShowDataException(Exception):
+    pass
+
+
 # Example: /1.0/data/show/acs2012_5yr?table_ids=B01001,B01003&geo_ids=04000US55,04000US56
 # Example: /1.0/data/show/latest?table_ids=B01001&geo_ids=160|04000US17,04000US56
 @app.route("/1.0/data/show/<acs>")
@@ -1259,15 +1792,21 @@ def show_specified_data(acs):
     app.logger.debug(request.qwargs.table_ids)
     app.logger.debug(request.qwargs.geo_ids)
 
-    if acs not in allowed_acs:
+    if acs in allowed_acs:
+        acs_to_try = [acs]
+        expand_geoids_with = acs
+    elif acs == "latest":
+        acs_to_try = allowed_acs[:3]  # The first three releases
+        expand_geoids_with = release_to_expand_with
+    else:
         abort(404, "The %s release isn't supported." % get_acs_name(acs))
 
     # valid_geo_ids only contains geos for which we want data
     requested_geo_ids = request.qwargs.geo_ids
     try:
-        valid_geo_ids, child_parent_map = ic(expand_geoids(
-            requested_geo_ids, release=acs, db=db
-        ))
+        valid_geo_ids, child_parent_map = expand_geoids(
+            requested_geo_ids, release=expand_geoids_with
+        )
     except ShowDataException as e:
         abort(400, str(e))
 
@@ -1285,8 +1824,7 @@ def show_specified_data(acs):
             "You requested %s geoids. The maximum is %s. Please contact us for bulk data."
             % (len(valid_geo_ids), max_geoids),
         )
-    
-    # No idea what this means.
+
     # expand_geoids has validated parents of groups by getting children;
     # this will include those parent names in the reponse `geography` list
     # but leave them out of the response `data` list
@@ -1467,11 +2005,38 @@ def show_specified_data(acs):
     }
 )
 @crossdomain(origin="*")
-def download_specified_data(*args, **kwargs):
-    geoids = request.qwargs.geo_ids
-    table_ids = request.qwargs.table_ids
+def download_specified_data(acs):
+    try:
+        valid_geoids = expand_geoids(
+            request.qwargs.geo_ids, release="acs2021_5yr"
+        )
 
-    response = prepare_download(geoids, table_ids)
+    except ShowDataException as e:
+        abort(400, e.message)
+
+    if (num_geoids := len(valid_geoids)) > current_app.config.get(
+        "MAX_GEOIDS_TO_DOWNLOAD", 500
+    ):
+        abort(
+            400,
+            f"You requested {num_geoids} geoids which is beyond our limit of 500.",
+        )
+
+    try:
+        result = db.session.execute(
+            text(
+                """SELECT full_geoid,
+                      population,
+                      display_name
+               FROM tiger2021.census_name_lookup
+               WHERE full_geoid IN :geo_ids;"""
+            ),
+            {"geo_ids": tuple(valid_geo_ids)},
+        )
+
+    except Exception as e:
+        app.logger.error(f"The query is failing with error {e}.")
+        abort(400, "Query error on geography query.")
 
 
 # Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
@@ -1486,7 +2051,6 @@ def download_specified_data(*args, **kwargs):
 )
 @crossdomain(origin="*")
 def _download_specified_data(acs):
-    ### wrangling ACS
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -1497,13 +2061,12 @@ def _download_specified_data(acs):
         app.logger.error(f"ACS release {acs} isn't supported")
         abort(404, "The %s release isn't supported." % get_acs_name(acs))
 
-    ## end wrangling ACS
     try:
         valid_geo_ids, _ = expand_geoids(
-            request.qwargs.geo_ids, release=expand_geoids_with, db=db
+            request.qwargs.geo_ids, release=expand_geoids_with
         )
     except ShowDataException as e:
-        abort(400, e)
+        abort(400, e.message)
 
     max_geoids = current_app.config.get("MAX_GEOIDS_TO_DOWNLOAD", 1000)
     if len(valid_geo_ids) > max_geoids:
@@ -1565,17 +2128,15 @@ def _download_specified_data(acs):
                 {"table_ids": tuple(request.qwargs.table_ids)},
             )
 
-            # ^ check_table_requests
-
             valid_table_ids = []
             table_metadata = OrderedDict()
             for table, columns in groupby(
                 result,
                 lambda x: (
-                    x.table_id,
-                    x.table_title,
-                    x.universe,
-                    x.denominator_column_id,
+                    x._mapping["table_id"],
+                    x._mapping["table_title"],
+                    x._mapping["universe"],
+                    x._mapping["denominator_column_id"],
                 ),
             ):
                 valid_table_ids.append(table[0])
@@ -1615,9 +2176,6 @@ def _download_specified_data(acs):
             invalid_table_ids = set(request.qwargs.table_ids) - set(
                 valid_table_ids
             )
-
-            # ^ group tables
-
             if invalid_table_ids:
                 raise ShowDataException(
                     "The %s release doesn't include table(s) %s."
@@ -1642,8 +2200,6 @@ def _download_specified_data(acs):
             result = db.session.execute(sql, {"geo_ids": tuple(valid_geo_ids)})
             data = OrderedDict()
 
-            # ^ fetch_data
-
             if result.rowcount != len(valid_geo_ids):
                 returned_geo_ids = {row._mapping["geoid"] for row in result}
                 raise ShowDataException(
@@ -1653,8 +2209,6 @@ def _download_specified_data(acs):
                         ",".join(set(valid_geo_ids) - returned_geo_ids),
                     )
                 )
-
-            # ^ leave here
 
             for row in result.fetchall():
                 row = dict(row._mapping)
@@ -1686,19 +2240,17 @@ def _download_specified_data(acs):
 
                 data[geoid] = data_for_geoid
 
-            # ^ data_prep_loop
-
             temp_path = tempfile.mkdtemp()
-            file_ident = f"{acs}_{next(iter(valid_table_ids))}_{next(iter(valid_geoids))}"
+            file_ident = "%s_%s_%s" % (
+                acs,
+                next(iter(valid_table_ids)),
+                next(iter(valid_geo_ids)),
+            )
             inner_path = os.path.join(temp_path, file_ident)
-            os.mkdir(inner_path)  # side effect
-
+            os.mkdir(inner_path)
             out_filename = os.path.join(
                 inner_path, "%s.%s" % (file_ident, request.qwargs.format)
             )
-
-            # ^ creating temp path
-
             format_info = supported_formats.get(request.qwargs.format)
             builder_func = format_info["function"]
             builder_func(
@@ -1711,8 +2263,6 @@ def _download_specified_data(acs):
                 request.qwargs.format,
                 logger=app.logger,
             )
-
-            # ^ applying builder_func
 
             metadata_dict = {
                 "release": {
@@ -1784,20 +2334,31 @@ def data_compare_geographies_within_parent(acs, table_id):
     comparison["child_geography_name_plural"] = SUMLEV_NAMES.get(
         child_summary_level, {}
     ).get("plural")
-    
-    result = check_table_requests(table_id, db)
 
-    match result:
-        case Success(rows):
-            table_metadata = rows.fetchall()
+    result = db.session.execute(
+        text(
+            """SELECT tab.table_id,
+                  tab.table_title,
+                  tab.universe,
+                  tab.denominator_column_id,
+                  col.column_id,
+                  col.column_title,
+                  col.indent
+           FROM census_column_metadata col
+           LEFT JOIN census_table_metadata tab USING (table_id)
+           WHERE table_id=:table_ids
+           ORDER BY column_id;"""
+        ),
+        {"table_ids": table_id},
+    )
+    table_metadata = result.fetchall()
 
-        case Failure(error):
-            if not table_metadata:
-                abort(
-                    404,
-                    "Table %s isn't available in the %s release."
-                    % (table_id.upper(), get_acs_name(acs)),
-                )
+    if not table_metadata:
+        abort(
+            404,
+            "Table %s isn't available in the %s release."
+            % (table_id.upper(), get_acs_name(acs)),
+        )
 
     validated_table_id = table_metadata[0]._mapping["table_id"]
 
@@ -1837,9 +2398,7 @@ def data_compare_geographies_within_parent(acs, table_id):
     comparison["parent_name"] = parent_geoheader._mapping["name"]
     comparison["parent_geoid"] = parent_geoid
 
-    child_geoheaders = get_child_geoids(
-        acs, parent_geoid, child_summary_level, db
-    )
+    child_geoheaders = get_child_geoids(acs, parent_geoid, child_summary_level)
 
     # start compiling child data for our response
     child_geoid_list = [

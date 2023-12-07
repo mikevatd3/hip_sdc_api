@@ -33,7 +33,7 @@ def grab_remaining_geoid_info(geoids: tuple[str, ...], db) -> Result:
 
 def check_table_requests(table_ids: tuple[str, ...], db) -> Result:
     try:
-        result = db.session.execute(
+        result = db.execute(
             text(
                 """SELECT tab.table_id,
                   tab.table_title,
@@ -50,7 +50,7 @@ def check_table_requests(table_ids: tuple[str, ...], db) -> Result:
             {"table_ids": table_ids},
         )
 
-        if result.count() == 0:
+        if result.rowcount == 0:
             return Failure("Query returned no results.")
 
         return Success(result)

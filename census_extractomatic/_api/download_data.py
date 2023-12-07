@@ -4,9 +4,10 @@ import zipfile
 import json
 import datetime
 
-from flask import send_file
+from flask import send_file, make_response, jsonify
 
-from .access import convert_row_to_dict
+from .access import convert_row_to_dict, pack_tables, convert_row_to_dict
+from .reference import ACS_NAMES
 
 
 def table_metadata_to_rows(table_metadata: dict):
@@ -132,16 +133,52 @@ def prepare_excel_response(
 
 
 def prepare_geojson_response(
+    acs,
+    table_metadata,
+    geo_metadata,
+    data,
+    properties_factory=lambda row, _: convert_row_to_dict(row),
+):
+
+    
+    result = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": json.loads(row.geom),  # where do we get this?
+                "properties": properties_factory(row, data),
+            }
+            for row in geo_metadata
+        ],
+        "metadata": {
+            "release": acs
+        }
+    }
+
+    if table_metadata is not None:
+        result["metadata"]["tables"] = table_metadata
+
+    return jsonify(result)
+
+
+def prepare_json_response(
     acs, table_metadata, geo_metadata, valid_geo_ids, data
 ):
     release = ACS_NAMES[acs].copy()
     release["id"] = acs
-    
+
+    def pack_geography(geoid, geo_obj):
+        if geo_obj is None:
+            return {"name": geoid}
+        return {"name": geo_obj["display_name"]}
 
     response = {
         "tables": table_metadata,
         "geography": {
-            geoid: geo_metadata.get(geoid, {"geoid": geoid})
+            geoid: pack_geography(
+                geoid, geo_metadata.get(geoid)
+            )  # geo_metadata.get(geoid, {"geoid": geoid})
             for geoid in valid_geo_ids
         },
         "release": release,
