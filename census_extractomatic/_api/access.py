@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from collections import namedtuple
 from itertools import groupby
 from textwrap import dedent
@@ -6,7 +6,6 @@ import logging
 import math
 import os
 
-from icecream import ic
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from returns.result import Result, Success, Failure
@@ -78,37 +77,62 @@ def check_table_requests(table_ids: tuple[str, ...], db) -> Result:
         return Failure(e)
 
 
-def group_tables(table_ids):
+def basic_col_builder(column):
+    return {
+        "column_title": column.column_title,
+        "indent": column.indent,
+        "parent_column_id": column.parent_column_id,
+    }
+
+
+def show_col_builder(column):
+    return {
+        "name": column.column_title,
+        "indent": column.indent,
+    }
+
+
+def group_tables(
+    table_rows, col_strategy=basic_col_builder, table_approach="full"
+):
     """
-    This trying to save this awkward groupby. This fix for this
-    loop with equivalent-name assignment might be a better query
-    in the first place.
+    For the table query that returns all the column rows, nest the
+    columns within the table.
     """
-    Table = namedtuple(
-        "Table", "table_id table_title universe denominator_column_id"
-    )
+
+    @dataclass(frozen=True, eq=True)
+    class Table:
+        table_id: str
+        table_title: str
+        simple_table_title: str
+        subject_area: str
+        universe: str
+        denominator_column_id: str
+        topics: list[str]
+
+        def to_dict(self, approach: str):
+            if approach == "short":
+                return {
+                    "denominator_column_id": self.denominator_column_id,
+                    "title": self.table_title,
+                    "universe": self.universe,
+                }
+
+            return asdict(self)
+
     valid_table_ids = []
     table_metadata = {}
     for table, columns in groupby(
-        table_ids,
+        table_rows,
         lambda x: Table(
-            x.table_id,
-            x.table_title,
-            x.universe,
-            x.denominator_column_id,
-        ),
+            *(getattr(x, field) for field in Table.__annotations__)
+        ),  # Pull all the same named fields from the sqlalch row
     ):
         valid_table_ids.append(table.table_id)
         table_metadata[table.table_id] = {
-            "title": table.table_title,
-            "universe": table.universe,
-            "denominator_column_id": table.denominator_column_id,
+            **table.to_dict(table_approach),
             "columns": {
-                column.column_id: {
-                    "name": column.column_title,
-                    "indent": column.indent,
-                }
-                for column in columns
+                column.column_id: col_strategy(column) for column in columns
             },
         }
 
@@ -127,7 +151,7 @@ def build_fetch_query(table_ids: list[str]):
 
     join_clause = "\n".join(
         [
-            "OUTER JOIN %s_moe USING (geoid)" % (table_id)
+            "FULL OUTER JOIN %s_moe USING (geoid)" % (table_id)
             for table_id in join_tables
         ]
     )
@@ -143,19 +167,21 @@ def build_fetch_query(table_ids: list[str]):
 
 
 def pack_tables(row):
-    variables = [col for col in row._fields if col not in {"index", "geoid"}]
+    fields = row._fields
+    row = list(row)  # keep the variables around
+    variables = [col for col in fields if col not in {"index", "geoid"}]
 
     result = {}
     for table, vars in groupby(variables, lambda col: col[:6]):
         result[table.upper()] = {
             "estimate": {
-                var.upper(): getattr(row, var)
-                for var in vars
-                if not var.endswith("_moe")
+                var.upper(): val
+                for var, val in zip(fields, row)
+                if not (var.endswith("_moe") | (var == "geoid"))
             },
             "error": {
-                var[:9].upper(): getattr(row, var)
-                for var in vars
+                var[:9].upper(): val
+                for var, val in zip(fields, row)
                 if var.endswith("_moe")
             },
         }
@@ -310,7 +336,7 @@ def get_geography_info(geoids, db, with_geom=False, fetchone=False):
                 """
             )
         ),
-        {"geoids": ic(tuple(geoids))},
+        {"geoids": tuple(geoids)},
     )
 
     if fetchone:
@@ -450,7 +476,7 @@ class ViewportLocation:
 
     @property
     def tiles_across(self):
-        return 2 ** self.zoom
+        return 2**self.zoom
 
     @property
     def lat_lon(self):
@@ -710,8 +736,7 @@ def get_child_geoids_by_coverage(parent_geoid, child_summary_level, db):
     return result
 
 
-def get_child_geoids_by_gis(parent_geoid, child_summary_level, db):
-    child_geoids = []
+def get_child_geoids_by_gis(child_summary_level, parent_geoid, db):
     result = db.execute(
         text(
             """
@@ -884,29 +909,6 @@ def get_data_fallback(
     return data, acs
 
 
-def wrap_up_columns(column_rows):
-    table_metadata = {}
-    valid_table_ids = []
-    for table, columns in groupby(
-        column_rows, lambda col: col["table_id"]
-    ):  # groupby table_id
-        valid_table_ids.append(ic(table)["table_id"])
-        table_metadata[table["table_id"]] = {
-            "title": table["table_title"],
-            "universe": table["universe"],
-            "denominator_column_id": table["denominator_column_id"],
-            "columns": {
-                column["column_id"]: {
-                    "name": column["column_title"],
-                    "indent": column["indent"],
-                }
-                for column in columns
-            },
-        }
-
-    return table_metadata, valid_table_ids
-
-
 def format_table_search_result(obj, include_columns, release):
     """internal util for formatting each object in `table_search` API response"""
 
@@ -948,6 +950,7 @@ def get_table_metadata(table_ids, release, db, include_columns=False):
         "SELECT tab.table_id",
         "       tab.table_title",
         "       tab.simple_table_title",
+        "       tab.subject_area",
         "       tab.universe",
         "       tab.denominator_column_id",
         "       tab.topics",
@@ -961,6 +964,7 @@ def get_table_metadata(table_ids, release, db, include_columns=False):
         select.extend(
             [
                 "         col.column_id",
+                "         col.parent_column_id",
                 "         col.column_title",
                 "         col.indent",
             ]

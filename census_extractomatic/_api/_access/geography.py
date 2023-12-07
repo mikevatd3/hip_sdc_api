@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import math
 from sqlalchemy import text
 
+from icecream import ic
 from pypika import Table, Query, CustomFunction, Parameter, Order
 from pypika_gis.spatialtypes import postgis as st
 from .ts_custom_functions import ts_indexed, prep_q_for_text_search
@@ -61,7 +62,7 @@ def get_geographies_with_ids(
     result = db.execute(
         text(stmt.get_sql()),
         {
-            "geoids": geoids,
+            "geoids": tuple(geoids),
             "limit": limit,
             "offset": offset,
             "sumlevs": sumlevs,
@@ -249,7 +250,7 @@ def get_neighboring_boundaries(sumlevel, loc: ViewportLocation, db):
 
 
 def get_details_for_geoids(geoids, db):
-    result = get_geographies_with_ids(geoids, db)
+    result = get_geographies_with_ids(geoids, db, limit=None)
     return {
         row.full_geoid: {
             "display_name": row.display_name,

@@ -60,7 +60,8 @@ login = LoginManager(app)
 from census_extractomatic.metadata_api.src import metadata_api
 from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
 
-app.register_blueprint(metadata_api, url_prefix="/metadata")
+# app.register_blueprint(metadata_api, url_prefix="/metadata")
+
 register_d3_metadata_admin(app)
 
 from census_extractomatic.auth import auth
@@ -1149,7 +1150,6 @@ def table_details_with_release(release, table_id):
         data["columns"] = OrderedDict(rows)
 
         result = json.dumps(data)
-
         resp = make_response(result)
 
         resp.headers.set("Content-Type", "application/json")
@@ -1265,9 +1265,9 @@ def show_specified_data(acs):
     # valid_geo_ids only contains geos for which we want data
     requested_geo_ids = request.qwargs.geo_ids
     try:
-        valid_geo_ids, child_parent_map = expand_geoids(
+        valid_geo_ids, child_parent_map = ic(expand_geoids(
             requested_geo_ids, release=acs, db=db
-        )
+        ))
     except ShowDataException as e:
         abort(400, str(e))
 

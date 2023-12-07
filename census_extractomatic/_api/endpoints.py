@@ -1,9 +1,15 @@
 import os
 import json
+import csv
+import io
+import zipfile
+import datetime
 
 from flask import Flask, jsonify, make_response, abort
-from flask import abort, request, g, current_app
+from flask import abort, request, g, current_app, send_file
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from raven.contrib.flask import Sentry
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from sqlalchemy import text
 from werkzeug.exceptions import HTTPException
@@ -28,7 +34,6 @@ from .access import (
     get_neighboring_boundaries,
     get_geography_info,
     get_parent_geoids,
-    get_details_for_geoids,
     convert_row_to_dict,
     get_table_metadata,
     group_tables,
@@ -38,8 +43,18 @@ from .access import (
     search_geos_by_point,
     search_geos_by_query,
     get_tabulation,
+    show_col_builder,
 )
+
+from .download_data import (
+    prepare_csv_response,
+    prepare_excel_response,
+    prepare_shape_response,
+    prepare_geojson_response,
+)
+
 from ._access.tables import search_tables
+from ._access.geography import get_details_for_geoids
 from .http_utils import crossdomain
 from .reference import (
     SUMLEV_NAMES,
@@ -48,6 +63,9 @@ from .reference import (
     default_table_search_release,
     supported_formats,
 )
+
+
+ic.configureOutput(includeContext=True)
 
 
 with open("config.toml", "rb") as f:
@@ -63,6 +81,23 @@ app.config.from_object(
 app.config["SECRET_KEY"] = config["sessions"]["secret_key"]
 
 db = SQLAlchemy(app)
+# login = LoginManager(app)
+
+# Set up metadata endpoint
+
+from census_extractomatic.metadata_api.src import metadata_api
+from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
+
+
+app.register_blueprint(metadata_api, url_prefix="/metadata")
+register_d3_metadata_admin(app)
+
+# from census_extractomatic.auth import auth
+
+# app.register_blueprint(auth, url_prefix="/auth")
+
+
+sentry = Sentry(app)
 
 
 @app.before_request
@@ -182,8 +217,11 @@ def geo_lookup(release, geoid):
         geom = json.loads(geom)
 
     result = json.dumps(
-        dict(type="Feature", properties=result, geometry=geom),
+        dict(
+            type="Feature", properties=result, geometry=geom
+        ),  # Hand-writing GeoJSON, nice
         separators=(",", ":"),
+        default=lambda x: str(x),
     )
 
     resp = make_response(result)
@@ -203,12 +241,13 @@ def geo_parent(release, geoid):
         tuple(level["geoid"] for level in levels), db.session
     )
 
-    result = json.dumps({
-        "parents": [
-            {**level, **ic(details).get(level["geoid"], {})}
-            for level in levels
-        ]
-    })
+    result = json.dumps(
+        {
+            "parents": [
+                {**level, **details.get(level["geoid"], {})} for level in levels
+            ]
+        }
+    )
 
     response = make_response(result)
     response.headers.set("Content-Type", "application/json")
@@ -264,7 +303,7 @@ def table_search():
 @crossdomain(origin="*")
 def table_ts():
     # Matching for table id
-    ic(request.qwargs.q)
+    request.qwargs.q
     if not (limit := request.qwargs.limit):
         limit = 5
 
@@ -329,14 +368,37 @@ def tabulation_details(tabulation_id):
 )
 @crossdomain(origin="*")
 def table_details(table_id):
-    result = get_table_metadata((table_id,), result.qwargs.acs, db.session)
-    row = result.fetchone()
+    db.session.execute(
+        text("SET search_path TO :acs, public;"), {"acs": request.qwargs.acs}
+    )
+
+    table_resp = get_table_metadata(
+        (table_id,), request.qwargs.acs, db.session, include_columns=True
+    )
+
+    _, wrapped_up = group_tables(table_resp)
+
+    response = json.dumps(wrapped_up[table_id])
+    resp = make_response(response)
+
+    resp.headers.set("Content-Type", "application/json")
+    resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
+
+    return resp
 
 
 @app.route("/2.0/table/<release>/<table_id>")
 @crossdomain(origin="*")
 def table_details_with_release(release, table_id):
-    pass
+    column_rows = get_table_metadata(
+        (table_id,), release, db.session, include_columns=True
+    )
+    _, tables = group_tables(column_rows)
+
+    try:
+        return jsonify(tables[table_id])
+    except KeyError:
+        abort(404, f"{table_id} isn't included in the {release} edition.")
 
 
 @app.route("/1.0/table/compare/rowcounts/<table_id>")
@@ -353,27 +415,16 @@ def table_geo_comparison_rowcount(table_id):
     pass
 
 
-@app.route("/1.0/data/show/<acs>")
-@qwarg_validate(
-    {
-        "table_ids": {"valid": StringList(), "required": True},
-        "geo_ids": {"valid": StringList(), "required": True},
-    }
-)
-@crossdomain(origin="*")
-def show_specified_data(acs):
+def data_pull(table_ids, geoids, acs, db):
     max_geoids = current_app.config.get("MAX_GEOIDS_TO_SHOW", 1000)
 
-    app.logger.debug(request.qwargs.table_ids)
-    app.logger.debug(request.qwargs.geo_ids)
-
     if acs not in ALLOWED_ACS:
-        abort(404, "The {acs} release isn't supported.")
+        abort(404, f"The {acs} release isn't supported.")
 
     # valid_geo_ids only contains geos for which we want data
     try:
         valid_geo_ids, child_parent_map = expand_geoids(
-            request.qwargs.geo_ids, release=acs, db=db.session
+            geoids, release=acs, db=db.session
         )
     except ShowDataException as e:
         abort(400, e)
@@ -381,8 +432,7 @@ def show_specified_data(acs):
     if not valid_geo_ids:
         abort(
             404,
-            "None of the geo_ids specified were valid: %s"
-            % ", ".join(request.qwargs.geo_ids),
+            f"None of the geo_ids specified were valid: {', '.join(geoids)}",
         )
 
     if (id_count := len(valid_geo_ids)) > max_geoids:
@@ -395,7 +445,8 @@ def show_specified_data(acs):
     # expand_geoids has validated parents of groups by getting children;
     # this will include those parent names in the reponse `geography` list
     # but leave them out of the response `data` list
-    grouped_geo_ids = [item for item in request.qwargs.geo_ids if "|" in item]
+
+    grouped_geo_ids = [item for item in geoids if "|" in item]
     parents_of_groups = set(
         [item_group.split("|")[1] for item_group in grouped_geo_ids]
     )
@@ -403,34 +454,85 @@ def show_specified_data(acs):
 
     # Fill in the display name for the geos
     try:
-        result = get_geography_info(named_geo_ids, db.session)
+        geo_metadata = get_details_for_geoids(named_geo_ids, db.session)
     except Exception as e:
-        print(e)
-        abort(400, f"There was an error processing your request.")
+        abort(400, f"There was an error processing your request: {e}.")
 
-    geo_metadata = {}
-    for row in result:
-        geo_metadata[row.full_geoid] = {
-            "name": row.display_name,
-        }
-        # let children know who their parents are to distinguish between
-        # groups at the same summary level
-        if row.full_geoid in child_parent_map:
-            geo_metadata[row.full_geoid]["parent_geoid"] = child_parent_map[
-                row.full_geoid
-            ]
+    # let children know who their parents are to distinguish between
+    # groups at the same summary level
 
-        db.session.execute(
-            text("SET search_path TO :acs, public;"), {"acs": acs}
-        )
+    """
+    if row.full_geoid in child_parent_map:
+        geo_metadata[row.full_geoid]["parent_geoid"] = child_parent_map[
+            row.full_geoid
+        ]
+    """
+
+    db.session.execute(text("SET search_path TO :acs, public;"), {"acs": acs})
 
     try:
-        columns = get_table_metadata(request.qwargs.table_ids, request.qwargs.acs, db.session, include_columns=True)
+        columns = get_table_metadata(
+            table_ids,
+            acs,
+            db.session,
+            include_columns=True,
+        )
     except (ProgrammingError, OperationalError) as e:
         raise e
 
-    valid_table_ids, table_metadata  = group_tables(columns)
-    result = fetch_data(valid_table_ids, valid_geo_ids, db.session)
+    # The kwargs for this function force the output to match the reference
+    valid_table_ids, table_metadata = group_tables(
+        columns, col_strategy=show_col_builder, table_approach="short"
+    )
+
+    return (
+        table_metadata,
+        geo_metadata,
+        valid_geo_ids,
+        fetch_data(valid_table_ids, valid_geo_ids, db.session),
+    )
+
+
+def prepare_geojson_response(
+    acs, table_metadata, geo_metadata, valid_geo_ids, data
+):
+    release = ACS_NAMES[acs].copy()
+    release["id"] = acs
+
+    response = {
+        "tables": table_metadata,
+        "geography": {
+            geoid: geo_metadata.get(geoid, {"geoid": geoid})
+            for geoid in valid_geo_ids
+        },
+        "release": release,
+        "data": {row.geoid: pack_tables(row) for row in data},
+    }
+
+    response = json.dumps(response)
+    resp = make_response(response)
+
+    resp.headers.set("Content-Type", "application/json")
+    resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
+
+    return resp
+
+
+@app.route("/1.0/data/show/<acs>")
+@qwarg_validate(
+    {
+        "table_ids": {"valid": StringList(), "required": True},
+        "geo_ids": {"valid": StringList(), "required": True},
+    }
+)
+@crossdomain(origin="*")
+def show_specified_data(acs):
+    app.logger.debug(request.qwargs.table_ids)
+    app.logger.debug(request.qwargs.geo_ids)
+
+    table_metadata, geo_metadata, valid_geo_ids, result = data_pull(
+        request.qwargs.table_ids, request.qwargs.geo_ids, acs, db
+    )
 
     match result:
         case Failure(e):
@@ -438,23 +540,10 @@ def show_specified_data(acs):
             abort(404, f"Unable to fetch data due to {e}")
 
         case Success(data):
-            release = ACS_NAMES[acs].copy()
-            release["id"] = acs
-
-            response = {
-                "tables": table_metadata,
-                "geography": {geoid: geo_metadata[geoid] for geoid in valid_geo_ids},
-                "release": release,
-                "data": {row.geoid: pack_tables(row) for row in data},
-            }
-
-            response = json.dumps(response)
-            resp = make_response(response)
-
-            resp.headers.set("Content-Type", "application/json")
-            resp.headers.set("Cache-Control", "public,max-age=86400")  # 1 day
-
-            return resp
+            response = prepare_geojson_response(
+                acs, table_metadata, geo_metadata, valid_geo_ids, data
+            )
+            return response
 
 
 @app.route("/1.0/data/download/<acs>")
@@ -466,8 +555,31 @@ def show_specified_data(acs):
     }
 )
 @crossdomain(origin="*")
-def download_specified_data(*args, **kwargs):
-    pass
+def download_specified_data(acs):
+    app.logger.debug(request.qwargs.table_ids)
+    app.logger.debug(request.qwargs.geo_ids)
+
+    format_strategies = {
+        "csv": prepare_csv_response,
+        "geojson": prepare_geojson_response,
+        "shape": prepare_shape_response,
+        "excel": prepare_excel_response,
+    }
+
+    table_metadata, geo_metadata, valid_geo_ids, result = data_pull(
+        request.qwargs.table_ids, request.qwargs.geo_ids, acs, db
+    )
+
+    match result:
+        case Failure(e):
+            abort(404, f"Unable to fetch data due to {type(e)}")
+
+        case Success(data):
+            response = format_strategies[request.qwargs.format](
+                acs, table_metadata, geo_metadata, valid_geo_ids, data
+            )
+
+            return response
 
 
 @app.route("/1.0/data/compare/<acs>/<table_id>")
