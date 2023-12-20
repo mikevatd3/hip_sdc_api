@@ -35,7 +35,7 @@ def table_metadata_to_rows(table_metadata: dict):
 
 def geo_metadata_to_rows(geo_metadata: dict):
     return [
-        (geo["geoid"], geo["display_name"], geo["sum_level"])
+        (geo["geoid"], geo["display_name"], geo["sumlevel"])
         for geo in geo_metadata.values()
     ]
 
@@ -133,6 +133,37 @@ def prepare_excel_response(
 
 
 def prepare_geojson_response(
+    acs,
+    table_metadata,
+    geo_metadata: dict[str,dict],
+    valid_geo_ids,
+    data: list,
+):
+    result = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": json.loads(geo_metadata[row.geoid].pop("geom")),  # nasty
+                "properties": {
+                    **geo_metadata[row.geoid],
+                    **convert_row_to_dict(row)
+                }
+            }
+            for row in data
+        ],
+        "metadata": {
+            "release": acs
+        }
+    }
+
+    if table_metadata is not None:
+        result["metadata"]["tables"] = table_metadata
+
+    return jsonify(result)
+
+
+def prepare_fake_geojson_response(
     acs,
     table_metadata,
     geo_metadata,

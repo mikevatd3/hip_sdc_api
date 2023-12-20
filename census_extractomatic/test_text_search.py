@@ -1,12 +1,13 @@
 import logging
 
 from census_extractomatic.metadata_api.connection import public_engine
-from ._api.access import search_geos_by_query, get_parent_geoids, get_details_for_geoids
+from ._api.access import get_parent_geoids, get_details_for_geoids
+from ._api._access.geography import search_geos_by_query
 
 logger = logging.getLogger()
 
 
-def test_search_geods_by_query():
+def __test_search_geods_by_query():
     with public_engine.connect() as db:
         result = search_geos_by_query("Detroit", db)
         assert result.fetchone().full_geoid == "06000US2616322000"

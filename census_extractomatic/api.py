@@ -42,7 +42,18 @@ from census_extractomatic.validation import (
 )
 import tomli
 
-from census_extractomatic.exporters import supported_formats
+from ._api.download_data import (
+    prepare_csv_response,
+    prepare_excel_response,
+    prepare_shape_response,
+    prepare_geojson_response,
+)
+
+from returns.result import Success, Failure
+
+from ._api.reference import supported_formats
+from ._api.endpoints import data_pull
+
 
 with open("config.toml", "rb") as f:
     config = tomli.load(f)
@@ -1996,6 +2007,8 @@ def show_specified_data(acs):
     abort(400, "Unspecified error.")
 
 
+# Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
+# Example: /1.0/data/download/latest?table_ids=B01001&geo_ids=160|04000US17,04000US56
 @app.route("/1.0/data/download/<acs>")
 @qwarg_validate(
     {
@@ -2006,300 +2019,30 @@ def show_specified_data(acs):
 )
 @crossdomain(origin="*")
 def download_specified_data(acs):
-    try:
-        valid_geoids = expand_geoids(
-            request.qwargs.geo_ids, release="acs2021_5yr"
-        )
+    app.logger.debug(request.qwargs.table_ids)
+    app.logger.debug(request.qwargs.geo_ids)
 
-    except ShowDataException as e:
-        abort(400, e.message)
-
-    if (num_geoids := len(valid_geoids)) > current_app.config.get(
-        "MAX_GEOIDS_TO_DOWNLOAD", 500
-    ):
-        abort(
-            400,
-            f"You requested {num_geoids} geoids which is beyond our limit of 500.",
-        )
-
-    try:
-        result = db.session.execute(
-            text(
-                """SELECT full_geoid,
-                      population,
-                      display_name
-               FROM tiger2021.census_name_lookup
-               WHERE full_geoid IN :geo_ids;"""
-            ),
-            {"geo_ids": tuple(valid_geo_ids)},
-        )
-
-    except Exception as e:
-        app.logger.error(f"The query is failing with error {e}.")
-        abort(400, "Query error on geography query.")
-
-
-# Example: /1.0/data/download/acs2012_5yr?format=shp&table_ids=B01001,B01003&geo_ids=04000US55,04000US56
-# Example: /1.0/data/download/latest?table_ids=B01001&geo_ids=160|04000US17,04000US56
-@app.route("/1.0/data/_download/<acs>")
-@qwarg_validate(
-    {
-        "table_ids": {"valid": StringList(), "required": True},
-        "geo_ids": {"valid": StringList(), "required": True},
-        "format": {"valid": OneOf(supported_formats), "required": True},
+    format_strategies = {
+        "csv": prepare_csv_response,
+        "geojson": prepare_geojson_response,
+        "shape": prepare_shape_response,
+        "excel": prepare_excel_response,
     }
-)
-@crossdomain(origin="*")
-def _download_specified_data(acs):
-    if acs in allowed_acs:
-        acs_to_try = [acs]
-        expand_geoids_with = acs
-    elif acs == "latest":
-        acs_to_try = allowed_acs[:3]  # The first three releases
-        expand_geoids_with = release_to_expand_with
-    else:
-        app.logger.error(f"ACS release {acs} isn't supported")
-        abort(404, "The %s release isn't supported." % get_acs_name(acs))
 
-    try:
-        valid_geo_ids, _ = expand_geoids(
-            request.qwargs.geo_ids, release=expand_geoids_with
-        )
-    except ShowDataException as e:
-        abort(400, e.message)
+    table_metadata, geo_metadata, valid_geo_ids, result = data_pull(
+        request.qwargs.table_ids, request.qwargs.geo_ids, acs, db
+    )
 
-    max_geoids = current_app.config.get("MAX_GEOIDS_TO_DOWNLOAD", 1000)
-    if len(valid_geo_ids) > max_geoids:
-        abort(
-            400,
-            "You requested %s geoids. The maximum is %s. Please contact us for bulk data."
-            % (len(valid_geo_ids), max_geoids),
-        )
+    match result:
+        case Failure(e):
+            abort(404, f"Unable to fetch data due to {type(e)}")
 
-    # Fill in the display name for the geos
-    try:
-        result = db.session.execute(
-            text(
-                """SELECT full_geoid,
-                      population,
-                      display_name
-               FROM tiger2021.census_name_lookup
-               WHERE full_geoid IN :geo_ids;"""
-            ),
-            {"geo_ids": tuple(valid_geo_ids)},
-        )
-
-    except Exception as e:
-        app.logger.error(f"The query is failing with error {e}.")
-        abort(400, "Query error on geography query.")
-
-    geo_metadata = OrderedDict()
-    try:
-        for geo in result:
-            geo_metadata[geo._mapping["full_geoid"]] = {
-                "name": geo._mapping["display_name"],
-            }
-
-    except KeyError as e:
-        app.logger.error(f"Uable to get key from geo call, {e}.")
-        abort(400, "Key error on geography query.")
-
-    for acs in acs_to_try:
-        try:
-            db.session.execute(
-                text("SET search_path TO :acs, public;"), {"acs": acs}
+        case Success(data):
+            response = format_strategies[request.qwargs.format](
+                acs, table_metadata, geo_metadata, valid_geo_ids, data
             )
 
-            # Check to make sure the tables requested are valid
-            result = db.session.execute(
-                text(
-                    """SELECT tab.table_id,
-                          tab.table_title,
-                          tab.universe,
-                          tab.denominator_column_id,
-                          col.column_id,
-                          col.column_title,
-                          col.indent
-                   FROM census_column_metadata col
-                   LEFT JOIN census_table_metadata tab USING (table_id)
-                   WHERE table_id IN :table_ids
-                   ORDER BY column_id;"""
-                ),
-                {"table_ids": tuple(request.qwargs.table_ids)},
-            )
-
-            valid_table_ids = []
-            table_metadata = OrderedDict()
-            for table, columns in groupby(
-                result,
-                lambda x: (
-                    x._mapping["table_id"],
-                    x._mapping["table_title"],
-                    x._mapping["universe"],
-                    x._mapping["denominator_column_id"],
-                ),
-            ):
-                valid_table_ids.append(table[0])
-                table_metadata[table[0]] = dict(
-                    [
-                        ("title", table[1]),
-                        ("universe", table[2]),
-                        ("denominator_column_id", table[3]),
-                        (
-                            "columns",
-                            dict(
-                                [
-                                    (
-                                        column._mapping["column_id"],
-                                        OrderedDict(
-                                            [
-                                                (
-                                                    "name",
-                                                    column._mapping[
-                                                        "column_title"
-                                                    ],
-                                                ),
-                                                (
-                                                    "indent",
-                                                    column._mapping["indent"],
-                                                ),
-                                            ]
-                                        ),
-                                    )
-                                    for column in columns
-                                ]
-                            ),
-                        ),
-                    ]
-                )
-
-            invalid_table_ids = set(request.qwargs.table_ids) - set(
-                valid_table_ids
-            )
-            if invalid_table_ids:
-                raise ShowDataException(
-                    "The %s release doesn't include table(s) %s."
-                    % (get_acs_name(acs), ",".join(invalid_table_ids))
-                )
-
-            # Now fetch the actual data
-            from_stmt = "%s_moe" % (valid_table_ids[0])
-            if len(valid_table_ids) > 1:
-                from_stmt += " "
-                from_stmt += " ".join(
-                    [
-                        "JOIN %s_moe USING (geoid)" % (table_id)
-                        for table_id in valid_table_ids[1:]
-                    ]
-                )
-
-            sql = text(
-                "SELECT * FROM %s WHERE geoid IN :geo_ids;" % (from_stmt,)
-            )
-
-            result = db.session.execute(sql, {"geo_ids": tuple(valid_geo_ids)})
-            data = OrderedDict()
-
-            if result.rowcount != len(valid_geo_ids):
-                returned_geo_ids = {row._mapping["geoid"] for row in result}
-                raise ShowDataException(
-                    "The %s release doesn't include GeoID(s) %s."
-                    % (
-                        get_acs_name(acs),
-                        ",".join(set(valid_geo_ids) - returned_geo_ids),
-                    )
-                )
-
-            for row in result.fetchall():
-                row = dict(row._mapping)
-                geoid = row.pop("geoid")
-                data_for_geoid = OrderedDict()
-
-                cols_iter = iter(sorted(row.items(), key=lambda tup: tup[0]))
-
-                for table_id, data_iter in groupby(
-                    cols_iter, lambda x: x[0][:-3].upper()
-                ):
-                    table_for_geoid = OrderedDict()
-                    table_for_geoid["estimate"] = OrderedDict()
-                    table_for_geoid["error"] = OrderedDict()
-
-                    data_iter = list(data_iter)
-
-                    # The variables and moes are arranged consecutively, so use zip
-                    # and slice notation to iterate over two cols at a time.
-                    for (col_name, value), (_, moe_value) in zip(
-                        data_iter[:-1:2], data_iter[1::2]
-                    ):
-                        col_name = col_name.upper()
-
-                        table_for_geoid["estimate"][col_name] = value
-                        table_for_geoid["error"][col_name] = moe_value
-
-                    data_for_geoid[table_id] = table_for_geoid
-
-                data[geoid] = data_for_geoid
-
-            temp_path = tempfile.mkdtemp()
-            file_ident = "%s_%s_%s" % (
-                acs,
-                next(iter(valid_table_ids)),
-                next(iter(valid_geo_ids)),
-            )
-            inner_path = os.path.join(temp_path, file_ident)
-            os.mkdir(inner_path)
-            out_filename = os.path.join(
-                inner_path, "%s.%s" % (file_ident, request.qwargs.format)
-            )
-            format_info = supported_formats.get(request.qwargs.format)
-            builder_func = format_info["function"]
-            builder_func(
-                app.config["SQLALCHEMY_DATABASE_URI"],
-                data,
-                table_metadata,
-                valid_geo_ids,
-                file_ident,
-                out_filename,
-                request.qwargs.format,
-                logger=app.logger,
-            )
-
-            metadata_dict = {
-                "release": {
-                    "id": acs,
-                    "years": ACS_NAMES[acs]["years"],
-                    "name": ACS_NAMES[acs]["name"],
-                },
-                "tables": table_metadata,
-            }
-            json.dump(
-                metadata_dict,
-                open(os.path.join(inner_path, "metadata.json"), "w"),
-                indent=4,
-            )
-
-            zfile_path = os.path.join(temp_path, file_ident + ".zip")
-            zfile = zipfile.ZipFile(zfile_path, "w", zipfile.ZIP_DEFLATED)
-            for root, dirs, files in os.walk(inner_path):
-                for f in files:
-                    zfile.write(
-                        os.path.join(root, f), os.path.join(file_ident, f)
-                    )
-            zfile.close()
-
-            resp = send_file(
-                zfile_path,
-                as_attachment=True,
-                download_name=file_ident + ".zip",
-            )
-
-            shutil.rmtree(temp_path)
-
-            return resp
-        except ShowDataException as e:
-            continue
-    abort(400, "Unspecified error.")
-
+            return response
 
 # Example: /1.0/data/compare/acs2012_5yr/B01001?sumlevel=050&within=04000US53
 @app.route("/1.0/data/compare/<acs>/<table_id>")

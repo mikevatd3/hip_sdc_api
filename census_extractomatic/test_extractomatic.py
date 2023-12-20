@@ -15,6 +15,7 @@ from .download_specified_data import (
     fetch_data,
     drop_whitespace,
 )
+from ._api.access import parse_table_name
 
 
 logger = logging.getLogger()
@@ -37,8 +38,12 @@ def MockSession():
         def __init__(self, items: list[Any]):
             self.items = items
 
-        def count(self):
+        @property
+        def rowcount(self):
             return len(self.items)
+
+        def count(self):
+            return self.rowcount
 
         def __iter__(self):
             return iter(self.items)
@@ -146,6 +151,37 @@ def MockSession():
                     fail_args={("FAIL_GEOID",)},
                     empty_args={("EMPTY_GEOID",)},
                 )
+            else:
+                self.session = self.Session(
+                    DBResult(
+                        [
+                            DataResult(
+                                "14000US26163511400",
+                                0,
+                                2,
+                                5,
+                                6,
+                            ),
+                            DataResult(
+                                "16000US2616322000",
+                                3,
+                                0,
+                                6,
+                                3,
+                            ),
+                            DataResult(
+                                "05000US26163",
+                                1,
+                                4,
+                                8,
+                                10,
+                            ),
+                        ]
+                    ),
+                    fail_args={("FAIL_GEOID",)},
+                    empty_args={("EMPTY_GEOID",)},
+                )
+                
 
     return MockDB
 
@@ -173,21 +209,21 @@ def test_grab_remianing_geoid_info_empty(MockSession):
 
 def test_check_table_requests_success(MockSession):
     db = MockSession("check_table_requests")
-    result = check_table_requests(("B01995",), db)
+    result = check_table_requests(("B01995",), db.session)
 
     assert isinstance(result, Success)
 
 
 def test_check_table_requests_failure(MockSession):
     db = MockSession("check_table_requests")
-    result = check_table_requests(("B01999",), db)
+    result = check_table_requests(("B01999",), db.session)
 
     assert isinstance(result, Failure)
 
 
 def test_check_table_requests_empty(MockSession):
     db = MockSession("check_table_requests")
-    result = check_table_requests(("B02000",), db)
+    result = check_table_requests(("B02000",), db.session)
 
     assert isinstance(result, Failure)
 
@@ -232,32 +268,42 @@ def test_fetch_build_data_sucess(MockSession):
     result = fetch_data(
         ("b01995", "b01979"),
         ("14000US26163511400", "16000US2616322000", "05000US26163"),
-        db
+        db,
     )
 
     assert isinstance(result, Success)
 
-    
+
 def test_fetch_data_failure(MockSession):
     db = MockSession("fetch_data")
-    result = fetch_data(
-        ("B01999",),
-        ("FAIL_GEOID",),
-        db
-    )
+    result = fetch_data(("B01999",), ("FAIL_GEOID",), db)
 
     assert isinstance(result, Failure)
 
 
 def test_fetch_data_empty(MockSession):
     db = MockSession("fetch_data")
-    result = fetch_data(
-        ("B02000",),
-        ("EMPTY_GEOID",),
-        db
-    )
+    result = fetch_data(("B02000",), ("EMPTY_GEOID",), db)
 
     assert isinstance(result, Failure)
+
+
+def test_parse_table_name_base():
+    result = parse_table_name("B01001001")
+
+    assert result == "B01001"
+
+
+def test_parse_table_name_racial_iterations():
+    result = parse_table_name("B01001A001")
+
+    assert result == "B01001A"
+
+
+def test_parse_table_name_c_tables():
+    result = parse_table_name("C01001A001")
+
+    assert result == "C01001A"
 
 
 def test_group_tables():
@@ -274,4 +320,3 @@ def test_data_prep_loop():
 
 def test_create_temp_file():
     pass
-

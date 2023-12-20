@@ -250,12 +250,13 @@ def get_neighboring_boundaries(sumlevel, loc: ViewportLocation, db):
 
 
 def get_details_for_geoids(geoids, db):
-    result = get_geographies_with_ids(geoids, db, limit=None)
+    result = get_geographies_with_ids(geoids, db, limit=None, with_geom=True)
     return {
         row.full_geoid: {
             "display_name": row.display_name,
-            "sum_level": row.sumlevel,
+            "sumlevel": row.sumlevel,
             "geoid": row.full_geoid,
+            "geom": row.geom,
         }
         for row in result
     }

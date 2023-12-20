@@ -2,11 +2,14 @@ from dataclasses import dataclass, asdict
 from collections import namedtuple
 from itertools import groupby
 from textwrap import dedent
+import json
 import logging
 import math
 import os
+import re
 
 from sqlalchemy import text
+from icecream import ic
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from returns.result import Result, Success, Failure
 
@@ -117,6 +120,14 @@ def group_tables(
                     "title": self.table_title,
                     "universe": self.universe,
                 }
+            if approach == "medium":
+                return {
+                    "denominator_column_id": self.denominator_column_id,
+                    "table_id": self.table_id,
+                    "table_name": self.table_title,
+                    "table_universe": self.universe,
+                }
+
 
             return asdict(self)
 
@@ -166,21 +177,31 @@ def build_fetch_query(table_ids: list[str]):
     )
 
 
-def pack_tables(row):
+
+def parse_table_name(column_name):
+    matcher = re.compile("([b|c|B|C][0-9]{5}[A-Za-z]?)")
+    try:
+        return matcher.match(column_name).groups()[0]
+    except AttributeError:
+        raise ValueError(f"{column_name} is an invalid census column name")
+
+
+
+def pack_tables(row, rename=dict()):
     fields = row._fields
     row = list(row)  # keep the variables around
     variables = [col for col in fields if col not in {"index", "geoid"}]
 
     result = {}
-    for table, vars in groupby(variables, lambda col: col[:6]):
+    for table, vars in groupby(variables, parse_table_name):
         result[table.upper()] = {
-            "estimate": {
+            rename.get("estimate", "estimate"): {
                 var.upper(): val
                 for var, val in zip(fields, row)
                 if not (var.endswith("_moe") | (var == "geoid"))
             },
-            "error": {
-                var[:9].upper(): val
+            rename.get("error", "error"): {
+                var[:-4].upper(): val
                 for var, val in zip(fields, row)
                 if var.endswith("_moe")
             },
@@ -195,7 +216,8 @@ def pack_tables(row):
 # 'data' -> geoid -> tableid -> variable -> estimate & error
 
 
-def fetch_data(table_ids, geoids, db):
+def fetch_data(table_ids, geoids, release, db):
+    db.execute(text("SET search_path TO :acs,public;"), {"acs": release})
     try:
         sql = text(build_fetch_query(table_ids))
         result = db.execute(sql, {"geoids": tuple(geoids)}).all()
@@ -332,15 +354,17 @@ def get_geography_info(geoids, db, with_geom=False, fetchone=False):
                 {select_compiled}
                 FROM tiger2021.census_name_lookup
                 WHERE full_geoid IN :geoids
-                LIMIT 1
                 """
             )
         ),
         {"geoids": tuple(geoids)},
     )
 
+    ic(result.rowcount)
+
     if fetchone:
         return result.fetchone()
+
     return result
 
 
@@ -736,7 +760,7 @@ def get_child_geoids_by_coverage(parent_geoid, child_summary_level, db):
     return result
 
 
-def get_child_geoids_by_gis(child_summary_level, parent_geoid, db):
+def get_child_geoids_by_gis(parent_geoid, child_summary_level, db):
     result = db.execute(
         text(
             """
@@ -1026,3 +1050,16 @@ def get_tabulation(tabulation_id, db):
         ),
         {"tabulation": tabulation_id},
     ).fetchone()
+
+
+def zip_data_with_geography(geo_metadata, geodata):
+    return {
+        row.full_geoid: {
+            **geodata[row.full_geoid],
+            "geography": {
+                "geometry": json.loads(row.geom),
+                "name": row.display_name,
+                "summary_level": row.sumlevel,
+            }
+        } for row in geo_metadata
+    }
