@@ -125,10 +125,10 @@ ACS_NAMES = {
 
 allowed_acs = list(ACS_NAMES.keys())
 
-release_to_expand_with = allowed_acs[1]
+release_to_expand_with = allowed_acs[0]
 # When table searches happen without a specified release, use this
 # release to do the table search.
-default_table_search_release = allowed_acs[1]
+default_table_search_release = allowed_acs[0]
 
 # Allowed TIGER releases in newest order
 allowed_tiger = [
@@ -1285,6 +1285,10 @@ def table_search():
 @app.route("/1.0/tabulation/<tabulation_id>")
 @crossdomain(origin="*")
 def tabulation_details(tabulation_id):
+    db.session.execute(
+        text("SET search_path TO :acs, public;"), {"acs": default_table_search_release}
+    )
+
     result = db.session.execute(
         text(
             """SELECT *
