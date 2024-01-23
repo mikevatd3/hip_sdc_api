@@ -1412,7 +1412,7 @@ def table_details_with_release(release, table_id):
     if release in allowed_acs:
         acs_to_try = [release]
     elif release == "latest":
-        acs_to_try = list(allowed_acs)
+        acs_to_try = ["acs2021_5yr"]
     else:
         abort(404, "The %s release isn't supported." % get_acs_name(release))
 
