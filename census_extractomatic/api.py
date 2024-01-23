@@ -103,23 +103,28 @@ except Exception as e:
     app.logger.warning("S3 Configuration failed.")
 
 
-# Allowed ACS's in "best" order (newest and smallest range preferred)
-allowed_acs = [
-    "d3_present",
-    "acs2021_5yr",
-    "acs2019_5yr",
-    "acs2018_5yr",
-    "acs2017_5yr",
-    "acs2016_5yr",
-    "acs2014_5yr",
-    "acs2013_5yr",
-    "acs2012_5yr",
-    "acs2011_5yr",
-    "d3_past",
-]
 # When expanding a container geoid shorthand (i.e. 140|05000US12127),
 # use this ACS. It should always be a 5yr release so as to include as
 # many geos as possible.
+
+ACS_NAMES = {
+    "acs2021_5yr": {"name": "ACS 2021 5-year", "years": "2017-2021"},
+    "acs2019_5yr": {"name": "ACS 2019 5-year", "years": "2015-2019"},
+    "acs2018_5yr": {"name": "ACS 2018 5-year", "years": "2014-2018"},
+    "acs2017_5yr": {"name": "ACS 2017 5-year", "years": "2013-2017"},
+    "acs2016_5yr": {"name": "ACS 2016 5-year", "years": "2012-2016"},
+    "acs2014_5yr": {"name": "ACS 2014 5-year", "years": "2010-2014"},
+    "acs2013_5yr": {"name": "ACS 2013 5-year", "years": "2009-2013"},
+    "acs2012_5yr": {"name": "ACS 2012 5-year", "years": "2008-2012"},
+    "acs2011_5yr": {"name": "ACS 2011 5-year", "years": "2007-2011"},
+    "d3_2024": {"name": "Data Driven Detroit", "years": "2023-2024"},
+    "d3_present": {"name": "Data Driven Detroit", "years": "2018-2021"},
+    "d3_2017": {"name": "Data Driven Detroit", "years": "2016-2017"},
+    "d3_past": {"name": "Data Driven Detroit", "years": "2015-2018"},
+}
+
+allowed_acs = list(ACS_NAMES.keys())
+
 release_to_expand_with = allowed_acs[1]
 # When table searches happen without a specified release, use this
 # release to do the table search.
@@ -132,19 +137,8 @@ allowed_tiger = [
 
 allowed_searches = ["table", "profile", "topic", "all"]
 
-ACS_NAMES = {
-    "acs2021_5yr": {"name": "ACS 2021 5-year", "years": "2017-2021"},
-    "acs2019_5yr": {"name": "ACS 2019 5-year", "years": "2015-2019"},
-    "acs2018_5yr": {"name": "ACS 2018 5-year", "years": "2014-2018"},
-    "acs2017_5yr": {"name": "ACS 2017 5-year", "years": "2013-2017"},
-    "acs2016_5yr": {"name": "ACS 2016 5-year", "years": "2012-2016"},
-    "acs2014_5yr": {"name": "ACS 2014 5-year", "years": "2010-2014"},
-    "acs2013_5yr": {"name": "ACS 2013 5-year", "years": "2009-2013"},
-    "acs2012_5yr": {"name": "ACS 2012 5-year", "years": "2008-2012"},
-    "acs2011_5yr": {"name": "ACS 2011 5-year", "years": "2007-2011"},
-    "d3_present": {"name": "Data Driven Detroit", "years": "2018-2021"},
-    "d3_past": {"name": "Data Driven Detroit", "years": "2015-2018"},
-}
+# Allowed ACS's in "best" order (newest and smallest range preferred)
+
 
 PARENT_CHILD_CONTAINMENT = {
     "040": [
