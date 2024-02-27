@@ -32,7 +32,7 @@ def safe_default(value):
             return None
         return value
 
-    except ValueError:
+    except (ValueError, TypeError):
         return value
 
 
