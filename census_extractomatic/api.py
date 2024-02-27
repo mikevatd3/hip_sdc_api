@@ -44,6 +44,8 @@ from ._api.download_data import (
     prepare_geojson_response,
 )
 
+from ._api.access import safe_default
+
 from returns.result import Success, Failure
 
 from ._api.reference import supported_formats
@@ -333,13 +335,6 @@ state_fips = {
     "78": "United States Virgin Islands",
 }
 
-
-
-def manage_census_nulls(value) -> float | None:
-    if value < -1000:
-        return None
-
-    return value
 
 
 def get_from_cache(cache_key, try_s3=True):
@@ -1985,8 +1980,8 @@ def show_specified_data(acs):
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
 
-                        table_for_geoid["estimate"][col_name] = manage_census_nulls(value)
-                        table_for_geoid["error"][col_name] = manage_census_nulls(moe_value)
+                        table_for_geoid["estimate"][col_name] = safe_default(value)
+                        table_for_geoid["error"][col_name] = safe_default(moe_value)
 
                     data_for_geoid[table_id] = table_for_geoid
 
