@@ -104,6 +104,7 @@ except Exception as e:
 
 
 ACS_NAMES = {
+    "acs2022_5yr": {"name": "ACS 2022 5-year", "years": "2018-2022"},
     "acs2021_5yr": {"name": "ACS 2021 5-year", "years": "2017-2021"},
     "acs2019_5yr": {"name": "ACS 2019 5-year", "years": "2015-2019"},
     "acs2018_5yr": {"name": "ACS 2018 5-year", "years": "2014-2018"},
@@ -128,6 +129,7 @@ default_table_search_release = allowed_acs[0]
 
 # Allowed TIGER releases in newest order
 allowed_tiger = [
+    "tiger2022",
     "tiger2021",
 ]
 
