@@ -1,7 +1,6 @@
 # For real division instead of sometimes-integer
 from __future__ import division
 
-from dataclasses import dataclass
 from flask import Flask
 from flask import abort, request, g
 from flask import make_response, current_app, send_file
@@ -17,14 +16,10 @@ import simplejson as json
 from collections import OrderedDict
 import operator
 import math
-from math import log10, log
 from datetime import timedelta
 import re
 import os
 import sys
-import shutil
-import tempfile
-import zipfile
 import pylibmc
 
 # import mockcache
@@ -106,6 +101,7 @@ except Exception as e:
 # When expanding a container geoid shorthand (i.e. 140|05000US12127),
 # use this ACS. It should always be a 5yr release so as to include as
 # many geos as possible.
+
 
 ACS_NAMES = {
     "acs2021_5yr": {"name": "ACS 2021 5-year", "years": "2017-2021"},
@@ -334,6 +330,14 @@ state_fips = {
     "72": "Puerto Rico",
     "78": "United States Virgin Islands",
 }
+
+
+
+def manage_census_nulls(value) -> float | None:
+    if value < -1000:
+        return None
+
+    return value
 
 
 def get_from_cache(cache_key, try_s3=True):
@@ -1124,6 +1128,12 @@ def geo_parent(release, geoid):
     return resp
 
 
+@app.route("/1.0/geo/custom/<release>")
+def show_custom_data(release):
+    pass
+
+
+
 # Example: /1.0/geo/show/tiger2014?geo_ids=04000US55,04000US56
 # Example: /1.0/geo/show/tiger2014?geo_ids=160|04000US17,04000US56
 @app.route("/1.0/geo/show/<release>")
@@ -1787,6 +1797,7 @@ class ShowDataException(Exception):
     pass
 
 
+
 # Example: /1.0/data/show/acs2012_5yr?table_ids=B01001,B01003&geo_ids=04000US55,04000US56
 # Example: /1.0/data/show/latest?table_ids=B01001&geo_ids=160|04000US17,04000US56
 @app.route("/1.0/data/show/<acs>")
@@ -1798,9 +1809,6 @@ class ShowDataException(Exception):
 )
 @crossdomain(origin="*")
 def show_specified_data(acs):
-    app.logger.debug(request.qwargs.table_ids)
-    app.logger.debug(request.qwargs.geo_ids)
-
     if acs in allowed_acs:
         acs_to_try = [acs]
         expand_geoids_with = acs
@@ -1877,7 +1885,7 @@ def show_specified_data(acs):
             try:
                 result = db.session.execute(
                     text(
-                        """SELECT tab.table_id,          -- 0
+                        """SELECT tab.table_id,           -- 0
                               tab.table_title,            -- 1
                               tab.universe,               -- 2
                               tab.denominator_column_id,  -- 3
@@ -1975,11 +1983,8 @@ def show_specified_data(acs):
                         col_name = col_name.upper()
                         (moe_name, moe_value) = next(cols_iter)
 
-                        if value is not None and moe_value is not None:
-                            this_geo_has_data = True
-
-                        table_for_geoid["estimate"][col_name] = value
-                        table_for_geoid["error"][col_name] = moe_value
+                        table_for_geoid["estimate"][col_name] = manage_census_nulls(value)
+                        table_for_geoid["error"][col_name] = manage_census_nulls(moe_value)
 
                     data_for_geoid[table_id] = table_for_geoid
 

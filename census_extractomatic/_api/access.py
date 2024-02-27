@@ -26,8 +26,15 @@ from .reference import (
 logger = logging.getLogger()
 
 
+def safe_default(value):
+    if value < -1000:
+        return None
+    return value
+
+
+
 def convert_row_to_dict(row):
-    return {col: getattr(row, col) for col in row._fields}
+    return {col: safe_default(getattr(row, col)) for col in row._fields}
 
 
 def grab_remaining_geoid_info(geoids: tuple[str, ...], db) -> Result:

@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import math
 from sqlalchemy import text
 
-from icecream import ic
 from pypika import Table, Query, CustomFunction, Parameter, Order
 from pypika_gis.spatialtypes import postgis as st
 from .ts_custom_functions import ts_indexed, prep_q_for_text_search
@@ -11,7 +10,7 @@ from .ts_custom_functions import ts_indexed, prep_q_for_text_search
 simplify = CustomFunction("ST_SimplifyPreserveTopology", ["geom", "threshold"])
 
 
-def make_geo_statement(
+def base_geo_statement(
     table,
     with_geom=False,
     sumlevs=None,
@@ -51,7 +50,7 @@ def get_geographies_with_ids(
     sumlevs=None,
 ):
     census_name_lookup = Table("census_name_lookup", schema=schema)
-    stmt = make_geo_statement(
+    stmt = base_geo_statement(
         census_name_lookup,
         with_geom=with_geom,
         sumlevs=sumlevs,
@@ -86,7 +85,7 @@ def search_geos_by_point(
     sumlevs: tuple[str, ...] | None = None,
 ):
     census_name_lookup = Table("census_name_lookup", schema=schema)
-    stmt = make_geo_statement(
+    stmt = base_geo_statement(
         census_name_lookup,
         with_geom=with_geom,
         sumlevs=sumlevs,
@@ -136,7 +135,7 @@ def search_geos_by_query(
     """
 
     census_name_lookup = Table("census_name_lookup", schema=schema)
-    stmt = make_geo_statement(
+    stmt = base_geo_statement(
         census_name_lookup,
         with_geom=with_geom,
         sumlevs=sumlevs,

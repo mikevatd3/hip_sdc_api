@@ -629,12 +629,14 @@ def show_specified_data(acs):
         fetch_data(request.qwargs.table_ids, all_geoids, acs, db.session)
     )
 
-    return jsonify({
-        "data": {},
-        "geography": {},
-        "release": {"id": acs, **ACS_NAMES[acs]},
-        "tables": {},
-    })
+    return jsonify(
+        {
+            "data": {},
+            "geography": {},
+            "release": {"id": acs, **ACS_NAMES[acs]},
+            "tables": {},
+        }
+    )
 
 
 @app.route("/1.0/data/download/<acs>")
@@ -714,7 +716,9 @@ def data_compare_geographies_within_parent(acs, table_id):
 
     children = get_geography_info(child_list, db.session, with_geom=True)
 
-    parent_result = fetch_data((table_id,), (parent.full_geoid,), acs, db.session)
+    parent_result = fetch_data(
+        (table_id,), (parent.full_geoid,), acs, db.session
+    )
 
     match parent_result:
         case Success(parent_data):
@@ -782,6 +786,12 @@ def data_compare_geographies_within_parent(acs, table_id):
         },
         child_geographies=zipped_children,
     )
+
+
+@app.route("/custom")
+def custom_calculation():
+    pass
+
 
 
 @app.route("/healthcheck")

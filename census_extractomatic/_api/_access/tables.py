@@ -1,7 +1,7 @@
 from itertools import groupby
 
 from sqlalchemy import text
-from pypika import Table, Query, Order
+from pypika import Table, Query, Order, Parameter
 
 from .ts_custom_functions import (
     ts_unindexed,
@@ -123,6 +123,7 @@ def get_table_metadata(table_ids, release, db, include_columns=False):
         )
         .from_(census_table_metadata)
         .orderby(census_table_metadata.table_id)
+        .where(census_column_metadata.table_id in Parameter(":table_ids"))
     )
 
     if include_columns:
