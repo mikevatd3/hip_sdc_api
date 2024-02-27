@@ -27,9 +27,13 @@ logger = logging.getLogger()
 
 
 def safe_default(value):
-    if value < -1000:
-        return None
-    return value
+    try:
+        if float(value) < -1000:
+            return None
+        return value
+
+    except ValueError:
+        return value
 
 
 
