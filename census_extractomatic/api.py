@@ -1644,7 +1644,7 @@ def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     )
     result = db.session.execute(
         text(
-            """SELECT geoid, name
+            """SELECT DISTINCT geoid, name
            FROM tiger2021.census_geo_containment, geoheader
            WHERE geoheader.geoid = census_geo_containment.child_geoid
              AND census_geo_containment.parent_geoid = :parent_geoid
@@ -1657,14 +1657,7 @@ def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
         },
     )
 
-    rowdicts = []
-    seen_geoids = set()
-    for row in result:
-        if not row["geoid"] in seen_geoids:
-            rowdicts.append(row)
-            seen_geoids.add(row["geoid"])
-
-    return rowdicts
+    return result
 
 
 def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
