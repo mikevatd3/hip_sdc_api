@@ -1,5 +1,6 @@
 ALLOWED_ACS = [
     "d3_present",
+    "acs2022_5yr",
     "acs2021_5yr",
     "acs2019_5yr",
     "acs2018_5yr",
