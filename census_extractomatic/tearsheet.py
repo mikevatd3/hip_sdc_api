@@ -3,7 +3,7 @@ from flask import render_template, request, jsonify, Blueprint
 from sqlalchemy import create_engine
 import tomli
 
-from access import Geography, Indicator, Tearsheet
+from .access import Geography, Indicator, Tearsheet
 
 
 tearsheet = Blueprint('tearsheet', __name__)

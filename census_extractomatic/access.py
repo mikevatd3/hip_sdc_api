@@ -5,7 +5,7 @@ from pypika import Query, Table, Column, Schema
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables
-from datatypes import Some, Empty, TearValue, serialize_maybes
+from .datatypes import Some, Empty, TearValue, serialize_maybes
 
 
 """
