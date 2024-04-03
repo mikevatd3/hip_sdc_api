@@ -20,7 +20,7 @@ public_engine = create_engine(connection_string)
 
 
 tiger_engine = create_engine(
-    connection_string, connect_args={"options": "-csearch_path=tiger2021"}
+    connection_string, connect_args={"options": "-csearch_path=tiger2021,public"}
 )
 
 metadata_engine = create_engine(
