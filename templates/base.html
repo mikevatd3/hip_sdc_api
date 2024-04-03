@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>tearsheet</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10" 
+        integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" 
+        crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
+    <style>
+        #top_bar {
+            margin: 1em;
+        }
+
+        #all_content {
+            padding-top: 1em;
+        }
+
+        .one_line_input {
+          display: flex;
+          gap: 1rem;
+          width: 100%;
+        }    
+
+        .one_line_input input {
+          flex-grow: 3;
+        }
+
+        .one_line_input button {
+          width: min-content;
+        }
+
+        .one_line_input select {
+          width: min-content;
+        }
+
+        .help_text {
+            font-size: larger;
+        }
+
+        .completion-popup {
+            position: absolute;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .completion-popup ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .completion-popup ul li {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .completion-popup ul li.highlighted {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+
+<body>
+    <nav id="top_bar">
+        {% include 'nav.html' %}
+    </nav>
+    <main id="all_content" class="container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+
+</html>

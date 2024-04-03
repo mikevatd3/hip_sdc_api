@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>Using <i>tearsheet!</i></h1>
+<article>
+    <p class="help_text">
+    <dfn>tearsheet!</dfn> is a tool for quickly grabbing datapoints from the American Community Survey 
+    or other datasets that Data Driven Detroit has compiled, aggregated to your chosen geographies. It
+    is optimized to make this basic task as straight forward as possible, but the tool provides you with a few
+    tricks.
+    </p>
+    
+    <h2>🌐 Specifying a geography</h2>
+    <h3>Basics</h3>
+    <p class="help_text">
+    Geographies can be any Census-style geography. Counties, county subdivisions, tracts, zip codes, are 
+    all available. Each of these will be identified by their geoid on a taresheet. If you don't know the
+    geoid off the top of your head, that's okay! If you type in the name of the geography you're looking for
+    you a menu of options will appear where you can choose.
+    </p>
+
+    <h3>Advanced</h3>
+    <p class="help_text">
+    Often, it's useful to select all of a smaller geography level falling within a larger 
+    geography. This can be done with a specification trick: use the '|' character.
+
+    
+    For example, say you want to get all the zip codes in Detroit, MI. You can do that by starting
+    your search with 'zips|' then searching for Detroit like normal. Once you've identified the Detroit
+    geoid, your final search term will look like this:
+    </p>
+    
+    <pre><code class="help_text">
+    zips|06000US2616322000
+    </code></pre>
+    <p class="help_text">
+    Then once you click the 'add', all Detroit zip codes will be added to your taresheet.
+    </p>
+    <h2>📊 Specifying an indicator</h2>
+    <h3>Basics</h3>
+    <p class="help_text">
+    Following the ACS, basic indicators are specified by their ACS variable name. Again, we don't expect
+    people to memorize these. Instead, try search terms to find the ACS table and variable that you'd like
+    and click 'add.'
+    </p>
+    <h3>Advanced</h3>
+    <h4>Aliasing</h4>
+    <p class="help_text">
+    We don't expect people to remember ACS variable names, and you shouldn't expect your colleagues to remember
+    them either. Aliasing is a way to help. To alias a variable, you can follow the same approach as you did with
+    the geography. Add the alias then a '|' then you can search for the variable that you're looking for. The final
+    spec will look like this:
+    </p>
+
+    <pre><code class="help_text">
+    total_pop|B01001001
+    </code></pre>
+
+    <p class="help_text">
+    Now on your final tearsheet, the indicator name will read total_pop and not the unreadable ACS table name (but now
+    you need a data dictionary? We have you covered!)
+    </p>
+
+    <h4>Crisp</h4>
+    <p class="help_text">
+    <dfn>Crisp</dfn> is a tiny version of Lisp that you can use to make custom indicators using ACS variables. We based
+    this on LISP (abbreviation of "list processing") because we found that often making custom ACS indicators, the formulas
+    end up being sums of lists of variables somtimes divided by sums of other lists. Lots of lists, so a lisp-like language
+    seemed appropriate. This version is stripped down to basics, only able to use ACS variable names as variables, along with 
+    numbers. The only operators that are available for Crisp are +, -, *, /, \<, \>, \<=, \>=. No other Lisp keywords are 
+    available.
+    </p>
+    <p class="help_text">
+    The syntax for writing custom variables is very simple. First, provide an alias. All Crisp-based indicators require one. Then, start your
+    custom indicator with an opening parenthesis '(', then one of the operators listed above. Then put any number of ACS variables separated by
+    spaces, then a closing parenthesis, ')'. The operator that you placed at the first will then be applied cumulatively to all variables.
+    </p>
+    <pre><code class="help_text">
+    pct_under_ten|(/ (+ B01001003 B01001004 B01001027 B01001028) B01001001)
+    </code></pre>
+</article>
+{% endblock %}
+

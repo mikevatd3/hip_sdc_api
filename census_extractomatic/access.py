@@ -142,14 +142,14 @@ class Indicator:
             )
 
         if specials:
-            tiger2022 = Schema("tiger2022")
+            tiger2021 = Schema("tiger2021")
             stmt = stmt.select(
                 *[
-                    tiger2022.census_name_lookup[cls.special_variables[var]] 
+                    tiger2021.census_name_lookup[cls.special_variables[var]] 
                     for var in specials
                 ]
-            ).join(tiger2022.census_name_lookup).on(
-                tiger2022.census_name_lookup.full_geoid == first_table.geoid
+            ).join(tiger2021.census_name_lookup).on(
+                tiger2021.census_name_lookup.full_geoid == first_table.geoid
             )
 
         stmt = (
@@ -235,7 +235,7 @@ class Geography:
                 f"'{sumlev}' is not a valid summary level or alias."
             )
 
-        geo_schema = Schema("tiger2022")
+        geo_schema = Schema("tiger2021")
 
         stmt = (
             Query.from_(geo_schema.census_geo_containment)
