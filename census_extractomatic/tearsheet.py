@@ -1,4 +1,4 @@
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 from flask import render_template, request, jsonify, Blueprint
 from sqlalchemy import create_engine
 import tomli
@@ -29,9 +29,9 @@ def index():
 
 @tearsheet.route("/sheet")
 def sheet():
-    geographies = request.args.get("geographies", "").split(",")
-    indicators = request.args.get("indicators", "").split(",")
-    release = request.args.get("release", "acs2022_5yr")
+    geographies = unquote(request.args.get("geographies", "")).split(",")
+    indicators = unquote(request.args.get("indicators", "")).split(",")
+    release = unquote(request.args.get("release", "acs2022_5yr"))
 
     with db_engine.connect() as db:
         tearsheet = Tearsheet.create(
@@ -49,9 +49,9 @@ def sheet():
 
 @tearsheet.route("/explain")
 def explain():
-    geographies = request.args.get("geographes", "").split(",")
-    indicators = request.args.get("indicators", "").split(",")
-    release = request.args.get("release", "acs2022_5yr")
+    geographies = unquote(request.args.get("geographes", "").split(","))
+    indicators = unquote(request.args.get("indicators", "").split(","))
+    release = unquote(request.args.get("release", "acs2022_5yr"))
 
     with db_engine.connect() as db:
         the_fineprint = Tearsheet.explain(
@@ -64,7 +64,7 @@ def explain():
 @tearsheet.route("/geosearch")
 def geo_search():
     with db_engine.connect() as db:
-        result = Geography.search(request.args.get("query", ""), db)
+        result = Geography.search(unquote(request.args.get("query", "")), db)
 
         return render_template("geo_results.html", result=result)
 
@@ -72,7 +72,7 @@ def geo_search():
 @tearsheet.route("/varsearch")
 def variable_search():
     with db_engine.connect() as db:
-        result = Indicator.search(request.args.get("query", ""), db)
+        result = Indicator.search(unquote(request.args.get("query", "")), db)
 
     return jsonify(result)
 
