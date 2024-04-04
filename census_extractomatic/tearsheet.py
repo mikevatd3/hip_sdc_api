@@ -43,7 +43,7 @@ def sheet():
         release = unquote(request.args.get("release", "acs2022_5yr"))
         html = request.args.get("html") == "yes"
     
-    url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}"
+    url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&html=yes"
 
     current_app.logger.warning(request.form if request.method == "POST" else request.args)
     
