@@ -893,7 +893,7 @@ def corral_geoid_strings(geoids):
 def expand_expandable_geoids(expandable_geoids, release, db):
     expanded_geoids = []
     child_parent_map = {}
-    for parent_geoid, child_sum_level in expandable_geoids:
+    for child_sum_level, parent_geoid in expandable_geoids:
         child_geoid_list = [
             child_geoid.geoid
             for child_geoid in get_child_geoids(
