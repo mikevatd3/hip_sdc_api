@@ -24,5 +24,8 @@
     </tbody>
 </table>
 </div>
-<div id="table_link" hx-swap-oob="true"><a href="{{ url }}">{{ url }}</a></div>
+<div id="table_link" hx-swap-oob="true">
+    <input type="text" value="{{ url }}" id="table_url" readonly>
+    <button onclick="copyLink()">Copy link for spreadsheet</button>
+</div>
 {% endblock %}
