@@ -9,14 +9,19 @@
     tricks.
     </p>
     
-    <h2>🌐 Specifying a geography</h2>
+    <h2>Specifying a geography</h2>
     <h3>Basics</h3>
     <p class="help_text">
     Geographies can be any Census-style geography. Counties, county subdivisions, tracts, zip codes, are 
-    all available. Each of these will be identified by their geoid on a taresheet. If you don't know the
-    geoid off the top of your head, that's okay! If you type in the name of the geography you're looking for
-    you a menu of options will appear where you can choose.
+    all available. Each of these will be identified by their geoid on a taresheet.
     </p>
+
+    <!--
+    <p>
+    If you don't know the geoid off the top of your head, that's okay! If you type in the name of the geography 
+    you're looking for you a menu of options will appear where you can choose.
+    </p>
+    -->
 
     <h3>Advanced</h3>
     <p class="help_text">
@@ -25,8 +30,8 @@
 
     
     For example, say you want to get all the zip codes in Detroit, MI. You can do that by starting
-    your search with 'zips|' then searching for Detroit like normal. Once you've identified the Detroit
-    geoid, your final search term will look like this:
+    your search with 'zips|' then add the for Detroit geoid like normal. Your final search term will 
+    look like this:
     </p>
     
     <pre><code class="help_text">
@@ -38,9 +43,7 @@
     <h2>📊 Specifying an indicator</h2>
     <h3>Basics</h3>
     <p class="help_text">
-    Following the ACS, basic indicators are specified by their ACS variable name. Again, we don't expect
-    people to memorize these. Instead, try search terms to find the ACS table and variable that you'd like
-    and click 'add.'
+    Following the ACS, basic indicators are specified by their ACS variable name. 
     </p>
     <h3>Advanced</h3>
     <h4>Aliasing</h4>
@@ -56,8 +59,7 @@
     </code></pre>
 
     <p class="help_text">
-    Now on your final tearsheet, the indicator name will read total_pop and not the unreadable ACS table name (but now
-    you need a data dictionary? We have you covered!)
+    Now on your final tearsheet, the indicator name will read total_pop and not the unreadable ACS table name. 
     </p>
 
     <h4>Crisp</h4>
