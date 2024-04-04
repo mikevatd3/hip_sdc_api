@@ -5,9 +5,10 @@
     <input name="geographies" placeholder="Enter geographies here"></input>
     <input name="indicators" placeholder="Enter indicators here"></input>
     <input name="html" type="hidden" value="yes"></input>
-    <button hx-target="#data_table"
-	    hx-swap="innerHTML"
-	    hx-select="results"
+    <button hx-include="closest div"
+	    hx-target="#data_table"
+	    hx-swap="outerHTML"
+	    hx-select="#data_table"
 	>Create tearsheet</button>
 </form>
 <div id="data_table"></div>
