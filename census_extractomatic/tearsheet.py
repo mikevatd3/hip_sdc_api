@@ -13,6 +13,9 @@ with open("config.toml", "rb") as f:
     conf = tomli.load(f)
 
 
+BASE_URL = "https://sdcapi.datadrivendetroit.org/tearsheet/sheet"
+
+
 HOST, DBNAME, USERNAME, PASSWORD, PORT = conf["db"].values()
 
 connection_string = (
@@ -39,6 +42,8 @@ def sheet():
         indicators = unquote(request.args.get("indicators", "")).split(",")
         release = unquote(request.args.get("release", "acs2022_5yr"))
         html = request.args.get("html") == "yes"
+    
+    url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}"
 
     current_app.logger.warning(request.form if request.method == "POST" else request.args)
     
@@ -51,14 +56,14 @@ def sheet():
         first, *rest = tearsheet
         headings = first.keys()
         values = [[item for item in row.values()] for row in [first] + rest]
-        return render_template("table.html", headings=headings, values=values)
+        return render_template("table.html", headings=headings, values=values, url=url)
 
     return jsonify(tearsheet)
 
 
 @tearsheet.route("/explain")
 def explain():
-    geographies = unquote(request.args.get("geographes", "").split(","))
+    geographies = unquote(request.args.get("geographies", "").split(","))
     indicators = unquote(request.args.get("indicators", "").split(","))
     release = unquote(request.args.get("release", "acs2022_5yr"))
 

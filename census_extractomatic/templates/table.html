@@ -2,6 +2,9 @@
 {% block content %}
 <div id="data_table">
 <table>
+    <caption>
+        Tearsheet! table
+    </caption>
     <thead>
         <tr>
             {% for heading in headings %}
@@ -21,4 +24,5 @@
     </tbody>
 </table>
 </div>
+<div id="table_link" hx-swap-oob="true"><a href="{{ url }}>url</a></div>
 {% endblock %}
