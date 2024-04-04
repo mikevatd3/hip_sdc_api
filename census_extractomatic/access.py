@@ -182,8 +182,15 @@ class Indicator:
             record["geoid"] = row["geoid"]
             record["name"] = row["name"]
             for formula in formulae:
-                record[formula[1]] = serialize_maybes(row[formula[1].lower()].value)
-                record[formula[1]+"_moe"] = serialize_maybes(row[formula[1].lower()].error)
+                try:
+                    record[formula[1]] = serialize_maybes(row[formula[1].lower()].value)
+                    record[formula[1]+"_moe"] = serialize_maybes(row[formula[1].lower()].error)
+                except AttributeError as e:
+                    if isinstance(row[formula[1].lower()], bool):
+                        record[formula[1]] = row[formula[1]]
+                    else:
+                        raise e
+
 
             result.append(record)
 

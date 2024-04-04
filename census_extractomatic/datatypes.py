@@ -412,7 +412,3 @@ class TearValue:  # (Real)
 
     def __str__(self) -> str:
         return f"{self.value.inner:.2f}±{self.error.inner:.2f}"
-
-
-def build_tearvalue(estimate, error):
-    pass

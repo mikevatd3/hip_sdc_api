@@ -1,5 +1,5 @@
 from urllib.parse import quote, unquote
-from flask import render_template, request, jsonify, Blueprint
+from flask import render_template, request, jsonify, Blueprint, current_app
 from sqlalchemy import create_engine
 import tomli
 
@@ -32,6 +32,8 @@ def sheet():
     geographies = unquote(request.args.get("geographies", "")).split(",")
     indicators = unquote(request.args.get("indicators", "")).split(",")
     release = unquote(request.args.get("release", "acs2022_5yr"))
+    current_app.logger.warning(request.args)
+    
 
     with db_engine.connect() as db:
         tearsheet = Tearsheet.create(
