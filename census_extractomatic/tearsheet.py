@@ -33,13 +33,13 @@ def index():
 @tearsheet.route("/sheet", methods=["GET", "POST"])
 def sheet():
     if request.method == "POST":
-        geographies = request.form.get("geographies", "").split(",")
-        indicators = request.form.get("indicators", "").split(",")
+        geographies = request.form.get("geographies", "").replace(", ", ",").split(",")
+        indicators = request.form.get("indicators", "").replace(", ", ",").split(",")
         release = request.form.get("release", "acs2022_5yr")
         html = request.form.get("html") == "yes"
     else:
-        geographies = unquote(request.args.get("geographies", "")).split(",")
-        indicators = unquote(request.args.get("indicators", "")).split(",")
+        geographies = unquote(request.args.get("geographies", "")).replace(", ", ",").split(",")
+        indicators = unquote(request.args.get("indicators", "")).replace(", ", ",").split(",")
         release = unquote(request.args.get("release", "acs2022_5yr"))
         html = request.args.get("html") == "yes"
     
