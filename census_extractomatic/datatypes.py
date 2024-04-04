@@ -302,12 +302,9 @@ class TearValue:  # (Real)
         try:
             return TearValue(
                 value=self.value + other.value,
-                error=sqrt(self.error**2 + other.error**2),
+                error=Some(sqrt(self.error.inner**2 + other.error.inner**2)),
             )
         except TypeError as e:
-            print(self)
-            print(other)
-
             raise e
 
     __radd__ = __add__
