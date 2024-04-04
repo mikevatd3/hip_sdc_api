@@ -504,6 +504,7 @@ def table_geo_comparison_rowcount(table_id):
 
 def data_pull(table_ids, geoids, acs, db):
     max_geoids = current_app.config.get("MAX_GEOIDS_TO_SHOW", 1000)
+    current_app.logger.warning(geoids)
 
     if acs not in ALLOWED_ACS:
         abort(404, f"The {acs} release isn't supported.")
