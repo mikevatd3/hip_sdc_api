@@ -27,20 +27,27 @@ def index():
     return render_template("index.html")
 
 
-@tearsheet.route("/sheet")
+@tearsheet.route("/sheet", methods=["GET", "POST"])
 def sheet():
-    geographies = unquote(request.args.get("geographies", "")).split(",")
-    indicators = unquote(request.args.get("indicators", "")).split(",")
-    release = unquote(request.args.get("release", "acs2022_5yr"))
-    current_app.logger.warning(request.args)
-    
+    if request.method == "POST":
+        geographies = request.form.get("geographies", "").split(",")
+        indicators = request.form.get("indicators", "").split(",")
+        release = request.form.get("release", "acs2022_5yr")
+        html = request.form.get("html") == "yes"
+    else:
+        geographies = unquote(request.args.get("geographies", "")).split(",")
+        indicators = unquote(request.args.get("indicators", "")).split(",")
+        release = unquote(request.args.get("release", "acs2022_5yr"))
+        html = request.args.get("html") == "yes"
 
+    current_app.logger.warning(request.form if request.method == "POST" else request.args)
+    
     with db_engine.connect() as db:
         tearsheet = Tearsheet.create(
             geographies, indicators, db, release=release
         )
 
-    if request.args.get("html") == "yes":
+    if html:
         first, *rest = tearsheet
         headings = first.keys()
         values = [[item for item in row.values()] for row in [first] + rest]
