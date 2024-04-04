@@ -513,6 +513,8 @@ def data_pull(table_ids, geoids, acs, db):
         valid_geo_ids, child_parent_map = expand_geoids(
             geoids, release=acs, db=db.session
         )
+        current_app.logger.warning(valid_geo_ids)
+
     except ShowDataException as e:
         abort(400, e)
 
