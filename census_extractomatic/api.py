@@ -2024,6 +2024,8 @@ def download_specified_data(acs):
         "excel": prepare_excel_response,
     }
 
+    current_app.logger.warning(request.qwargs.geo_ids)
+
     table_metadata, geo_metadata, valid_geo_ids, result = data_pull(
         request.qwargs.table_ids, request.qwargs.geo_ids, acs, db
     )

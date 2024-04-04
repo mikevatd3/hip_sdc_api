@@ -8,6 +8,8 @@ import math
 import os
 import re
 
+from flask import current_app
+
 from sqlalchemy import text
 from icecream import ic
 from sqlalchemy.exc import ProgrammingError, OperationalError
@@ -908,14 +910,21 @@ def expand_expandable_geoids(expandable_geoids, release, db):
 
 def expand_geoids(geoid_list: list[str], release: str, db):
     explicit_geoids, expandable_geoids = corral_geoid_strings(geoid_list)
+    
+    current_app.logger.warning(explicit_geoids)
+    current_app.logger.warning(expandable_geoids)
 
     expanded_geoids, child_parent_map = expand_expandable_geoids(
         expandable_geoids, release, db
     )
 
+    current_app.logger.warning(expanded_geoids)
+
     # Since the expanded geoids were sourced from the database they don't need to be checked
     valid_geo_ids = []
     valid_geo_ids.extend(expanded_geoids)
+    
+    current_app.logger.warning(valid_geo_ids)
 
     # Check to make sure the geo ids the user entered are valid
     if explicit_geoids:
