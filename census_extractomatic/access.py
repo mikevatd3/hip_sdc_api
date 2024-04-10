@@ -228,10 +228,11 @@ class Geography:
         "zips": "860",
         "tracts": "140",
         "cosubs": "060",
+        "places": "160",
         "counties": "050",
     }
 
-    valid_sum_levs = {"040", "050", "060", "140", "860"}
+    valid_sum_levs = {"040", "050", "060", "160", "140", "860"}
 
     @classmethod
     def find_within(cls, sumlev: str, geoid: str, db) -> list[str]:
