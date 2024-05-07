@@ -161,7 +161,7 @@ class Indicator:
             )
         )
 
-        db.execute(text("SET search_path TO :acs, public;"), {"acs": release})
+        db.execute(text("SET search_path TO :acs, d3_2024, d3_present, public;"), {"acs": release})
 
         return Indicator.wrap_values(
             pd.read_sql(text(str(stmt)), db), variables
