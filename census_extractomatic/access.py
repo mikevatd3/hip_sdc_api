@@ -99,13 +99,13 @@ class Indicator:
                     )
                 else:
                     value = row[var] 
-                    if value and (value > -1000):
+                    if (not value) or (value < -1000):
                         value = Empty()
                     else:
                         value = Some(value)
                     
                     error = row[var + "_moe"]                    
-                    if error and (error > 0):
+                    if (not error) or (error < 0):
                         error = Empty()
                     else:
                         error = Some(error)
