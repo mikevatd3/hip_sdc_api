@@ -305,8 +305,10 @@ class TearValue:  # (Real)
                 error=Some(sqrt(self.error.inner**2 + other.error.inner**2)),
             )
         except TypeError as e:
-            raise e
-
+            return TearValue(
+                value=self.value + other.value,
+                error=Empty()
+            )
     __radd__ = __add__
 
     def __ceil__(self) -> "TearValue":
