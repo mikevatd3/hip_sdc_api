@@ -1,12 +1,16 @@
 from urllib.parse import quote, unquote
 from flask import render_template, request, jsonify, Blueprint, current_app
+from flask_cors import CORS, cross_origin
 from sqlalchemy import create_engine
 import tomli
 
 from .access import Geography, Indicator, Tearsheet
 
 
+
 tearsheet = Blueprint('tearsheet', __name__)
+
+CORS(tearsheet)
 
 
 with open("config.toml", "rb") as f:
