@@ -2,17 +2,10 @@
 <details>
     <summary>{{ table.table_id}} - {{ table.table_title }}</summary>
     {% for variable in table.variables %}
-    <table>
-    <tr>
-        <td>
-            {{ variable.column_id }}
-        </td>
-        <td>
-            {{ variable.column_title }}
-        </td>
-    </tr>
-    </tr>
-    </table>
+    <ul>
+        <li>
+            {{ variable.column_id }} - {{ variable.column_title }}
+        </li>
     {% endfor %}
 </details>
 {% endfor %}
