@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from sqlalchemy import text
 import tomli
-from pypika import Query, Table, Column, Schema
+from pypika import Query, Table, Column, Schema, Parameter
 from pypika import functions as fn
 import pandas as pd
 from lesp.core import execute
@@ -228,7 +228,7 @@ class Indicator:
             )
             .join(cls.columns_meta)
             .on(cls.tables_meta.table_id == cls.columns_meta.table_id)
-            .where(fn.Lower(cls.tables_meta.table_title).like(":query"))
+            .where(fn.Lower(cls.tables_meta.table_title).like(Parameter(":query")))
             .limit(10)
         )
 
