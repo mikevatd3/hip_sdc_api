@@ -1,19 +1,16 @@
 <table>
-{% for row in result %}
-<tr>
-    <td>
-        {{ row.table_id }}
-    </td>
-    <td>
-        {{ row.table_title }}
-    </td>
-    <td>
-        {{ row.column_id }}
-    </td>
-    <td>
-        {{ row.column_title }}
-    </td>
-</tr>
-</tr>
-{% endfor %}
+{% for table in tables %}
+<details>
+    <summary>{{ table.table_id}} - {{ table.table_title }}</summary>
+    {% for variable in table.variables %}
+    <tr>
+        <td>
+            {{ variable.column_id }}
+        </td>
+        <td>
+            {{ variable.column_title }}
+        </td>
+    </tr>
+    </tr>
+    {% endfor %}
 </table>

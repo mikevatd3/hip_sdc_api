@@ -1,3 +1,4 @@
+from itertools import groupby
 from urllib.parse import quote, unquote
 from flask import render_template, request, jsonify, Blueprint, current_app
 from flask_cors import CORS, cross_origin
@@ -92,7 +93,17 @@ def variable_search():
     with db_engine.connect() as db:
         result = Indicator.search(unquote(request.args.get("query", "")), db)
 
-    return render_template("var_results.html", result=result)
+
+    tables = []
+
+    for table, variables in groupby(result, key=lambda row: (row.table_id, row.table_title)):
+        tables.append({
+            "table_id": table[0],
+            "table_title": table[1],
+            "variables": variables
+        })
+
+    return render_template("var_results.html", tables=tables)
 
 
 
