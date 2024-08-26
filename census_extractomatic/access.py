@@ -34,8 +34,8 @@ class Indicator:
         "geom": "geom",
     }
 
-    tables_meta = Table("census_table_metadata")
-    columns_meta = Table("census_column_metadata")
+    tables_meta = Table("acs2022_5yr.census_table_metadata")
+    columns_meta = Table("acs2022_5yr.census_column_metadata")
 
     @classmethod
     def prep_ind_request(
