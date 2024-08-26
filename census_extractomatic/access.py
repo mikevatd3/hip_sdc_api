@@ -232,12 +232,12 @@ class Indicator:
             )
             .join(cls.columns_meta)
             .on(cls.tables_meta.table_id == cls.columns_meta.table_id)
-            .where(fn.Lower(cls.tables_meta.table_title).like(Parameter(":query")))
+            .where(fn.Lower(cls.tables_meta.table_title).like(fn.Lower(Parameter(":query"))))
             .orderby(cls.tables_meta.table_id)
             .limit(10)
         )
 
-        result = db.execute(text(str(stmt)), {"query": query + "%"})
+        result = db.execute(text(str(stmt)), {"query": "%" + query + "%"})
 
         return result.fetchall()
 
