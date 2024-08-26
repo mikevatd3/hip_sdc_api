@@ -97,7 +97,7 @@ def variable_search():
 
 
 @tearsheet.route("/passthrough")
-def variable_search():
+def passthrough():
 
     query = request.args.get("query", "")
 
