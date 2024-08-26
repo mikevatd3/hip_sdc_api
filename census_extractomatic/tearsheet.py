@@ -92,7 +92,7 @@ def variable_search():
     with db_engine.connect() as db:
         result = Indicator.search(unquote(request.args.get("query", "")), db)
 
-    return jsonify(result)
+    return render_template("var_results.html", result=result)
 
 
 @tearsheet.route("/help")

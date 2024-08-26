@@ -2,6 +2,7 @@ from enum import Enum, auto
 from sqlalchemy import text
 import tomli
 from pypika import Query, Table, Column, Schema
+from pypika import functions as fn
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables
@@ -28,14 +29,18 @@ class IndFlag(Enum):
 
 class Indicator:
     special_variables = {
-        "land_area": "aland", 
+        "land_area": "aland",
         "water_area": "awater",
         "geom": "geom",
     }
 
+    tables_meta = Table("census_table_metadata")
+    columns_meta = Table("census_column_metadata")
+
     @classmethod
     def prep_ind_request(
-        cls, indicators: list[str],
+        cls,
+        indicators: list[str],
     ) -> tuple[list[tuple[IndFlag, str, str]], list[str]]:
         formulae = []
         result = []
@@ -44,7 +49,9 @@ class Indicator:
                 title, function = ind.split("|")
 
                 if title in cls.special_variables:
-                    raise ValueError(f"'{title}' is a reserved indicator name, choose something else.")
+                    raise ValueError(
+                        f"'{title}' is a reserved indicator name, choose something else."
+                    )
 
                 formulae.append((IndFlag.custom, title, function.lower()))
                 result.extend(
@@ -63,7 +70,6 @@ class Indicator:
         return {
             "apology": "It would be lovely if this feature were working, but it just isn't yet."
         }
-
 
     @staticmethod
     def run_formula(
@@ -94,17 +100,16 @@ class Indicator:
                 if var in cls.special_variables:
                     # Special variables don't have errors associated with them
                     wrapped_row[var] = TearValue(
-                        Some(row[cls.special_variables[var]]), 
-                        Some(0)
+                        Some(row[cls.special_variables[var]]), Some(0)
                     )
                 else:
-                    value = row[var] 
+                    value = row[var]
                     if (not value) or (value < -1000):
                         value = Empty()
                     else:
                         value = Some(value)
-                    
-                    error = row[var + "_moe"]                    
+
+                    error = row[var + "_moe"]
                     if (not error) or (error < 0):
                         error = Empty()
                     else:
@@ -120,7 +125,9 @@ class Indicator:
     def create_namespace(
         cls, prepared_geos: list[str], variables: list[str], db, release: str
     ):
-        tables = {var[:-3] for var in variables if var not in cls.special_variables}
+        tables = {
+            var[:-3] for var in variables if var not in cls.special_variables
+        }
         first_table = Table(tables.pop() + "_moe")
         geoheader = Table("geoheader")
 
@@ -139,29 +146,33 @@ class Indicator:
 
         for table in tables:
             table = Table(table.lower() + "_moe")
-            stmt = stmt.join(table).on(
-                table.geoid == first_table.geoid
-            )
+            stmt = stmt.join(table).on(table.geoid == first_table.geoid)
 
         if specials:
             tiger2021 = Schema("tiger2021")
-            stmt = stmt.select(
-                *[
-                    tiger2021.census_name_lookup[cls.special_variables[var]] 
-                    for var in specials
-                ]
-            ).join(tiger2021.census_name_lookup).on(
-                tiger2021.census_name_lookup.full_geoid == first_table.geoid
+            stmt = (
+                stmt.select(
+                    *[
+                        tiger2021.census_name_lookup[cls.special_variables[var]]
+                        for var in specials
+                    ]
+                )
+                .join(tiger2021.census_name_lookup)
+                .on(
+                    tiger2021.census_name_lookup.full_geoid == first_table.geoid
+                )
             )
 
         stmt = (
-            stmt.join(geoheader).on(first_table.geoid == geoheader.geoid)
-            .where(
-                first_table.geoid.isin(prepared_geos)
-            )
+            stmt.join(geoheader)
+            .on(first_table.geoid == geoheader.geoid)
+            .where(first_table.geoid.isin(prepared_geos))
         )
 
-        db.execute(text("SET search_path TO :acs, d3_2024, d3_present, public;"), {"acs": release})
+        db.execute(
+            text("SET search_path TO :acs, d3_2024, d3_present, public;"),
+            {"acs": release},
+        )
 
         return Indicator.wrap_values(
             pd.read_sql(text(str(stmt)), db), variables
@@ -174,10 +185,14 @@ class Indicator:
         )
 
         calculated_rows = pd.concat(
-            [namespace[["geoid", "name"]]] + [Indicator.run_formula(formula, namespace) for formula in formulae],
+            [namespace[["geoid", "name"]]]
+            + [
+                Indicator.run_formula(formula, namespace)
+                for formula in formulae
+            ],
             axis=1,
         )
-        
+
         result = []
         for row in calculated_rows.to_dict(orient="records"):
             record = {}
@@ -185,24 +200,41 @@ class Indicator:
             record["name"] = row["name"]
             for formula in formulae:
                 try:
-                    record[formula[1]] = serialize_maybes(row[formula[1].lower()].value)
-                    record[formula[1]+"_moe"] = serialize_maybes(row[formula[1].lower()].error)
+                    record[formula[1]] = serialize_maybes(
+                        row[formula[1].lower()].value
+                    )
+                    record[formula[1] + "_moe"] = serialize_maybes(
+                        row[formula[1].lower()].error
+                    )
                 except AttributeError as e:
                     if isinstance(row[formula[1].lower()], bool):
                         record[formula[1]] = row[formula[1]]
                     else:
                         raise e
 
-
             result.append(record)
 
         return result
-                
-    @staticmethod
-    def search(*args, **kwargs):
-        return {
-            "apology": "It would be lovely if this feature were working, but it just isn't yet."
-        }
+
+    @classmethod
+    def search(cls, query: str, db):
+        stmt = (
+            Query.from_(cls.tables_meta)
+            .select(
+                cls.tables_meta.table_id,
+                cls.tables_meta.table_title,
+                cls.columns_meta.column_id,
+                cls.columns_meta.column_title,
+            )
+            .join(cls.columns_meta)
+            .on(cls.tables_meta == cls.columns_meta)
+            .where(fn.Lower(cls.tables_meta.table_title).like(":query"))
+            .limit(10)
+        )
+
+        result = db.execute(stmt, {"query": query + "%"})
+
+        return result.fetchall()
 
 
 class Tearsheet:
@@ -289,4 +321,3 @@ class Geography:
         result = db.execute(stmt, {"query": " & ".join(query.split())})
 
         return result.fetchall()
-

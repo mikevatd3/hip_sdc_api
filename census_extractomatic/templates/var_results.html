@@ -1,0 +1,19 @@
+<table>
+{% for row in result %}
+<tr>
+    <td>
+        {{ row.table_id }}
+    </td>
+    <td>
+        {{ row.table_title }}
+    </td>
+    <td>
+        {{ row.column_id }}
+    </td>
+    <td>
+        {{ row.column_title }}
+    </td>
+</tr>
+</tr>
+{% endfor %}
+</table>
