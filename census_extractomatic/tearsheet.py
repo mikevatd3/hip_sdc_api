@@ -100,7 +100,12 @@ def variable_search():
         tables.append({
             "table_id": table[0],
             "table_title": table[1],
-            "variables": variables
+            "variables": [
+                {
+                    "column_id": variable[2],
+                    "column_title": variable[3],
+                } for variable in variables
+            ]
         })
 
     return render_template("var_results.html", tables=tables)
