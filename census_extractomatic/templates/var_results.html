@@ -1,8 +1,8 @@
-<table>
 {% for table in tables %}
 <details>
     <summary>{{ table.table_id}} - {{ table.table_title }}</summary>
     {% for variable in table.variables %}
+    <table>
     <tr>
         <td>
             {{ variable.column_id }}
@@ -12,5 +12,7 @@
         </td>
     </tr>
     </tr>
+    </table>
     {% endfor %}
-</table>
+</details>
+{% endfor %}
