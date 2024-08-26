@@ -34,8 +34,8 @@ class Indicator:
         "geom": "geom",
     }
 
-    tables_meta = Table("acs2022_5yr.census_table_metadata")
-    columns_meta = Table("acs2022_5yr.census_column_metadata")
+    tables_meta = Table("census_table_metadata")
+    columns_meta = Table("census_column_metadata")
 
     @classmethod
     def prep_ind_request(
@@ -217,7 +217,11 @@ class Indicator:
         return result
 
     @classmethod
-    def search(cls, query: str, db):
+    def search(cls, query: str, db, release="acs2022_5yr"):
+        db.execute(
+            text("SET search_path TO :acs, d3_2024, d3_present, public;"),
+            {"acs": release},
+        )
         stmt = (
             Query.from_(cls.tables_meta)
             .select(
