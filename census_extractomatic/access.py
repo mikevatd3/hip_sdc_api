@@ -232,7 +232,7 @@ class Indicator:
             .limit(10)
         )
 
-        result = db.execute(stmt, {"query": query + "%"})
+        result = db.execute(text(str(stmt)), {"query": query + "%"})
 
         return result.fetchall()
 
