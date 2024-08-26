@@ -95,6 +95,19 @@ def variable_search():
     return render_template("var_results.html", result=result)
 
 
+
+@tearsheet.route("/passthrough")
+def variable_search():
+
+    query = request.args.get("query", "")
+
+    return f"""
+    <h3>The query you sent was {query}</h3>
+    """
+    # return render_template("var_results.html", result=result)
+
+
+
 @tearsheet.route("/help")
 def help():
     return render_template("help.html")
