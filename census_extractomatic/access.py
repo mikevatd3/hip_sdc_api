@@ -234,7 +234,7 @@ class Indicator:
             .on(cls.tables_meta.table_id == cls.columns_meta.table_id)
             .where(fn.Lower(cls.tables_meta.table_title).like(fn.Lower(Parameter(":query"))))
             .orderby(cls.tables_meta.table_id)
-            .limit(10)
+            .limit(75)
         )
 
         result = db.execute(text(str(stmt)), {"query": "%" + query + "%"})
