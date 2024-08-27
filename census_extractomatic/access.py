@@ -34,8 +34,8 @@ class Indicator:
         "geom": "geom",
     }
 
-    tables_meta = Table("census_table_metadata")
-    columns_meta = Table("census_column_metadata")
+    acs_schema = Schema("acs2022_5yr")
+    d3_schema = Schema("d3_2024")
 
     @classmethod
     def prep_ind_request(
@@ -226,31 +226,51 @@ class Indicator:
         # TODO: Get the first five tables, then join all variables
         # Use more complete text search
         # Add D3 tables
-        #    - Use table title, 
-        
-        table_query = (
-            Query.from_(cls.tables_meta)
-            .select(cls.tables_meta.table_id)
-            .where(fn.Lower(cls.tables_meta.table_title).like(fn.Lower(Parameter(":query"))))
+        #    - Use table title,
+
+
+        unified_table_q = (
+            Query.from_(cls.acs_schema.census_table_metadata)
+            .union(cls.d3_schema.census_table_metadata)
+        )
+
+        unified_col_q = (
+            Query.from_(cls.acs_schema.census_column_metadata)
+            .union(cls.d3_schema.census_column_metadata)
+        )
+
+        unified_tables = AliasedQuery("unified_tables")
+        unified_columns = AliasedQuery("unified_columns")
+
+        match_tables = (
+            Query
+            .with_(unified_table_q, "unified_tables")
+            .from_(unified_tables)
+            .select(unified_tables.table_id)
+            .union(cls.d3_schema.census_table_metadata)
+            .where(fn.Lower(unified_tables.table_title).like(fn.Lower(Parameter(":query"))))
             .limit(10)
             .offset(0)
         )
 
         stmt = (
-            Query.from_(cls.tables_meta)
-            .with_(table_query, "match_tables")
+            Query
+            .with_(match_tables, "match_tables")
+            .with_(unified_table_q, "unified_tables")
+            .with_(unified_col_q, "unified_columns")
+            .from_(unified_tables)
             .select(
-                cls.tables_meta.table_id,
-                cls.tables_meta.table_title,
-                cls.columns_meta.column_id,
-                cls.columns_meta.column_title,
-                cls.columns_meta.indent, # use this to indent the variables
+                unified_tables.table_id,
+                unified_tables.table_title,
+                unified_columns.column_id,
+                unified_columns.column_title,
+                unified_columns.indent, # use this to indent the variables
             )
-            .join(cls.columns_meta)
-            .on(cls.tables_meta.table_id == cls.columns_meta.table_id)
+            .join(unified_columns)
+            .on(unified_tables.table_id == unified_columns.table_id)
             .join(AliasedQuery("match_tables"))
-            .on(AliasedQuery("match_tables").table_id == cls.tables_meta.table_id)
-            .orderby(cls.tables_meta.table_id, cls.columns_meta.column_id)
+            .on(AliasedQuery("match_tables").table_id == unified_tables.table_id)
+            .orderby(unified_tables.table_id, unified_columns.column_id)
         )
 
         result = db.execute(text(str(stmt)), {"query": "%" + query + "%"})
