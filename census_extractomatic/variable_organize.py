@@ -4,9 +4,9 @@ def arrange_variable_hierarchy(data):
 
     for item in data:
         current_node = {
-            "column_id": item.column_id,
-            "column_title": item.column_title,
-            "indent": item.indent,
+            "column_id": item[2],
+            "column_title": item[3],
+            "indent": item[4],
             "children": []
         }
 
