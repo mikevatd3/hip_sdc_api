@@ -77,11 +77,11 @@ SUMLEV_NAMES = {
         "plural": "census tracts",
         "tiger_table": "tract",
     },
-    "150": {
-        "name": "block group",
-        "plural": "block groups",
-        "tiger_table": "bg",
-    },
+    # "150": {
+    #    "name": "block group",
+    #    "plural": "block groups",
+    #    "tiger_table": "bg",
+    # },
     "160": {"name": "place", "plural": "places", "tiger_table": "place"},
     "170": {
         "name": "consolidated city",
