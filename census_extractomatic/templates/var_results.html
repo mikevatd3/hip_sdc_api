@@ -4,7 +4,7 @@
     <ul>
     {%- for variable in table.variables recursive %}
         <li>
-        { variable.column_id }} - {{ variable.column_title }}
+        {{ variable.column_id }} - {{ variable.column_title }}
         {%- if variable.children %}
             <ul>{{ loop(variable.children) }}</ul>
             {%- endif %}
