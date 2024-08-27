@@ -889,10 +889,22 @@ def geo_search():
         abort(400, "Must provide either a lat/lon OR a query term.")
 
     where += " AND lower(display_name) not like '%%not defined%%' "
+    where += " AND sumlevel IN :sumlevs"
 
     if sumlevs:
-        where += " AND sumlevel IN :sumlevs"
         where_args["sumlevs"] = tuple(sumlevs)
+    else:
+        where_args["sumlevs"] = [
+            "140",
+            "060",
+            "310",
+            "330",
+            "350",
+            "860",
+            "950",
+            "960",
+            "970",
+        ]
 
     if with_geom:
         sql = text(
