@@ -95,14 +95,25 @@ def variable_search():
     with db_engine.connect() as db:
         result = Indicator.search(unquote(request.args.get("query", "")), db)
 
-
     tables = []
 
     for table, variables in groupby(result, key=lambda row: (row.table_id, row.table_title)):
+
+        try:
+            prepped_variables = arrange_variable_hierarchy(variables)
+        except TypeError:
+            prepped_variables = [
+                {
+                    "column_id": "ERROR",
+                    "column_title": "This table doesn't have indentation information on sdcapi.datadrivendetroit.org/admin."
+                    "children": []
+                }
+            ]
+
         tables.append({
             "table_id": table[0],
             "table_title": table[1],
-            "variables": arrange_variable_hierarchy(variables)       
+            "variables": prepped_variables
         })
 
     return render_template("var_results.html", tables=tables)

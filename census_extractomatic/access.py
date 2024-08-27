@@ -216,7 +216,6 @@ class Indicator:
 
         return result
 
-
     @classmethod
     def search(cls, query: str, db):
         # db.execute(
@@ -247,7 +246,7 @@ class Indicator:
             Query.with_(unified_table_q, "unified_tables")
             .from_(unified_tables)
             .select(unified_tables.table_id)
-            .where(fn.Lower(unified_tables.table_title).like(fn.Lower(Parameter(":query"))))
+            .where(fn.Lower(unified_tables.table_title).like(Parameter(":query")))
             .limit(10)
             .offset(0)
         )
