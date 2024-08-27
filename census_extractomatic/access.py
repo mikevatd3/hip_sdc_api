@@ -238,7 +238,7 @@ class Indicator:
 
         stmt = (
             Query.from_(cls.tables_meta)
-            .with(table_query, "match_tables")
+            .with_(table_query, "match_tables")
             .select(
                 cls.tables_meta.table_id,
                 cls.tables_meta.table_title,
