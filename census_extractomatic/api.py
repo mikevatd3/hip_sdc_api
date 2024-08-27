@@ -894,7 +894,7 @@ def geo_search():
     if sumlevs:
         where_args["sumlevs"] = tuple(sumlevs)
     else:
-        where_args["sumlevs"] = [
+        where_args["sumlevs"] = (
             "140",
             "060",
             "310",
@@ -904,7 +904,7 @@ def geo_search():
             "950",
             "960",
             "970",
-        ]
+        )
 
     if with_geom:
         sql = text(
