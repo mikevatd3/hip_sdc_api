@@ -1,7 +1,7 @@
 from enum import Enum, auto
 from sqlalchemy import text
 import tomli
-from pypika import Query, Table, Column, Schema, Parameter
+from pypika import Query, Table, Column, Schema, Parameter, AliasedQuery
 from pypika import functions as fn
 import pandas as pd
 from lesp.core import execute
@@ -222,19 +222,35 @@ class Indicator:
             text("SET search_path TO :acs, d3_2024, d3_present, public;"),
             {"acs": release},
         )
+
+        # TODO: Get the first five tables, then join all variables
+        # Use more complete text search
+        # Add D3 tables
+        #    - Use table title, 
+        
+        table_query = (
+            Query.from_(cls.tables_meta)
+            .select(cls.tables_meta.table_id)
+            .where(fn.Lower(cls.tables_meta.table_title).like(fn.Lower(Parameter(":query"))))
+            .limit(10)
+            .offset(0)
+        )
+
         stmt = (
             Query.from_(cls.tables_meta)
+            .with(table_query, "match_tables")
             .select(
                 cls.tables_meta.table_id,
                 cls.tables_meta.table_title,
                 cls.columns_meta.column_id,
                 cls.columns_meta.column_title,
+                cls.columns_meta.indent, # use this to indent the variables
             )
             .join(cls.columns_meta)
             .on(cls.tables_meta.table_id == cls.columns_meta.table_id)
-            .where(fn.Lower(cls.tables_meta.table_title).like(fn.Lower(Parameter(":query"))))
-            .orderby(cls.tables_meta.table_id)
-            .limit(75)
+            .join(AliasedQuery("match_tables"))
+            .on(AliasedQuery("match_tables").table_id == cls.tables_meta.table_id)
+            .orderby(cls.tables_meta.table_id, cls.columns_meta.variable_id)
         )
 
         result = db.execute(text(str(stmt)), {"query": "%" + query + "%"})
