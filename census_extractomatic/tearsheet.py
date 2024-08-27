@@ -104,6 +104,7 @@ def variable_search():
                 {
                     "column_id": variable[2],
                     "column_title": variable[3],
+                    "indent": variable[4],
                 } for variable in variables
             ]
         })
