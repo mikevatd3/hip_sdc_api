@@ -4,7 +4,7 @@
     <ul>
     {% for variable in table.variables %}
         <li>
-            <span>{{ "    " * variable.indent }}{% for i %}{{ variable.column_id }} - {{ variable.column_title }}</span>
+            <span>{{ "    " * variable.indent }}{{ variable.column_id }} - {{ variable.column_title }}</span>
         </li>
     {% endfor %}
     </ul>
