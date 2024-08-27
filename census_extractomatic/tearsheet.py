@@ -5,6 +5,7 @@ from flask_cors import CORS, cross_origin
 from sqlalchemy import create_engine
 import tomli
 
+from .variable_organize import arrange_variable_hierarchy
 from .access import Geography, Indicator, Tearsheet
 
 
@@ -88,6 +89,7 @@ def geo_search():
         return render_template("geo_results.html", result=result)
 
 
+
 @tearsheet.route("/varsearch")
 def variable_search():
     with db_engine.connect() as db:
@@ -100,13 +102,7 @@ def variable_search():
         tables.append({
             "table_id": table[0],
             "table_title": table[1],
-            "variables": [
-                {
-                    "column_id": variable[2],
-                    "column_title": variable[3],
-                    "indent": variable[4],
-                } for variable in variables
-            ]
+            "variables": arrange_variable_hierarchy(variables)       
         })
 
     return render_template("var_results.html", tables=tables)

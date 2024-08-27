@@ -2,9 +2,12 @@
 <details>
     <summary>{{ table.table_id}} - {{ table.table_title }}</summary>
     <ul>
-    {% for variable in table.variables %}
+    {%- for variable in table.variables recursive %}
         <li>
-            <span>{{ "    " * variable.indent }}{{ variable.column_id }} - {{ variable.column_title }}</span>
+        { variable.column_id }} - {{ variable.column_title }}
+        {%- if item.children %}
+            <ul>{{ loop(item.children) }}</ul>
+            {%- endif %}
         </li>
     {% endfor %}
     </ul>
