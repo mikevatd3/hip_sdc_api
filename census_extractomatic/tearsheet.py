@@ -105,7 +105,7 @@ def variable_search():
             prepped_variables = [
                 {
                     "column_id": "ERROR",
-                    "column_title": "This table doesn't have indentation information on sdcapi.datadrivendetroit.org/admin."
+                    "column_title": "This table doesn't have indentation information on sdcapi.datadrivendetroit.org/admin.",
                     "children": []
                 }
             ]
