@@ -10,7 +10,7 @@ def arrange_variable_hierarchy(data):
             "children": []
         }
 
-        while stack and stack[-1]["indent"] >= item["indent"]:
+        while stack and stack[-1]["indent"] >= item[4]:
             stack.pop()
 
         if stack:
@@ -19,6 +19,6 @@ def arrange_variable_hierarchy(data):
         else:
             result.append(current_node)
 
-        stack.append({"indent": item["indent"], "node": current_node})
+        stack.append({"indent": item[4], "node": current_node})
 
     return result
