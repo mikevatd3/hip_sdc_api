@@ -876,7 +876,7 @@ def geo_search():
     sumlevs = request.qwargs.sumlevs
     with_geom = request.qwargs.geom
     
-    app.logger.info(sumlevs)
+    app.logger.warning(sumlevs)
 
     if lat and lon:
         where = "ST_Intersects(geom, ST_SetSRID(ST_Point(:lon, :lat),4326))"
