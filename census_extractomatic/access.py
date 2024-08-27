@@ -216,38 +216,37 @@ class Indicator:
 
         return result
 
+
     @classmethod
-    def search(cls, query: str, db, release="acs2022_5yr"):
-        db.execute(
-            text("SET search_path TO :acs, d3_2024, d3_present, public;"),
-            {"acs": release},
-        )
+    def search(cls, query: str, db):
+        # db.execute(
+        # text("SET search_path TO :acs, d3_2024, d3_present, public;"),
+        # {"acs": release},
+        # )
 
         # TODO: Get the first five tables, then join all variables
         # Use more complete text search
         # Add D3 tables
         #    - Use table title,
 
-
         unified_table_q = (
-            Query.from_(cls.acs_schema.census_table_metadata)
-            .union(cls.d3_schema.census_table_metadata)
+            Query.from_(Schema("acs2022_5yr").census_table_metadata).select("*")
+            + Query.from_(Schema("d3_2024").census_table_metadata).select("*")
         )
 
         unified_col_q = (
-            Query.from_(cls.acs_schema.census_column_metadata)
-            .union(cls.d3_schema.census_column_metadata)
+            Query.from_(Schema("acs2022_5yr").census_column_metadata).select("*")
+            + Query.from_(Schema("d3_2024").census_column_metadata).select("*")
         )
+
 
         unified_tables = AliasedQuery("unified_tables")
         unified_columns = AliasedQuery("unified_columns")
 
         match_tables = (
-            Query
-            .with_(unified_table_q, "unified_tables")
+            Query.with_(unified_table_q, "unified_tables")
             .from_(unified_tables)
             .select(unified_tables.table_id)
-            .union(cls.d3_schema.census_table_metadata)
             .where(fn.Lower(unified_tables.table_title).like(fn.Lower(Parameter(":query"))))
             .limit(10)
             .offset(0)
@@ -273,7 +272,7 @@ class Indicator:
             .orderby(unified_tables.table_id, unified_columns.column_id)
         )
 
-        result = db.execute(text(str(stmt)), {"query": "%" + query + "%"})
+        result = db.execute(text(str(stmt)), {"query": f"%{query.lower()}%"})
 
         return result.fetchall()
 
