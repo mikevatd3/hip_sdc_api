@@ -894,6 +894,7 @@ def geo_search():
     where += " AND sumlevel IN :sumlevs"
 
     if sumlevs:
+        sumlevs = [lev for lev in sumlevs if lev != '150']
         where_args["sumlevs"] = tuple(sumlevs)
     else:
         where_args["sumlevs"] = (
