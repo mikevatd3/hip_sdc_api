@@ -5,8 +5,8 @@
     {%- for variable in table.variables recursive %}
         <li>
         { variable.column_id }} - {{ variable.column_title }}
-        {%- if item.children %}
-            <ul>{{ loop(item.children) }}</ul>
+        {%- if variable.children %}
+            <ul>{{ loop(variable.children) }}</ul>
             {%- endif %}
         </li>
     {% endfor %}
