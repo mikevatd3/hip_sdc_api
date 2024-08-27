@@ -250,7 +250,7 @@ class Indicator:
             .on(cls.tables_meta.table_id == cls.columns_meta.table_id)
             .join(AliasedQuery("match_tables"))
             .on(AliasedQuery("match_tables").table_id == cls.tables_meta.table_id)
-            .orderby(cls.tables_meta.table_id, cls.columns_meta.variable_id)
+            .orderby(cls.tables_meta.table_id, cls.columns_meta.column_id)
         )
 
         result = db.execute(text(str(stmt)), {"query": "%" + query + "%"})
