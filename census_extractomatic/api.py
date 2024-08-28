@@ -762,7 +762,7 @@ def compute_profile_item_levels(geoid):
     ):
         result = db.session.execute(
             text(
-                """SELECT * FROM tiger2021.census_geo_containment
+                """SELECT * FROM tiger2022.census_geo_containment
                WHERE child_geoid=:geoid
                ORDER BY percent_covered ASC;
             """
@@ -912,7 +912,7 @@ def geo_search():
     if with_geom:
         sql = text(
             """SELECT DISTINCT geoid,sumlevel,population,display_name,full_geoid,priority,ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geom
-            FROM tiger2021.census_name_lookup
+            FROM tiger2022.census_name_lookup
             WHERE %s
             ORDER BY priority, population DESC NULLS LAST
             LIMIT 25;"""
@@ -921,7 +921,7 @@ def geo_search():
     else:
         sql = text(
             """SELECT DISTINCT geoid,sumlevel,population,display_name,full_geoid,priority
-            FROM tiger2021.census_name_lookup
+            FROM tiger2022.census_name_lookup
             WHERE %s
             ORDER BY priority, population DESC NULLS LAST
             LIMIT 25;"""
@@ -1662,7 +1662,7 @@ def get_child_geoids_by_coverage(release, parent_geoid, child_summary_level):
     result = db.session.execute(
         text(
             """SELECT DISTINCT geoid, name
-           FROM tiger2021.census_geo_containment, geoheader
+           FROM tiger2022.census_geo_containment, geoheader
            WHERE geoheader.geoid = census_geo_containment.child_geoid
              AND census_geo_containment.parent_geoid = :parent_geoid
              AND census_geo_containment.child_geoid LIKE :child_geoids
@@ -1684,7 +1684,7 @@ def get_child_geoids_by_gis(release, parent_geoid, child_summary_level):
         text(
             """
             SELECT child_geoid as full_geoid
-            FROM tiger2021.census_geo_containment parent
+            FROM tiger2022.census_geo_containment parent
             WHERE parent_geoid = :parent_geoid
             AND child_geoid LIKE :child_sumlevel
             AND percent_covered > 10;
@@ -1863,7 +1863,7 @@ def show_specified_data(acs):
         result = db.session.execute(
             text(
                 """SELECT full_geoid,population,display_name
-               FROM tiger2021.census_name_lookup
+               FROM tiger2022.census_name_lookup
                WHERE full_geoid IN :geoids;"""
             ),
             {"geoids": tuple(named_geo_ids)},
@@ -2173,7 +2173,7 @@ def data_compare_geographies_within_parent(acs, table_id):
         result = db.session.execute(
             text(
                 """SELECT ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
-               FROM tiger2021.census_name_lookup
+               FROM tiger2022.census_name_lookup
                WHERE full_geoid=:geo_ids;"""
             ),
             {"geo_ids": parent_geoid},
@@ -2191,7 +2191,7 @@ def data_compare_geographies_within_parent(acs, table_id):
         result = db.session.execute(
             text(
                 """SELECT geoid, ST_AsGeoJSON(ST_SimplifyPreserveTopology(geom,0.001), 5) as geometry
-               FROM tiger2021.census_name_lookup
+               FROM tiger2022.census_name_lookup
                WHERE full_geoid IN :geo_ids
                ORDER BY full_geoid;"""
             ),
