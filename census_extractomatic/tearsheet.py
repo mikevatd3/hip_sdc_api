@@ -2,7 +2,7 @@ from itertools import groupby
 from urllib.parse import quote, unquote
 from flask import render_template, request, jsonify, Blueprint, current_app
 from flask_cors import CORS, cross_origin
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import tomli
 
 from .variable_organize import arrange_variable_hierarchy
@@ -91,32 +91,103 @@ def geo_search():
 
 
 @tearsheet.route("/varsearch")
-def variable_search():
+def text_search():
+    """
+    We're prioritizing 3 search strategies:
+
+    1. Search table descriptions
+        - Returns only the table id, table description, and universe
+          with the match in the description highlighted.
+
+    2. Search variable descriptions
+        - Returns only the table id, table description, variable
+          description and universe with the match in the description
+          highlighted.
+
+    3. TODO: Search table names
+        - This is the only sub-word level search possibility
+
+    4. TODO: Search variable names
+        - Oops, no, this is sub-word seach as well
+
+    Tweaks:
+    - Somehow represent the more often used tables higher in the
+      index.
+        - This might require some manual annotating.
+    - The split between table-level hits and var level hits is good,
+      but it would be better if you could match terms on either level.
+    - Include / how to include nested type variables -- like if you want to find
+      females involved in fishing, hunting and trapping -- how do you get to the variable level.
+    - Collapse racial iterations from search -- link from page.
+    - Provide semantic suggestions from the table detail page
+        - semantic similarity on all variable columns and fields.
+    """
+    q = request.args.get("query")
+
+    stmt = text(
+        """
+        WITH table_highlights AS (
+            SELECT 1 AS lev,
+                   t.id,
+                   ts_headline(t.description, q, 'StartSel="<mark>", StopSel="</mark>"') AS highlighted_text,
+                   t.universe,
+                   '' as parent_id,
+                   '' as parent_label,
+                   ts_rank(to_tsvector('english', t.id || ' ' || t.description), q) AS rnk
+            FROM censearch.acs_tables t
+            CROSS JOIN to_tsquery('english', :q) AS q
+            WHERE (to_tsvector('english', t.id || ' ' || t.description) @@ q)
+            ORDER BY ts_rank(to_tsvector('english', t.id || ' ' || t.description), q) / LENGTH(t.description) DESC
+        ),
+             var_highlights AS (
+            SELECT DISTINCT ON (v.table_id)
+                   2 as lev,
+                   t.id,
+                   t.description || E'\n' || v.id || ': ' || ts_headline(v.label, q, 'StartSel="<mark>", StopSel="</mark>"') AS highlighted_text,
+                   t.universe,
+                   vb.id as parent_id,
+                   vb.label as parent_label,
+                   ts_rank(to_tsvector('english', v.id || ' ' || v.label), q) AS rnk
+            FROM censearch.acs_tables t
+            JOIN censearch.acs_variables v
+                ON v.table_id = t.id
+            LEFT JOIN censearch.acs_variables vb
+                ON v.parent_id = vb.id
+            CROSS JOIN to_tsquery('english', :q) AS q
+            WHERE (to_tsvector('english', v.id || ' ' || v.label) @@ q)
+            ORDER BY v.table_id, ts_rank(to_tsvector('english', v.id || ' ' || v.label), q) / LENGTH(v.label) DESC
+        )
+        SELECT DISTINCT ON (lev, id) *
+        FROM table_highlights
+        UNION
+        SELECT *
+        FROM var_highlights
+        ORDER BY lev;
+    """
+    )
+
     with db_engine.connect() as db:
-        result = Indicator.search(unquote(request.args.get("query", "")), db)
+        rows = db.execute(stmt, {"q": " & ".join(q.split())})  # type: ignore
+        results = rows.fetchall()
 
-    tables = []
+    if not results:
+        return render_template("no_results.html", query=q)
 
-    for table, variables in groupby(result, key=lambda row: (row.table_id, row.table_title)):
+    hits = [
+        {
+            "id": row.id,
+            "title": row.highlighted_text.split("\n")[0],
+            "parent_id": row.parent_id,
+            "parent_label": row.parent_label,
+            "variable": row.highlighted_text.split("\n")[1]
+            if (len(row.highlighted_text.split("\n")) > 1)
+            else "",
+            "universe": row.universe,
+        }
+        for row in results
+    ]
 
-        try:
-            prepped_variables = arrange_variable_hierarchy(variables)
-        except TypeError:
-            prepped_variables = [
-                {
-                    "column_id": "ERROR",
-                    "column_title": "This table doesn't have indentation information on sdcapi.datadrivendetroit.org/admin.",
-                    "children": []
-                }
-            ]
-
-        tables.append({
-            "table_id": table[0],
-            "table_title": table[1],
-            "variables": prepped_variables
-        })
-
-    return render_template("var_results.html", tables=tables)
+    return render_template("search_results.html", results=hits)
 
 
 
