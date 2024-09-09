@@ -157,12 +157,14 @@ def text_search():
             WHERE (to_tsvector('english', v.id || ' ' || v.label) @@ q)
             ORDER BY v.table_id, ts_rank(to_tsvector('english', v.id || ' ' || v.label), q) / LENGTH(v.label) DESC
         )
-        SELECT DISTINCT ON (lev, id) *
-        FROM table_highlights
-        UNION
-        SELECT *
-        FROM var_highlights
-        ORDER BY lev;
+        SELECT DISTINCT ON (id) *
+        from (
+            SELECT *
+            FROM table_highlights
+            UNION
+            SELECT *
+            FROM var_highlights
+            ORDER BY lev) combined;
     """
     )
 
