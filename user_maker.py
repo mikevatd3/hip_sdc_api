@@ -2,8 +2,13 @@ from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 import click
 
-from .models import User
-from ..metadata_api.connection import PublicSession
+from census_extractomatic.auth.models import User
+
+
+def public_session():
+    from census_extractomatic.metadata_api.connection import PublicSession
+
+    return PublicSession()
 
 
 def create_user(
@@ -28,7 +33,7 @@ def create_user(
 @click.argument("email")
 @click.argument("pass_confirm")
 def main(username, password, email, pass_confirm):
-    with PublicSession() as db:
+    with public_session() as db:
         create_user(username, email, password, pass_confirm, db)
 
 

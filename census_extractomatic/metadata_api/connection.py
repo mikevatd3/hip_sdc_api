@@ -5,8 +5,10 @@ from sqlalchemy.orm import sessionmaker
 from .models import Base
 import tomli
 
+
 with open("config.toml", "rb") as f:
     config = tomli.load(f)
+
 
 HOST, DBNAME, USERNAME, PASSWORD, PORT = config["db"].values()
 
@@ -22,6 +24,7 @@ public_engine = create_engine(connection_string)
 tiger_engine = create_engine(
     connection_string, connect_args={"options": "-csearch_path=tiger2021,public"}
 )
+
 
 metadata_engine = create_engine(
     connection_string, connect_args={"options": "-csearch_path=d3_metadata"}
@@ -57,3 +60,4 @@ def make_data_session(year: str, paradigm: DataParadigm):
     )
 
     return sessionmaker(engine)
+
