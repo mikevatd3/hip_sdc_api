@@ -99,9 +99,21 @@ def sheet():
         if how == "html":
             match e:
                 case ProgrammingError():
-                    return render_template("error.html", e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.", error_type=type(e))
+                    return render_template(
+                        "error.html",
+                        e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.",
+                        error_type=e.orig,
+                    )
+                case AttributeError():
+                    return render_template(
+                        "error.html",
+                        e="Something is wrong with one of your tearsheet equations. Revise and try again.",
+                        error_type="equation error",
+                    )
                 case _:
-                    return render_template("error.html", e=e, error_type=type(e))
+                    return render_template(
+                        "error.html", e=e, error_type=type(e)
+                    )
 
         return jsonify({"message": f"there was an error with your request {e}"})
 
