@@ -143,7 +143,7 @@ class Indicator:
         geom=False,
     ):
 
-        st_asgeojson = CustomFunction("ST_AsGeoJSON")
+        st_asgeojson = CustomFunction("ST_AsGeoJSON", ["geom"])
 
         tables = {
             var[:-3] for var in variables if var not in cls.special_variables
@@ -207,8 +207,6 @@ class Indicator:
         namespace = Indicator.create_namespace(
             prepared_geos, variables, db, release, geom=geom
         )
-
-        print(namespace.columns)
 
         non_formula_vars = ["geoid", "name"]
 
