@@ -1,7 +1,15 @@
 from enum import Enum, auto
 from sqlalchemy import text
 import tomli
-from pypika import Query, Table, Column, Schema, Parameter, AliasedQuery
+from pypika import (
+    Query,
+    Table,
+    Column,
+    Schema,
+    Parameter,
+    AliasedQuery,
+    Function,
+)
 from pypika import functions as fn
 import pandas as pd
 from lesp.core import execute
@@ -134,6 +142,9 @@ class Indicator:
         release: str,
         geom=False,
     ):
+
+        st_asgeojson = Function("ST_AsGeoJSON")
+
         tables = {
             var[:-3] for var in variables if var not in cls.special_variables
         }
@@ -166,7 +177,7 @@ class Indicator:
             # I don't like this nesting
 
             if geom:
-                stmt = stmt.select(tiger2022.census_name_lookup.geom)
+                stmt = stmt.select(st_asgeojson(tiger2022.census_name_lookup.geom))
 
             if specials:
                 stmt = stmt.select(
@@ -201,7 +212,8 @@ class Indicator:
 
         non_formula_vars = ["geoid", "name"]
 
-        if geom: non_formula_vars.append("geom")
+        if geom:
+            non_formula_vars.append("geom")
 
         calculated_rows = pd.concat(
             [namespace[non_formula_vars]]
