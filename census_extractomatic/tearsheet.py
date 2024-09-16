@@ -99,9 +99,9 @@ def sheet():
         if how == "html":
             match e:
                 case ProgrammingError():
-                    return render_template("error.html", e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.")
+                    return render_template("error.html", e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.", error_type=type(e))
                 case _:
-                    return render_template("error.html", e=e)
+                    return render_template("error.html", e=e, error_type=type(e))
 
         return jsonify({"message": f"there was an error with your request {e}"})
 
