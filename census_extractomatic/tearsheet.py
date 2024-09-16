@@ -45,6 +45,7 @@ def sheet():
         indicators = request.form.get("indicators", "").replace(", ", ",").split(",")
         release = request.form.get("release", "acs2022_5yr")
         how = request.form.get("how")
+
     else:
         geographies = unquote(request.args.get("geographies", "")).replace(", ", ",").split(",")
         indicators = unquote(request.args.get("indicators", "")).replace(", ", ",").split(",")
