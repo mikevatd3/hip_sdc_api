@@ -193,8 +193,14 @@ class Indicator:
             prepared_geos, variables, db, release, geom=geom
         )
 
+        print(namespace.columns)
+
+        non_formula_vars = ["geoid", "name"]
+
+        if geom: non_formula_vars.append("geom")
+
         calculated_rows = pd.concat(
-            [namespace[["geoid", "name", "geom"]]]
+            [namespace[non_formula_vars]]
             + [
                 Indicator.run_formula(formula, namespace)
                 for formula in formulae
