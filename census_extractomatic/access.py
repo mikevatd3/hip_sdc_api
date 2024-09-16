@@ -177,7 +177,7 @@ class Indicator:
             # I don't like this nesting
 
             if geom:
-                stmt = stmt.select(st_asgeojson(tiger2022.census_name_lookup.geom))
+                stmt = stmt.select(st_asgeojson(tiger2022.census_name_lookup.geom).as_("geom"))
 
             if specials:
                 stmt = stmt.select(
