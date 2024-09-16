@@ -5,6 +5,8 @@ from flask_cors import CORS, cross_origin
 from sqlalchemy import create_engine, text
 import tomli
 
+from census_extractomatic._api.download_data import pack_geojson_response
+
 from .variable_organize import arrange_variable_hierarchy
 from .access import Geography, Indicator, Tearsheet
 
@@ -42,27 +44,34 @@ def sheet():
         geographies = request.form.get("geographies", "").replace(", ", ",").split(",")
         indicators = request.form.get("indicators", "").replace(", ", ",").split(",")
         release = request.form.get("release", "acs2022_5yr")
-        html = request.form.get("html") == "yes"
+        how = request.form.get("how")
     else:
         geographies = unquote(request.args.get("geographies", "")).replace(", ", ",").split(",")
         indicators = unquote(request.args.get("indicators", "")).replace(", ", ",").split(",")
         release = unquote(request.args.get("release", "acs2022_5yr"))
-        html = request.args.get("html") == "yes"
+        how = request.args.get("how")
     
-    url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&html=yes"
+    url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
 
     current_app.logger.warning(request.form if request.method == "POST" else request.args)
     
     with db_engine.connect() as db:
+        geom = how == "geojson"
         tearsheet = Tearsheet.create(
-            geographies, indicators, db, release=release
+            geographies, indicators, db, release=release, geom=geom
         )
 
-    if html:
-        first, *rest = tearsheet
+    if how == "html":
+        first = tearsheet[0]
         headings = first.keys()
-        values = [[item for item in row.values()] for row in [first] + rest]
+        values = [[item for item in row.values()] for row in tearsheet]
         return render_template("table.html", headings=headings, values=values, url=url)
+
+    if how == "geojson":
+        return pack_geojson_response(tearsheet)
+
+    if (how is not None) | (how != 'json'):
+        print("WARNING: {how} is not a valid 'how', must be one of ('html', 'geojson', 'json'). Returning json.")
 
     return jsonify(tearsheet)
 

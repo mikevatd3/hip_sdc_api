@@ -123,7 +123,12 @@ class Indicator:
 
     @classmethod
     def create_namespace(
-        cls, prepared_geos: list[str], variables: list[str], db, release: str
+        cls,
+        prepared_geos: list[str],
+        variables: list[str],
+        db,
+        release: str,
+        geom=False,
     ):
         tables = {
             var[:-3] for var in variables if var not in cls.special_variables
@@ -148,20 +153,24 @@ class Indicator:
             table = Table(table.lower() + "_moe")
             stmt = stmt.join(table).on(table.geoid == first_table.geoid)
 
-        if specials:
+        if geom | bool(specials):
             tiger2022 = Schema("tiger2022")
-            stmt = (
-                stmt.select(
+            stmt = stmt.join(tiger2022.census_name_lookup).on(
+                tiger2022.census_name_lookup.full_geoid == first_table.geoid
+            )
+
+            # I don't like this nesting
+
+            if geom:
+                stmt = stmt.select(tiger2022.census_name_lookup.geom)
+
+            if specials:
+                stmt = stmt.select(
                     *[
                         tiger2022.census_name_lookup[cls.special_variables[var]]
                         for var in specials
                     ]
                 )
-                .join(tiger2022.census_name_lookup)
-                .on(
-                    tiger2022.census_name_lookup.full_geoid == first_table.geoid
-                )
-            )
 
         stmt = (
             stmt.join(geoheader)
@@ -179,9 +188,9 @@ class Indicator:
         )
 
     @staticmethod
-    def compile(prepared_geos, formulae, variables, db, release):
+    def compile(prepared_geos, formulae, variables, db, release, geom=False):
         namespace = Indicator.create_namespace(
-            prepared_geos, variables, db, release
+            prepared_geos, variables, db, release, geom=geom
         )
 
         calculated_rows = pd.concat(
@@ -228,16 +237,21 @@ class Indicator:
         # Add D3 tables
         #    - Use table title,
 
-        unified_table_q = (
-            Query.from_(Schema("acs2022_5yr").census_table_metadata).select("*")
-            + Query.from_(Schema("d3_2024").census_table_metadata).select("*")
+        unified_table_q = Query.from_(
+            Schema("acs2022_5yr").census_table_metadata
+        ).select("*") + Query.from_(
+            Schema("d3_2024").census_table_metadata
+        ).select(
+            "*"
         )
 
-        unified_col_q = (
-            Query.from_(Schema("acs2022_5yr").census_column_metadata).select("*")
-            + Query.from_(Schema("d3_2024").census_column_metadata).select("*")
+        unified_col_q = Query.from_(
+            Schema("acs2022_5yr").census_column_metadata
+        ).select("*") + Query.from_(
+            Schema("d3_2024").census_column_metadata
+        ).select(
+            "*"
         )
-
 
         unified_tables = AliasedQuery("unified_tables")
         unified_columns = AliasedQuery("unified_columns")
@@ -246,14 +260,15 @@ class Indicator:
             Query.with_(unified_table_q, "unified_tables")
             .from_(unified_tables)
             .select(unified_tables.table_id)
-            .where(fn.Lower(unified_tables.table_title).like(Parameter(":query")))
+            .where(
+                fn.Lower(unified_tables.table_title).like(Parameter(":query"))
+            )
             .limit(10)
             .offset(0)
         )
 
         stmt = (
-            Query
-            .with_(match_tables, "match_tables")
+            Query.with_(match_tables, "match_tables")
             .with_(unified_table_q, "unified_tables")
             .with_(unified_col_q, "unified_columns")
             .from_(unified_tables)
@@ -262,12 +277,14 @@ class Indicator:
                 unified_tables.table_title,
                 unified_columns.column_id,
                 unified_columns.column_title,
-                unified_columns.indent, # use this to indent the variables
+                unified_columns.indent,  # use this to indent the variables
             )
             .join(unified_columns)
             .on(unified_tables.table_id == unified_columns.table_id)
             .join(AliasedQuery("match_tables"))
-            .on(AliasedQuery("match_tables").table_id == unified_tables.table_id)
+            .on(
+                AliasedQuery("match_tables").table_id == unified_tables.table_id
+            )
             .orderby(unified_tables.table_id, unified_columns.column_id)
         )
 
@@ -278,12 +295,12 @@ class Indicator:
 
 class Tearsheet:
     @staticmethod
-    def create(geographies, indicators, db, release="acs2022_5yr"):
+    def create(geographies, indicators, db, release="acs2022_5yr", geom=False):
         prepared_geos = Geography.prep_geo_request(geographies, db)
         formulae, variables = Indicator.prep_ind_request(indicators)
 
         return Indicator.compile(
-            prepared_geos, formulae, variables, db, release
+            prepared_geos, formulae, variables, db, release, geom=geom
         )
 
     @staticmethod

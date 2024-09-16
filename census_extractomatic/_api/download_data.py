@@ -163,6 +163,20 @@ def prepare_geojson_response(
     return jsonify(result)
 
 
+def pack_geojson_response(rows):
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": json.loads(row.pop("geom")),
+                "properties": row 
+            }
+            for row in rows
+        ],
+    }
+
+
 def prepare_fake_geojson_response(
     acs,
     table_metadata,
