@@ -78,6 +78,7 @@ def sheet():
         return jsonify(tearsheet)
 
     except Exception as e:
+        print("Exception {e} hit")
         if how == "html":
             return render_template("error.html", error=e)
         else:
