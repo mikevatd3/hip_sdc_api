@@ -217,6 +217,10 @@ class Indicator:
             record = {}
             record["geoid"] = row["geoid"]
             record["name"] = row["name"]
+
+            if geom:
+                record["geom"] = row["geom"]
+
             for formula in formulae:
                 try:
                     record[formula[1]] = serialize_maybes(
