@@ -102,7 +102,7 @@ def sheet():
                     return render_template(
                         "error.html",
                         e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.",
-                        error_type=e.orig,
+                        error_type=type(e.orig),
                     )
                 case AttributeError():
                     return render_template(
