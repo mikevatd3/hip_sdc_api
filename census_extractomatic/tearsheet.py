@@ -55,26 +55,33 @@ def sheet():
     url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
 
     current_app.logger.warning(request.form if request.method == "POST" else request.args)
-    
-    with db_engine.connect() as db:
-        geom = how == "geojson"
-        tearsheet = Tearsheet.create(
-            geographies, indicators, db, release=release, geom=geom
-        )
 
-    if how == "html":
-        first = tearsheet[0]
-        headings = first.keys()
-        values = [[item for item in row.values()] for row in tearsheet]
-        return render_template("table.html", headings=headings, values=values, url=url)
+    try:
+        with db_engine.connect() as db:
+            geom = how == "geojson"
+            tearsheet = Tearsheet.create(
+                geographies, indicators, db, release=release, geom=geom
+            )
 
-    if how == "geojson":
-        return pack_geojson_response(tearsheet)
+        if how == "html":
+            first = tearsheet[0]
+            headings = first.keys()
+            values = [[item for item in row.values()] for row in tearsheet]
+            return render_template("table.html", headings=headings, values=values, url=url)
 
-    if (how is not None) | (how != 'json'):
-        print("WARNING: {how} is not a valid 'how', must be one of ('html', 'geojson', 'json'). Returning json.")
+        if how == "geojson":
+            return jsonify(pack_geojson_response(tearsheet))
 
-    return jsonify(tearsheet)
+        if (how is not None) | (how != 'json'):
+            print("WARNING: {how} is not a valid 'how', must be one of ('html', 'geojson', 'json'). Returning json.")
+
+        return jsonify(tearsheet)
+
+    except Exception as e:
+        if how == "html":
+            return render_template("error.html", error=e)
+        else:
+            return jsonify({"message": f"error with your request {e}"})
 
 
 @tearsheet.route("/explain")
