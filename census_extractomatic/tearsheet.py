@@ -11,8 +11,7 @@ from .variable_organize import arrange_variable_hierarchy
 from .access import Geography, Indicator, Tearsheet
 
 
-
-tearsheet = Blueprint('tearsheet', __name__)
+tearsheet = Blueprint("tearsheet", __name__)
 
 CORS(tearsheet)
 
@@ -41,41 +40,64 @@ def index():
 @tearsheet.route("/sheet", methods=["GET", "POST"])
 def sheet():
     if request.method == "POST":
-        geographies = request.form.get("geographies", "").replace(", ", ",").split(",")
-        indicators = request.form.get("indicators", "").replace(", ", ",").split(",")
+        geographies = (
+            request.form.get("geographies", "").replace(", ", ",").split(",")
+        )
+        indicators = (
+            request.form.get("indicators", "").replace(", ", ",").split(",")
+        )
         release = request.form.get("release", "acs2022_5yr")
         how = request.form.get("how")
 
     else:
-        geographies = unquote(request.args.get("geographies", "")).replace(", ", ",").split(",")
-        indicators = unquote(request.args.get("indicators", "")).replace(", ", ",").split(",")
+        geographies = (
+            unquote(request.args.get("geographies", ""))
+            .replace(", ", ",")
+            .split(",")
+        )
+        indicators = (
+            unquote(request.args.get("indicators", ""))
+            .replace(", ", ",")
+            .split(",")
+        )
         release = unquote(request.args.get("release", "acs2022_5yr"))
         how = request.args.get("how")
-    
+
     url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
 
-    current_app.logger.warning(request.form if request.method == "POST" else request.args)
+    current_app.logger.warning(
+        request.form if request.method == "POST" else request.args
+    )
 
-    with db_engine.connect() as db:
-        geom = how == "geojson"
-        tearsheet = Tearsheet.create(
-            geographies, indicators, db, release=release, geom=geom
-        )
+    try:
+        with db_engine.connect() as db:
+            geom = how == "geojson"
+            tearsheet = Tearsheet.create(
+                geographies, indicators, db, release=release, geom=geom
+            )
 
-    if how == "html":
-        first = tearsheet[0]
-        headings = first.keys()
-        values = [[item for item in row.values()] for row in tearsheet]
-        return render_template("table.html", headings=headings, values=values, url=url)
+        if how == "html":
+            first = tearsheet[0]
+            headings = first.keys()
+            values = [[item for item in row.values()] for row in tearsheet]
+            return render_template(
+                "table.html", headings=headings, values=values, url=url
+            )
 
-    if how == "geojson":
-        return jsonify(pack_geojson_response(tearsheet))
+        if how == "geojson":
+            return jsonify(pack_geojson_response(tearsheet))
 
-    if (how is not None) | (how != 'json'):
-        print("WARNING: {how} is not a valid 'how', must be one of ('html', 'geojson', 'json'). Returning json.")
+        if (how is not None) | (how != "json"):
+            print(
+                "WARNING: {how} is not a valid 'how', must be one of ('html', 'geojson', 'json'). Returning json."
+            )
 
-    return jsonify(tearsheet)
+        return jsonify(tearsheet)
+    except Exception as e:
+        if how == "html":
+            return render_template("error.html", e=e)
 
+        return jsonify({"message": f"there was an error with your request {e}"})
 
 
 @tearsheet.route("/explain")
@@ -98,7 +120,6 @@ def geo_search():
         result = Geography.search(unquote(request.args.get("query", "")), db)
 
         return render_template("geo_results.html", result=result)
-
 
 
 @tearsheet.route("/varsearch")
@@ -203,10 +224,8 @@ def text_search():
     return render_template("search_results.html", results=hits)
 
 
-
 @tearsheet.route("/passthrough")
 def passthrough():
-
     query = request.args.get("query", "")
 
     return f"""
@@ -215,8 +234,6 @@ def passthrough():
     # return render_template("var_results.html", result=result)
 
 
-
 @tearsheet.route("/help")
 def help():
     return render_template("help.html")
-
