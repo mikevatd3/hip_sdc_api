@@ -194,7 +194,7 @@ class Indicator:
         )
 
         calculated_rows = pd.concat(
-            [namespace[["geoid", "name"]]]
+            [namespace[["geoid", "name", "geom"]]]
             + [
                 Indicator.run_formula(formula, namespace)
                 for formula in formulae
