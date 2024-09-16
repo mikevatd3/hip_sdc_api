@@ -3,6 +3,7 @@ from urllib.parse import quote, unquote
 from flask import render_template, request, jsonify, Blueprint, current_app
 from flask_cors import CORS, cross_origin
 from sqlalchemy import create_engine, text
+from psycopg2.errors import UndefinedTable
 import tomli
 
 from census_extractomatic._api.download_data import pack_geojson_response
@@ -93,9 +94,13 @@ def sheet():
             )
 
         return jsonify(tearsheet)
-    except Exception as e:
+    except (UndefinedTable | Exception) as e:
         if how == "html":
-            return render_template("error.html", e=e)
+            match e:
+                case UndefinedTable():
+                    return render_template("error.html", e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.")
+                case _:
+                    return render_template("error.html", e=e)
 
         return jsonify({"message": f"there was an error with your request {e}"})
 
