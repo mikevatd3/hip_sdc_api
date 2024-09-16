@@ -85,7 +85,7 @@ class Indicator:
 
     @classmethod
     def wrap_values(
-        cls, dataframe: pd.DataFrame, variables: list[str]
+        cls, dataframe: pd.DataFrame, variables: list[str], geom=False
     ) -> pd.DataFrame:
         """
         Wrap up dataframe into combined estimate and moes for combination.
@@ -96,6 +96,10 @@ class Indicator:
             wrapped_row = {}
             wrapped_row["geoid"] = row["geoid"]
             wrapped_row["name"] = row["name"]
+
+            if geom:
+                wrapped_row["geom"] = row["geom"]
+
             for var in variables:
                 if var in cls.special_variables:
                     # Special variables don't have errors associated with them
@@ -184,7 +188,7 @@ class Indicator:
         )
 
         return Indicator.wrap_values(
-            pd.read_sql(text(str(stmt)), db), variables
+            pd.read_sql(text(str(stmt)), db), variables, geom=geom
         )
 
     @staticmethod
