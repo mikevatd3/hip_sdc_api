@@ -3,6 +3,7 @@ from urllib.parse import quote, unquote
 from flask import render_template, request, jsonify, Blueprint, current_app
 from flask_cors import CORS, cross_origin
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import ProgrammingError
 from psycopg2.errors import UndefinedTable
 import tomli
 
@@ -94,10 +95,10 @@ def sheet():
             )
 
         return jsonify(tearsheet)
-    except (UndefinedTable, Exception) as e:
+    except (ProgrammingError, Exception) as e:
         if how == "html":
             match e:
-                case UndefinedTable():
+                case ProgrammingError():
                     return render_template("error.html", e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.")
                 case _:
                     return render_template("error.html", e=e)
