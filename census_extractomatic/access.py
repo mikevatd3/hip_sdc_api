@@ -8,9 +8,9 @@ from pypika import (
     Schema,
     Parameter,
     AliasedQuery,
-    Function,
 )
 from pypika import functions as fn
+from pypika.functions import Function
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables
