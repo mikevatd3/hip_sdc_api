@@ -8,9 +8,9 @@ from pypika import (
     Schema,
     Parameter,
     AliasedQuery,
+    CustomFunction
 )
 from pypika import functions as fn
-from pypika.functions import Function
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables
@@ -143,7 +143,7 @@ class Indicator:
         geom=False,
     ):
 
-        st_asgeojson = Function("ST_AsGeoJSON")
+        st_asgeojson = CustomFunction("ST_AsGeoJSON")
 
         tables = {
             var[:-3] for var in variables if var not in cls.special_variables
