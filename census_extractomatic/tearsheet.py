@@ -99,11 +99,19 @@ def sheet():
         if how == "html":
             match e:
                 case ProgrammingError():
-                    return render_template(
-                        "error.html",
-                        e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.",
-                        error_type=type(e.orig),
-                    )
+                    match e.orig:
+                        case UndefinedTable():
+                            return render_template(
+                                "error.html",
+                                e="The table you're requestiong doesn't exist. Make sure your variables are spelled correctly.",
+                                error_type=type(e.orig),
+                            )
+                        case _:
+                            return render_template(
+                                "error.html",
+                                e=e.statement,
+                                error_type=type(e.orig)
+                            )
                 case AttributeError():
                     return render_template(
                         "error.html",
