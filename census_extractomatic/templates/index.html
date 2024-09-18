@@ -9,7 +9,7 @@
     <input name="geographies" placeholder="Enter geographies here"></input>
     <input type="text"
            name="indicators" 
-           hx-post="/tearsheet/validate-program"
+           hx-get="/tearsheet/validate-program"
            hx-trigger="keyup delay:500ms changed"
            hx-target="#error-message"
            hx-swap="innerHTML"
