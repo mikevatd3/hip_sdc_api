@@ -1,14 +1,16 @@
 {% extends 'base.html' %}
 {% block content %}
 <form hx-post="https://sdcapi.datadrivendetroit.org/tearsheet/sheet"
+      hx-indicator="#build_ind"
       hx-params="*"
       hx-target="#data_table"
       hx-select="#data_table"
       hx-swap="outerHTML">
     <input name="geographies" placeholder="Enter geographies here"></input>
-    <input name="indicators" 
+    <input type="text"
+           name="indicators" 
            hx-post="https://sdcapi.datadrivendetroit.org/tearsheet/validate-program"
-           hx-trigger="keyup changed delay:500ms"
+           hx-trigger="keyup delay:500ms changed"
            hx-target="#validation"
            hx-swap="innerHTML"
            hx-indicator="#val_ind"
@@ -19,5 +21,6 @@
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="validation"></div>
 <div id="table_link"></div>
+<div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
 {% endblock %}

@@ -110,7 +110,7 @@ def sheet():
                             return render_template(
                                 "error.html",
                                 e=e.statement,
-                                error_type=type(e.orig)
+                                error_type=type(e.orig),
                             )
                 case AttributeError():
                     return render_template(
@@ -168,7 +168,9 @@ def validate_lesp():
     current_app.logger.warning(helpers)
 
     if not helpers:
-        current_app.logger.warning("Made it through validation with no messages." )
+        current_app.logger.warning(
+            "Made it through validation with no messages."
+        )
 
     response = render_template("validation.html", helpers=helpers)
 
@@ -277,16 +279,6 @@ def text_search():
     ]
 
     return render_template("search_results.html", results=hits)
-
-
-@tearsheet.route("/passthrough")
-def passthrough():
-    query = request.args.get("query", "")
-
-    return f"""
-    <h3>The query you sent was {query}</h3>
-    """
-    # return render_template("var_results.html", result=result)
 
 
 @tearsheet.route("/help")
