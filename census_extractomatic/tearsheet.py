@@ -166,8 +166,13 @@ def validate_lesp():
                 helpers.append(f"Error with indicator {name}. {message}")
 
     current_app.logger.warning(helpers)
-    current_app.logger.warning("Made it through validation with no messages." )
-    return render_template("validation.html", helpers=helpers)
+
+    if not helpers:
+        current_app.logger.warning("Made it through validation with no messages." )
+
+    response = render_template("validation.html", helpers=helpers)
+
+    return response
 
 
 @tearsheet.route("/varsearch")
