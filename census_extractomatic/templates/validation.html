@@ -1,5 +1,15 @@
+<input type="text"
+       name="indicators" 
+       hx-post="https://sdcapi.datadrivendetroit.org/tearsheet/validate-program"
+       hx-trigger="keyup delay:500ms changed"
+       hx-indicator="#val_ind"
+       placeholder="Enter indicators here"></input>
+<div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
+{% if helpers %}
 <ul>
     {% for helper in helpers %}
         <li>{{ helper }}</li>
     {% endfor %}
 </ul>
+{% endif %}
+
