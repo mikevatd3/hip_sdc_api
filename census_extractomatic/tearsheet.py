@@ -172,11 +172,7 @@ def validate_lesp():
             "Made it through validation with no messages."
         )
 
-    response = render_template("validation.html", helpers=helpers)
-
-    current_app.logger.warning(response)
-
-    return response
+    return render_template("validation.html", helpers=helpers)
 
 
 @tearsheet.route("/varsearch")
