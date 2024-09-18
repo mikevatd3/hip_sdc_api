@@ -148,8 +148,10 @@ def geo_search():
         return render_template("geo_results.html", result=result)
 
 
-@tearsheet.route("/validate-program", methods=["POST"])
+@tearsheet.route("/validate-program", methods=["GET", "POST"])
 def validate_lesp():
+    if request.method == "GET":
+        return render_template("validate_only.html")
     current_app.logger.warning(f"Hit validate-program with args {request.args}")
 
     indicators = (

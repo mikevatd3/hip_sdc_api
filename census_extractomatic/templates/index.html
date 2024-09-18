@@ -15,13 +15,6 @@
            hx-swap="innerHTML"
            hx-indicator="#val_ind"
            placeholder="Enter indicators here"></input>
-        {% if helpers %}
-        <ul>
-            {% for helper in helpers %}
-                <li>{{ helper }}</li>
-            {% endfor %}
-        </ul>
-        {% endif %}
     </div>
     <input name="how" type="hidden" value="html"></input>
     <button>Create tearsheet</button>
