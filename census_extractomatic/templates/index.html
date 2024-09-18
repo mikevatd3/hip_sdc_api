@@ -10,10 +10,12 @@
            hx-post="https://sdcapi.datadrivendetroit.org/tearsheet/validate-program"
            hx-trigger="keyup changed delay:500ms"
            hx-target="#validation"
+           hx-indicator="#val_ind"
            placeholder="Enter indicators here"></input>
     <input name="how" type="hidden" value="html"></input>
     <button>Create tearsheet</button>
 </form>
+<div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="validation"></div>
 <div id="table_link"></div>
 <div id="data_table"></div>

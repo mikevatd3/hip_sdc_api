@@ -172,6 +172,8 @@ def validate_lesp():
 
     response = render_template("validation.html", helpers=helpers)
 
+    current_app.logger.
+
     return response
 
 
