@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<input type="text"
+       name="indicators" 
+       hx-post="/tearsheet/validate-program"
+       hx-trigger="keyup delay:500ms changed"
+       hx-target="#error-message"
+       hx-swap="innerHTML"
+       hx-indicator="#val_ind"
+       placeholder="Enter indicators here"></input>
+    </div>
+    <input name="how" type="hidden" value="html"></input>
+    <button>Create tearsheet</button>
+</form>
+<div id="error-message"></div>
+<div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
+{% endblock %}
