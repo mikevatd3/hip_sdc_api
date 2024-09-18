@@ -148,6 +148,26 @@ def geo_search():
         return render_template("geo_results.html", result=result)
 
 
+@tearsheet.route("/validate-program")
+def validate_lesp():
+    indicators = request.args.get("indicators")
+    if not indicators:
+        return '<div class="validation"></div>'
+    
+    helpers = []
+    for indicator in indicators.split(","):
+        name, *eq = indicator.split("|")
+        if eq:
+            success, message = Indicator.validate_indicator(eq[0])
+
+            if not success:
+                helpers.append(f"Error with indicator {name}. {message}")
+    if helpers:
+        return render_template("validation.html", helpers=helpers)
+
+    return '<div class="validation"></div>'
+
+
 @tearsheet.route("/varsearch")
 def text_search():
     """

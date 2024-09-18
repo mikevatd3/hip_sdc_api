@@ -13,7 +13,7 @@ from pypika import (
 from pypika import functions as fn
 import pandas as pd
 from lesp.core import execute
-from lesp.analyze import extract_variables
+from lesp.analyze import extract_variables, validate_program, LespCompileError
 from .datatypes import Some, Empty, TearValue, serialize_maybes
 
 
@@ -44,6 +44,15 @@ class Indicator:
 
     acs_schema = Schema("acs2022_5yr")
     d3_schema = Schema("d3_2024")
+
+    @staticmethod
+    def validate_indicator(formula: str) -> tuple[bool, str]:
+        try:
+            validate_program(formula)
+        except LespCompileError as e:
+            return (False, e.args[0])
+
+        return (True, '')
 
     @classmethod
     def prep_ind_request(

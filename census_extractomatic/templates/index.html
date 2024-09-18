@@ -6,10 +6,16 @@
       hx-select="#data_table"
       hx-swap="outerHTML">
     <input name="geographies" placeholder="Enter geographies here"></input>
-    <input name="indicators" placeholder="Enter indicators here"></input>
+    <input name="indicators" 
+           hx-post="/validate-program"
+           hx-trigger="keyup changed delay:500ms"
+           hx-target="#validation"
+           hx-swap="outerHTML"
+           placeholder="Enter indicators here"></input>
     <input name="how" type="hidden" value="html"></input>
     <button>Create tearsheet</button>
 </form>
+<div id="validation"></div>
 <div id="table_link"></div>
 <div id="data_table"></div>
 <script>
