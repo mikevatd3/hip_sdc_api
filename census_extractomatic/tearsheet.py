@@ -150,6 +150,8 @@ def geo_search():
 
 @tearsheet.route("/validate-program", methods=["POST"])
 def validate_lesp():
+    current_app.logger.warning(f"Hit validate-program with args {request.args}")
+
     default_response = '<ul></ul>'
 
     indicators = (
@@ -157,6 +159,7 @@ def validate_lesp():
     )
 
     if not indicators:
+        current_app.logger.warning("No indicators found")
         return default_response
     
     helpers = []
@@ -167,9 +170,13 @@ def validate_lesp():
 
             if not success:
                 helpers.append(f"Error with indicator {name}. {message}")
+
+    current_app.logger.warning(helpers)
+
     if helpers:
         return render_template("validation.html", helpers=helpers)
-
+    
+    current_app.logger.warning("Made it through validation with no messages." )
     return default_response
 
 
