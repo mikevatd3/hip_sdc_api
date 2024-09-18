@@ -7,6 +7,7 @@ from sqlalchemy.exc import ProgrammingError
 from psycopg2.errors import UndefinedTable
 import tomli
 
+from lesp.analyze import extract_variables, validate_program, LespCompileError
 from census_extractomatic._api.download_data import pack_geojson_response
 
 from .variable_organize import arrange_variable_hierarchy
@@ -155,7 +156,6 @@ def validate_test():
 
 @tearsheet.route("/validate-program", methods=["GET", "POST"])
 def validate_lesp():
-    current_app.logger.warning(f"Hit validate-program with args {request.args}")
     if request.method == "POST":
         indicators = (
             request.form.get("indicators", "").replace(", ", ",").split(",")
@@ -166,6 +166,8 @@ def validate_lesp():
             request.args.get("indicators", "").replace(", ", ",").split(",")
         )
 
+    # Part 1. Validate LESP
+
     helpers = []
     for indicator in indicators:
         name, *eq = indicator.split("|")
@@ -175,14 +177,31 @@ def validate_lesp():
             if not success:
                 helpers.append(f"Error with indicator {name}. {message}")
 
-    current_app.logger.warning(helpers)
+    if helpers:
+        # Parsing is fast, so if you're at this point with a failure
+        # send the response.
 
-    if not helpers:
-        current_app.logger.warning(
-            "Made it through validation with no messages."
-        )
+        return render_template("validation.html", helpers=helpers)
 
-    return render_template("validation.html", helpers=helpers)
+    # Part 2. Make sure the indicators exist
+
+    variables = {}
+    for indicator in indicators:
+        name, *eq = indicator.split("|")
+        if eq:
+            variables = variables | extract_variables(eq)
+
+    if variables:
+        with db_engine.connect() as db:
+            missing_tables = Indicator.identify_missing_tables(variables, db)
+
+        helpers = [
+            f"{table} isn't available in the ACS 5-year, check your variable spelling"
+            for table in missing_tables
+        ]
+
+        return render_template("validation.html", helpers=helpers)
+    return render_template("validation.html")
 
 
 @tearsheet.route("/varsearch")

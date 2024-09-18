@@ -8,7 +8,7 @@ from pypika import (
     Schema,
     Parameter,
     AliasedQuery,
-    CustomFunction
+    CustomFunction,
 )
 from pypika import functions as fn
 import pandas as pd
@@ -45,6 +45,12 @@ class Indicator:
     acs_schema = Schema("acs2022_5yr")
     d3_schema = Schema("d3_2024")
 
+    unified_table_q = unified_table_q = Query.from_(
+        Schema("acs2022_5yr").census_table_metadata
+    ).select("*") + Query.from_(Schema("d3_2024").census_table_metadata).select(
+        "*"
+    )
+
     @staticmethod
     def validate_indicator(formula: str) -> tuple[bool, str]:
         try:
@@ -52,7 +58,7 @@ class Indicator:
         except LespCompileError as e:
             return (False, e.args[0])
 
-        return (True, '')
+        return (True, "")
 
     @classmethod
     def prep_ind_request(
@@ -151,7 +157,6 @@ class Indicator:
         release: str,
         geom=False,
     ):
-
         st_asgeojson = CustomFunction("ST_AsGeoJSON", ["geom"])
 
         tables = {
@@ -186,7 +191,9 @@ class Indicator:
             # I don't like this nesting
 
             if geom:
-                stmt = stmt.select(st_asgeojson(tiger2022.census_name_lookup.geom).as_("geom"))
+                stmt = stmt.select(
+                    st_asgeojson(tiger2022.census_name_lookup.geom).as_("geom")
+                )
 
             if specials:
                 stmt = stmt.select(
@@ -210,6 +217,39 @@ class Indicator:
         return Indicator.wrap_values(
             pd.read_sql(text(str(stmt)), db), variables, geom=geom
         )
+
+    @classmethod
+    def identify_missing_tables(cls, variables, db, release="acs2022_5yr"):
+        
+        tables = {
+            var[:-3].upper()
+            for var in variables
+            if var not in cls.special_variables
+        }
+
+        unified_tables = AliasedQuery("unified_tables")
+
+        match_tables = (
+            Query.with_(cls.unified_table_q, "unified_tables")
+            .from_(unified_tables)
+            .select(unified_tables.table_id)
+            .where(fn.Upper(unified_tables.table_id).isin(Parameter(":tables")))
+        )
+
+        db.execute(
+            text("SET search_path TO :acs, d3_2024, d3_present, public;"),
+            {"acs": release},
+        )
+
+        rows = db.execute(text(str(match_tables)), {"tables": tuple(tables)})
+
+        available_tables = {table.table_id for table in rows}
+
+        missing_tables = (
+            tables - available_tables
+        )  # This set operations shows elements in a that aren't in b
+
+        return missing_tables
 
     @staticmethod
     def compile(prepared_geos, formulae, variables, db, release, geom=False):
@@ -270,14 +310,6 @@ class Indicator:
         # Add D3 tables
         #    - Use table title,
 
-        unified_table_q = Query.from_(
-            Schema("acs2022_5yr").census_table_metadata
-        ).select("*") + Query.from_(
-            Schema("d3_2024").census_table_metadata
-        ).select(
-            "*"
-        )
-
         unified_col_q = Query.from_(
             Schema("acs2022_5yr").census_column_metadata
         ).select("*") + Query.from_(
@@ -290,7 +322,7 @@ class Indicator:
         unified_columns = AliasedQuery("unified_columns")
 
         match_tables = (
-            Query.with_(unified_table_q, "unified_tables")
+            Query.with_(cls.unified_table_q, "unified_tables")
             .from_(unified_tables)
             .select(unified_tables.table_id)
             .where(
@@ -302,7 +334,7 @@ class Indicator:
 
         stmt = (
             Query.with_(match_tables, "match_tables")
-            .with_(unified_table_q, "unified_tables")
+            .with_(cls.unified_table_q, "unified_tables")
             .with_(unified_col_q, "unified_columns")
             .from_(unified_tables)
             .select(
