@@ -11,7 +11,7 @@
            name="indicators" 
            hx-post="https://sdcapi.datadrivendetroit.org/tearsheet/validate-program"
            hx-trigger="keyup delay:500ms changed"
-           hx-target="#validation"
+           hx-target="#error-messages"
            hx-swap="innerHTML"
            hx-indicator="#val_ind"
            placeholder="Enter indicators here"></input>
@@ -19,7 +19,7 @@
     <button>Create tearsheet</button>
 </form>
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
-<div id="validation"></div>
+<div id="error-messages"></div>
 <div id="table_link"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
