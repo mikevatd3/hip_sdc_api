@@ -185,11 +185,13 @@ def validate_lesp():
 
     # Part 2. Make sure the indicators exist
 
-    variables = {}
+    variables = set()
     for indicator in indicators:
         name, *eq = indicator.split("|")
         if eq:
-            variables = variables | extract_variables(eq)
+            variables = variables | extract_variables(eq[0])
+        else:
+            variables.add(name)
 
     if variables:
         with db_engine.connect() as db:
