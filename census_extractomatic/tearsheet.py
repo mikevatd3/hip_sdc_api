@@ -152,16 +152,10 @@ def geo_search():
 def validate_lesp():
     current_app.logger.warning(f"Hit validate-program with args {request.args}")
 
-    default_response = '<ul></ul>'
-
     indicators = (
         request.form.get("indicators", "").replace(", ", ",").split(",")
     )
 
-    if not indicators:
-        current_app.logger.warning("No indicators found")
-        return default_response
-    
     helpers = []
     for indicator in indicators:
         name, *eq = indicator.split("|")
@@ -172,12 +166,8 @@ def validate_lesp():
                 helpers.append(f"Error with indicator {name}. {message}")
 
     current_app.logger.warning(helpers)
-
-    if helpers:
-        return render_template("validation.html", helpers=helpers)
-    
     current_app.logger.warning("Made it through validation with no messages." )
-    return default_response
+    return render_template("validation.html", helpers=helpers)
 
 
 @tearsheet.route("/varsearch")
