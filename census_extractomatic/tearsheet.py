@@ -151,8 +151,7 @@ def geo_search():
 @tearsheet.route("/validate-program", methods=["POST"])
 def validate_lesp():
 
-    default_response = '<div class="validation"></div>'
-
+    default_response = '<div id="validation"></div>'
 
     indicators = (
         request.form.get("indicators", "").replace(", ", ",").split(",")
