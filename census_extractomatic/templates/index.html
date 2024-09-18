@@ -1,11 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<form hx-post="/tearsheet/sheet"
-      hx-indicator="#build_ind"
-      hx-params="*"
-      hx-target="#data_table"
-      hx-select="#data_table"
-      hx-swap="outerHTML">
+<form>
     <input name="geographies" placeholder="Enter geographies here"></input>
     <input type="text"
            name="indicators" 
@@ -17,7 +12,12 @@
            placeholder="Enter indicators here"></input>
     </div>
     <input name="how" type="hidden" value="html"></input>
-    <button>Create tearsheet</button>
+    <button hx-post="/tearsheet/sheet"
+            hx-indicator="#build_ind"
+            hx-params="*"
+            hx-target="#data_table"
+            hx-select="#data_table"
+            hx-swap="outerHTML">Create tearsheet</button>
 </form>
 <div id="error-message"></div>
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
