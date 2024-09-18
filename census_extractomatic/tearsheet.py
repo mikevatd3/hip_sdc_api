@@ -44,10 +44,16 @@ def index():
 def sheet():
     if request.method == "POST":
         geographies = (
-            request.form.get("geographies", "").replace(", ", ",").split(",")
+            request.form.get("geographies", "")
+            .strip()
+            .replace(", ", ",")
+            .split(",")
         )
         indicators = (
-            request.form.get("indicators", "").replace(", ", ",").split(",")
+            request.form.get("indicators", "")
+            .strip()
+            .replace(", ", ",")
+            .split(",")
         )
         release = request.form.get("release", "acs2022_5yr")
         how = request.form.get("how")
@@ -55,11 +61,13 @@ def sheet():
     else:
         geographies = (
             unquote(request.args.get("geographies", ""))
+            .strip()
             .replace(", ", ",")
             .split(",")
         )
         indicators = (
             unquote(request.args.get("indicators", ""))
+            .strip()
             .replace(", ", ",")
             .split(",")
         )
@@ -158,12 +166,18 @@ def validate_test():
 def validate_lesp():
     if request.method == "POST":
         indicators = (
-            request.form.get("indicators", "").replace(", ", ",").split(",")
+            request.form.get("indicators", "")
+            .strip()
+            .replace(", ", ",")
+            .split(",")
         )
 
     else:
         indicators = (
-            request.args.get("indicators", "").replace(", ", ",").split(",")
+            request.args.get("indicators", "")
+            .strip()
+            .replace(", ", ",")
+            .split(",")
         )
 
     # Part 1. Validate LESP
@@ -199,7 +213,7 @@ def validate_lesp():
 
         helpers = [
             f"{table} isn't available in the ACS 5-year, check your variable spelling"
-            for table in missing_tables
+            for table in missing_tables if table.strip() # Trying to handle weird edge case where '' is getting warned on.
         ]
 
         return render_template("validation.html", helpers=helpers)
