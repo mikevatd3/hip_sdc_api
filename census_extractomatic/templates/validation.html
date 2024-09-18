@@ -1,5 +1,3 @@
 {% if helpers %}
-    <ul>
-        {% for helper in helpers %}<li>{{ helper }}</li>{% endfor %}
-    </ul>
+    {% for helper in helpers %}<p>{{ helper }}</p>{% endfor %}
 {% endif %}
