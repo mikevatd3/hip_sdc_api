@@ -75,6 +75,7 @@ def sheet():
         how = request.args.get("how")
 
     url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
+    geojsonurl = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
 
     current_app.logger.warning(
         request.form if request.method == "POST" else request.args
@@ -92,7 +93,11 @@ def sheet():
             headings = first.keys()
             values = [[item for item in row.values()] for row in tearsheet]
             return render_template(
-                "table.html", headings=headings, values=values, url=url
+                "table.html",
+                headings=headings,
+                values=values,
+                url=url,
+                geojsonurl=geojsonurl,
             )
 
         if how == "geojson":
