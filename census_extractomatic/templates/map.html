@@ -31,12 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }).addTo(map);
 
     // Load the GeoJSON data
-    fetch('{{ geojsonurl }}') // Update the path to your GeoJSON file
+    fetch('{{ geojsonurl|escapejs }}') // Update the path to your GeoJSON file
     .then(response => response.json())
     .then(geojsonData => {
         // Verify that geojsonData is loaded
         if (!geojsonData || !geojsonData.features || geojsonData.features.length === 0) {
-            console.error('GeoJSON data from {{ geojsonurl }} is empty or invalid.');
+            console.error('GeoJSON data from {{ geojsonurl|escapejs }} is empty or invalid.');
             return;
         }
 
