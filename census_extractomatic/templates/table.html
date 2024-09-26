@@ -26,6 +26,14 @@
 </div>
 <div id="table_link" hx-swap-oob="true">
     <p>Download data: <a href="{{ url }}">html</a> <a href="{{ geojsonurl }}">geojson</a></p>
-    <button hx-trigger="click" hx-target="#data_table" hx-swap="innerHTML">Clear</button>
+    {% if method != 'GET' %}
+        <button hx-trigger="click" hx-target="#data_table" hx-swap="innerHTML">Clear</button>
+    {% endif %}
+        <button hx-post="/tearsheet/sheet"
+                hx-indicator="#build_ind"
+                hx-params="*"
+                hx-target="#data_table"
+                hx-select="#data_table"
+                hx-swap="outerHTML">Rebuild tearsheet</button>
 </div>
 {% endblock %}
