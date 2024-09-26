@@ -1,107 +1,5 @@
-{% block extra_js %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-
-      // Initialize the map
-      var map = L.map('map').setView([0, 0], 2); // Adjust the initial view as needed
-
-      // Add a basemap layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-
-      // Load the GeoJSON data
-        fetch({{ geojsonurl }}) // Update the path to your GeoJSON file
-        .then(function(response) { return response.json(); })
-        .then(function(geojsonData) {
-          // Extract properties from the first feature to get field names
-          var properties = geojsonData.features[0].properties;
-
-          // Filter numeric and boolean fields
-          var fields = [];
-          for (var key in properties) {
-            var value = properties[key];
-            if (typeof value === 'number' || typeof value === 'boolean') {
-              fields.push(key);
-            }
-          }
-
-          // Populate the dropdown menu
-          var fieldSelect = document.getElementById('field-select');
-          fields.forEach(function(field) {
-            var option = document.createElement('option');
-            option.value = field;
-            option.text = field;
-            fieldSelect.appendChild(option);
-          });
-
-          var geojsonLayer;
-
-          // Function to update the choropleth map based on the selected field
-          function updateChoropleth(field) {
-            if (geojsonLayer) {
-              map.removeLayer(geojsonLayer);
-            }
-
-            // Extract values for the selected field
-            var values = geojsonData.features.map(function(feature) {
-              return feature.properties[field];
-            });
-
-            var min = Math.min.apply(null, values);
-            var max = Math.max.apply(null, values);
-
-            // Define a color scale
-            var getColor;
-            if (typeof values[0] === 'boolean') {
-              getColor = function(d) {
-                return d ? '#1f78b4' : '#e31a1c';
-              };
-            } else {
-              getColor = function(d) {
-                var ratio = (d - min) / (max - min);
-                return `hsl(${(1 - ratio) * 240}, 100%, 50%)`; // Blue to red scale
-              };
-            }
-
-            function style(feature) {
-              return {
-                fillColor: getColor(feature.properties[field]),
-                weight: 1,
-                opacity: 1,
-                color: 'white',
-                fillOpacity: 0.7
-              };
-            }
-
-            geojsonLayer = L.geoJson(geojsonData, {
-              style: style,
-              onEachFeature: function(feature, layer) {
-                layer.bindPopup(`<strong>${field}:</strong> ${feature.properties[field]}`);
-              }
-            }).addTo(map);
-
-            map.fitBounds(geojsonLayer.getBounds());
-          }
-
-          // Initial rendering with the first field
-          updateChoropleth(fields[0]);
-
-          // Update the map when a new field is selected
-          fieldSelect.addEventListener('change', function(e) {
-            updateChoropleth(e.target.value);
-          });
-        })
-        .catch(function(error) {
-          console.error('Error loading GeoJSON data:', error);
-        });
-    });
-</script>
-{% endblock %}
-
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
 <style>
     #map {
         height: 90vh;
@@ -117,6 +15,108 @@
         left: 10px;
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  // Initialize the map
+  var map = L.map('map').setView([0, 0], 2); // Adjust the initial view as needed
+
+  // Add a basemap layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Load the GeoJSON data
+  fetch('/static/data/your_geojson_file.geojson') // Update the path to your GeoJSON file
+    .then(function(response) { return response.json(); })
+    .then(function(geojsonData) {
+      // Extract properties from the first feature to get field names
+      var properties = geojsonData.features[0].properties;
+
+      // Filter numeric and boolean fields
+      var fields = [];
+      for (var key in properties) {
+        var value = properties[key];
+        if (typeof value === 'number' || typeof value === 'boolean') {
+          fields.push(key);
+        }
+      }
+
+      // Populate the dropdown menu
+      var fieldSelect = document.getElementById('field-select');
+      fields.forEach(function(field) {
+        var option = document.createElement('option');
+        option.value = field;
+        option.text = field;
+        fieldSelect.appendChild(option);
+      });
+
+      var geojsonLayer;
+
+      // Function to update the choropleth map based on the selected field
+      function updateChoropleth(field) {
+        if (geojsonLayer) {
+          map.removeLayer(geojsonLayer);
+        }
+
+        // Extract values for the selected field
+        var values = geojsonData.features.map(function(feature) {
+          return feature.properties[field];
+        });
+
+        var min = Math.min.apply(null, values);
+        var max = Math.max.apply(null, values);
+
+        // Define a color scale
+        var getColor;
+        if (typeof values[0] === 'boolean') {
+          getColor = function(d) {
+            return d ? '#1f78b4' : '#e31a1c';
+          };
+        } else {
+          getColor = function(d) {
+            var ratio = (d - min) / (max - min);
+            return `hsl(${(1 - ratio) * 240}, 100%, 50%)`; // Blue to red scale
+          };
+        }
+
+        function style(feature) {
+          return {
+            fillColor: getColor(feature.properties[field]),
+            weight: 1,
+            opacity: 1,
+            color: 'white',
+            fillOpacity: 0.7
+          };
+        }
+
+        geojsonLayer = L.geoJson(geojsonData, {
+          style: style,
+          onEachFeature: function(feature, layer) {
+            layer.bindPopup(`<strong>${field}:</strong> ${feature.properties[field]}`);
+          }
+        }).addTo(map);
+
+        map.fitBounds(geojsonLayer.getBounds());
+      }
+
+      // Initial rendering with the first field
+      updateChoropleth(fields[0]);
+
+      // Update the map when a new field is selected
+      fieldSelect.addEventListener('change', function(e) {
+        updateChoropleth(e.target.value);
+      });
+    })
+    .catch(function(error) {
+      console.error('Error loading GeoJSON data:', error);
+    });
+});
+</script>
 {% endblock %}
 
 {% block content %}
