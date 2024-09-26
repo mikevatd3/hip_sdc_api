@@ -220,7 +220,7 @@ class Indicator:
 
     @classmethod
     def identify_missing_tables(cls, variables, db, release="acs2022_5yr"):
-        
+
         tables = {
             var[:-3].upper()
             for var in variables

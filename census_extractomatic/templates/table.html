@@ -25,6 +25,7 @@
 </table>
 </div>
 <div id="table_link" hx-swap-oob="true">
-    <a href="{{ url }}">Copy link for spreadsheet</a>
+    <p>Download data: <a href="{{ url }}">html</a> <a href="{{ geojson_url }}">geojson</a></p>
+    <button hx-trigger="click" hx-target="#data_table" hx-swap="innerHTML">Clear</button>
 </div>
 {% endblock %}

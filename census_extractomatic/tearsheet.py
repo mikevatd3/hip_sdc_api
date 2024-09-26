@@ -1,16 +1,16 @@
-from itertools import groupby
 from urllib.parse import quote, unquote
+import re
+
 from flask import render_template, request, jsonify, Blueprint, current_app
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from psycopg2.errors import UndefinedTable
 import tomli
 
-from lesp.analyze import extract_variables, validate_program, LespCompileError
+from lesp.analyze import extract_variables
 from census_extractomatic._api.download_data import pack_geojson_response
 
-from .variable_organize import arrange_variable_hierarchy
 from .access import Geography, Indicator, Tearsheet
 
 
@@ -162,6 +162,66 @@ def validate_test():
     return render_template("validate_only.html")
 
 
+@tearsheet.route("/validate-geography")
+def validate_geo():
+
+    # Before DB hit
+    # 1. If parent-child, make sure the relationship makes sense
+    # 2. Make sure the main geoid follows the basic
+
+    valid_suffixes = {
+        "040": ("state", r"04000US\d{2}$"),
+        "050": ("county", r"05000US\d{5}$"),
+        "060": ("county subdivision", r"06000US\d{10}$"),
+        "140": ("tract", r"14000US\d{11}$"),
+        "860": ("zip code", r"86000US\d{5}$"),
+        "970": ("school district", r"97000US\d{7}$"),
+    }
+
+    valid_children = {
+        "040": {"050", "060", "140", "860"},
+        "050": {"140", "060", "860"},
+        "060": {"140", "860"},
+    }
+
+    if request.method == "POST":
+        geographies = (
+            request.form.get("geographies", "")
+            .strip()
+            .replace(", ", ",")
+            .split(",")
+        )
+    else:
+        geographies = (
+            request.args.get("geographies", "")
+            .strip()
+            .replace(", ", ",")
+            .split(",")
+        )
+
+    helpers = []
+    for geo_arg in geographies:
+        *children, geography = geo_arg.split("|")
+        readable, check_re = valid_suffixes[geography[:3]]
+
+        matcher = re.compile(check_re)
+        if not matcher.match(geography):
+            helpers.append(
+                f"'{geography}' is not a valid geoid for a {readable} (geoids beginning with {geography[:3]})"
+            )
+
+        if bool(children) and (
+            children[0] not in valid_children[geography[:3]]
+        ):
+            helpers.append(
+                f"'{children[0]}' is not a valid child for '{geography}'"
+            )
+
+        return render_template("validation.html", helpers=helpers)
+
+    return render_template("validation.html")
+
+
 @tearsheet.route("/validate-program", methods=["GET", "POST"])
 def validate_lesp():
     if request.method == "POST":
@@ -213,7 +273,8 @@ def validate_lesp():
 
         helpers = [
             f"{table} isn't available in the ACS 5-year, check your variable spelling"
-            for table in missing_tables if table.strip() # Trying to handle weird edge case where '' is getting warned on.
+            for table in missing_tables
+            if table.strip()  # Trying to handle weird edge case where '' is getting warned on.
         ]
 
         return render_template("validation.html", helpers=helpers)
@@ -311,9 +372,11 @@ def text_search():
             "title": row.highlighted_text.split("\n")[0],
             "parent_id": row.parent_id,
             "parent_label": row.parent_label,
-            "variable": row.highlighted_text.split("\n")[1]
-            if (len(row.highlighted_text.split("\n")) > 1)
-            else "",
+            "variable": (
+                row.highlighted_text.split("\n")[1]
+                if (len(row.highlighted_text.split("\n")) > 1)
+                else ""
+            ),
             "universe": row.universe,
         }
         for row in results
