@@ -76,6 +76,7 @@ def sheet():
 
     url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
     geojsonurl = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
+    mapurl = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
 
     current_app.logger.warning(
         request.form if request.method == "POST" else request.args
@@ -98,7 +99,14 @@ def sheet():
                 values=values,
                 url=url,
                 geojsonurl=geojsonurl,
+                mapurl=mapurl,
                 method=request.method,
+            )
+
+        if how == "map":
+            return render_template(
+                "map.html",
+                geojsonurl=geojsonurl,
             )
 
         if how == "geojson":
