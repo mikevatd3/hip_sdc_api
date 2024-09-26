@@ -2,10 +2,16 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
 <style>
+    
+    #map-container {
+        position: relative;
+    }
+
     #map {
-        height: 100vh;
+        height: 90vh;
         width: 100%;
     }
+
     #controls {
         margin: 10px;
         padding: 10px;
@@ -151,11 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
 {% endblock %}
 
 {% block content %}
-<div id="map"></div>
-<div id="controls">
-    <label for="field-select">Choose a field:</label>
-    <select id="field-select">
-        <!-- Options will be populated dynamically -->
-    </select>
+<div id="map-container">
+    <div id="map"></div>
+    <div id="controls">
+        <label for="field-select">Choose a field:</label>
+        <select id="field-select">
+            <!-- Options will be populated dynamically -->
+        </select>
+    </div>
 </div>
 {% endblock %}
