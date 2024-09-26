@@ -76,7 +76,7 @@ def sheet():
 
     url = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
     geojsonurl = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
-    mapurl = f"{BASE_URL}?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
+    mapurl = f"/tearsheet/sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
 
     current_app.logger.warning(
         request.form if request.method == "POST" else request.args

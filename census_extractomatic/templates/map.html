@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }).addTo(map);
 
     // Load the GeoJSON data
-    fetch('/static/data/your_geojson_file.geojson') // Update the path to your GeoJSON file
+    fetch({{ geojsonurl }}) // Update the path to your GeoJSON file
     .then(response => response.json())
     .then(geojsonData => {
         // Verify that geojsonData is loaded
