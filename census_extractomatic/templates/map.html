@@ -113,4 +113,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
             geojsonLayer = L.geoJson(geojsonData, {
                 style: style,
-      
+                onEachFeature: (feature, layer) => {
+                    const value = feature.properties[field];
+                    layer.bindPopup(`<strong>${field}:</strong> ${value}`);
+                }
+            }).addTo(map);
+
+            // Adjust the map view to fit the GeoJSON layer with padding
+            map.fitBounds(geojsonLayer.getBounds(), {
+                padding: [20, 20] // Adjust the padding as needed
+            });
+        }
+
+        // Initial rendering with the first field
+        updateChoropleth(fields[0]);
+
+        // Update the map when a new field is selected
+        fieldSelect.addEventListener('change', e => {
+            updateChoropleth(e.target.value);
+        });
+    })
+    .catch(error => {
+        console.error('Error loading GeoJSON data:', error);
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div id="map"></div>
+<div id="controls">
+    <label for="field-select">Choose a field:</label>
+    <select id="field-select">
+        <!-- Options will be populated dynamically -->
+    </select>
+</div>
+{% endblock %}
