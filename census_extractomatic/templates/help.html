@@ -8,19 +8,22 @@
     straight forward as possible, and it includes a few tricks to simplify other common data pulls.
     </p>
     
-    <h2>Specifying a geography</h2>
+    <h2>🌎 Specifying a geography</h2>
     <h3>Basics</h3>
     <p class="help_text">
-    In the 'geographies' box, enter the geoid for any Census-style geography. For example, if you wanted data for Michigan, enter `04000US26`. 
-    Counties, county subdivisions, tracts, zip codes, are all available. Each of these will be identified by their geoid on a tearsheet. You 
-    can enter multiple geoids separated by a comma to get data for all those geographies.
+    In the 'geographies' box, enter the geoid for any Census-style geography. For example, if you wanted data for 
+    Michigan, enter `04000US26`. Counties, county subdivisions, tracts, zip codes, are all available. Each of these 
+    will be identified by their geoid on a tearsheet. You can enter multiple geoids separated by a comma to get data 
+    for all those geographies.
     </p>
 
     <h3>Advanced</h3>
     <p class="help_text">
     Often, it's useful to select all of a smaller geography level falling within a larger 
     geography. This can be done with a specification trick: use the `|` character.
-    
+    </p>
+
+    <p>
     For example, say you want to get all the zip codes in Detroit, MI. You can do that by starting
     your search with `zips|` then add the for Detroit geoid like normal. Your final search term will 
     look like this:
