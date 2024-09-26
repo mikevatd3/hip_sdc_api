@@ -20,111 +20,97 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
 
-  // Initialize the map
-  var map = L.map('map').setView([0, 0], 2); // Adjust the initial view as needed
+    // Initialize the map without setting the view
+    const map = L.map('map');
 
-  // Add a basemap layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+    // Add a basemap layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-  // Load the GeoJSON data
-  fetch('/static/data/your_geojson_file.geojson') // Update the path to your GeoJSON file
-    .then(function(response) { return response.json(); })
-    .then(function(geojsonData) {
-      // Extract properties from the first feature to get field names
-      var properties = geojsonData.features[0].properties;
-
-      // Filter numeric and boolean fields
-      var fields = [];
-      for (var key in properties) {
-        var value = properties[key];
-        if (typeof value === 'number' || typeof value === 'boolean') {
-          fields.push(key);
-        }
-      }
-
-      // Populate the dropdown menu
-      var fieldSelect = document.getElementById('field-select');
-      fields.forEach(function(field) {
-        var option = document.createElement('option');
-        option.value = field;
-        option.text = field;
-        fieldSelect.appendChild(option);
-      });
-
-      var geojsonLayer;
-
-      // Function to update the choropleth map based on the selected field
-      function updateChoropleth(field) {
-        if (geojsonLayer) {
-          map.removeLayer(geojsonLayer);
+    // Load the GeoJSON data
+    fetch('/static/data/your_geojson_file.geojson') // Update the path to your GeoJSON file
+    .then(response => response.json())
+    .then(geojsonData => {
+        // Verify that geojsonData is loaded
+        if (!geojsonData || !geojsonData.features || geojsonData.features.length === 0) {
+            console.error('GeoJSON data is empty or invalid.');
+            return;
         }
 
-        // Extract values for the selected field
-        var values = geojsonData.features.map(function(feature) {
-          return feature.properties[field];
+        // Extract properties from the first feature to get field names
+        const properties = geojsonData.features[0].properties;
+
+        // Filter numeric and boolean fields
+        const fields = [];
+        for (const key in properties) {
+            const value = properties[key];
+            if (typeof value === 'number' || typeof value === 'boolean') {
+                fields.push(key);
+            }
+        }
+
+        // Check if any numeric or boolean fields are found
+        if (fields.length === 0) {
+            console.error('No numeric or boolean fields found in GeoJSON properties.');
+            return;
+        }
+
+        // Populate the dropdown menu
+        const fieldSelect = document.getElementById('field-select');
+        fields.forEach(field => {
+            const option = document.createElement('option');
+            option.value = field;
+            option.text = field;
+            fieldSelect.appendChild(option);
         });
 
-        var min = Math.min.apply(null, values);
-        var max = Math.max.apply(null, values);
+        let geojsonLayer;
 
-        // Define a color scale
-        var getColor;
-        if (typeof values[0] === 'boolean') {
-          getColor = function(d) {
-            return d ? '#1f78b4' : '#e31a1c';
-          };
-        } else {
-          getColor = function(d) {
-            var ratio = (d - min) / (max - min);
-            return `hsl(${(1 - ratio) * 240}, 100%, 50%)`; // Blue to red scale
-          };
-        }
+        // Function to update the choropleth map based on the selected field
+        function updateChoropleth(field) {
+            if (geojsonLayer) {
+                map.removeLayer(geojsonLayer);
+            }
 
-        function style(feature) {
-          return {
-            fillColor: getColor(feature.properties[field]),
-            weight: 1,
-            opacity: 1,
-            color: 'white',
-            fillOpacity: 0.7
-          };
-        }
+            // Extract values for the selected field
+            const values = geojsonData.features.map(feature => feature.properties[field]);
 
-        geojsonLayer = L.geoJson(geojsonData, {
-          style: style,
-          onEachFeature: function(feature, layer) {
-            layer.bindPopup(`<strong>${field}:</strong> ${feature.properties[field]}`);
-          }
-        }).addTo(map);
+            // Handle cases where values may be undefined
+            const validValues = values.filter(v => v !== undefined && v !== null);
 
-        map.fitBounds(geojsonLayer.getBounds());
-      }
+            if (validValues.length === 0) {
+                console.error(`Field "${field}" has no valid data.`);
+                return;
+            }
 
-      // Initial rendering with the first field
-      updateChoropleth(fields[0]);
+            const min = Math.min(...validValues);
+            const max = Math.max(...validValues);
 
-      // Update the map when a new field is selected
-      fieldSelect.addEventListener('change', function(e) {
-        updateChoropleth(e.target.value);
-      });
-    })
-    .catch(function(error) {
-      console.error('Error loading GeoJSON data:', error);
-    });
-});
-</script>
-{% endblock %}
+            // Define a color scale
+            let getColor;
+            if (typeof validValues[0] === 'boolean') {
+                getColor = d => d ? '#1f78b4' : '#e31a1c';
+            } else {
+                getColor = d => {
+                    const ratio = (d - min) / (max - min);
+                    return `hsl(${(1 - ratio) * 240}, 100%, 50%)`; // Blue to red scale
+                };
+            }
 
-{% block content %}
-<div id="map"></div>
-<div id="controls">
-  <label for="field-select">Choose a field:</label>
-  <select id="field-select">
-    <!-- Options will be populated dynamically -->
-  </select>
-</div>
-{% endblock %}
+            function style(feature) {
+                const value = feature.properties[field];
+                return {
+                    fillColor: getColor(value),
+                    weight: 1,
+                    opacity: 1,
+                    color: 'white',
+                    fillOpacity: 0.7
+                };
+            }
+
+            geojsonLayer = L.geoJson(geojsonData, {
+                style: style,
+      
