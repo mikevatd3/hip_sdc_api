@@ -74,9 +74,9 @@ def sheet():
         release = unquote(request.args.get("release", "acs2022_5yr"))
         how = request.args.get("how")
 
-    url = f"tearsheet/sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
-    geojsonurl = f"tearsheet/sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
-    mapurl = f"tearsheet/sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
+    url = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
+    geojsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
+    mapurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
 
     current_app.logger.warning(
         request.form if request.method == "POST" else request.args
