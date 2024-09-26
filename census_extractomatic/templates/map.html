@@ -2,7 +2,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
 <style>
-    
     #map-container {
         position: relative;
     }
@@ -15,11 +14,38 @@
     #controls {
         margin: 10px;
         padding: 10px;
-        background-color: white;
+        background-color: rgba(255, 255, 255, 0.8);
         z-index: 1000;
         position: absolute;
         top: 10px;
         left: 10px;
+        color: #000;
+    }
+
+    #controls label, #controls select {
+        color: #000;
+    }
+
+    /* Styles for the legend */
+    .info.legend {
+        background: rgba(255, 255, 255, 0.8);
+        padding: 6px 8px;
+        font: 14px/16px Arial, Helvetica, sans-serif;
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 5px;
+        line-height: 18px;
+        color: #000;
+    }
+    .info.legend h4 {
+        margin: 0 0 5px;
+        color: #777;
+    }
+    .info.legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
     }
 </style>
 {% endblock %}
@@ -31,7 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the map without setting the view
     const map = L.map('map');
-    
 
     // Add a basemap layer
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -40,14 +65,18 @@ document.addEventListener('DOMContentLoaded', () => {
         maxZoom: 19
     }).addTo(map);
 
-    /*  This was the default
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-    */
+    // Define the legend control
+    const legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        return div;
+    };
+
+    legend.addTo(map);
 
     // Load the GeoJSON data
-    fetch({{ geojsonurl|tojson }}) // Update the path to your GeoJSON file
+    fetch({{ geojsonurl|tojson }})
     .then(response => response.json())
     .then(geojsonData => {
         // Verify that geojsonData is loaded
@@ -84,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         let geojsonLayer;
+        let validValues = []; // Declare validValues outside the function to access it in updateLegend
 
         // Function to update the choropleth map based on the selected field
         function updateChoropleth(field) {
@@ -95,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const values = geojsonData.features.map(feature => feature.properties[field]);
 
             // Handle cases where values may be undefined
-            const validValues = values.filter(v => v !== undefined && v !== null);
+            validValues = values.filter(v => v !== undefined && v !== null);
 
             if (validValues.length === 0) {
                 console.error(`Field "${field}" has no valid data.`);
@@ -139,6 +169,49 @@ document.addEventListener('DOMContentLoaded', () => {
             map.fitBounds(geojsonLayer.getBounds(), {
                 padding: [20, 20] // Adjust the padding as needed
             });
+
+            // Update the legend
+            updateLegend(field, min, max, getColor);
+        }
+
+        // Function to update the legend
+        function updateLegend(field, min, max, getColor) {
+            const legendDiv = document.querySelector('.legend');
+            if (!legendDiv) return;
+
+            // Clear existing content
+            legendDiv.innerHTML = `<h4>${field}</h4>`;
+
+            if (typeof min === 'undefined' || typeof max === 'undefined') {
+                legendDiv.innerHTML += 'No data available';
+                return;
+            }
+
+            // Create legend content based on data type
+            if (typeof validValues[0] === 'boolean') {
+                // For boolean fields
+                const categories = [true, false];
+                categories.forEach(value => {
+                    legendDiv.innerHTML +=
+                        `<i style="background:${getColor(value)}"></i> ${value}<br>`;
+                });
+            } else {
+                // For numeric fields
+                const grades = 5; // Number of legend intervals
+                const step = (max - min) / grades;
+                const labels = [];
+                for (let i = 0; i <= grades; i++) {
+                    const value = min + step * i;
+                    labels.push(value.toFixed(2));
+                }
+                // Generate legend labels
+                for (let i = 0; i < labels.length - 1; i++) {
+                    const from = labels[i];
+                    const to = labels[i + 1];
+                    legendDiv.innerHTML +=
+                        `<i style="background:${getColor(+from)}"></i> ${from} &ndash; ${to}<br>`;
+                }
+            }
         }
 
         // Initial rendering with the first field
