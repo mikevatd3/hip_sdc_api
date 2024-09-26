@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(geojsonData => {
         // Verify that geojsonData is loaded
         if (!geojsonData || !geojsonData.features || geojsonData.features.length === 0) {
-            console.error('GeoJSON data is empty or invalid.');
+            console.error('GeoJSON data from {{ geojsonurl }} is empty or invalid.');
             return;
         }
 
