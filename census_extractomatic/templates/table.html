@@ -27,7 +27,7 @@
 <div id="table_link" hx-swap-oob="true">
     <p>Download data: <a href="{{ url }}">html</a> <a href="{{ geojsonurl }}">geojson</a></p>
     {% if method != 'GET' %}
-        <button hx-trigger="click" hx-get="/tearsheet/clear" hx-target="#table_link" hx-swap="innerHTML">Clear</button>
+        <button hx-trigger="click" hx-get="/tearsheet/clear" hx-target="#table_link" hx-swap="outerHTML">Clear</button>
         <button hx-post="/tearsheet/sheet"
                 hx-indicator="#build_ind"
                 hx-params="*"
