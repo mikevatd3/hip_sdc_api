@@ -391,7 +391,7 @@ def text_search():
     return render_template("search_results.html", results=hits)
 
 
-@tearsheet.rote("/clear")
+@tearsheet.route("/clear")
 def clear():
     return render_template("control_reset.html")
 
