@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     })
     .catch(error => {
-        console.error('Error loading GeoJSON data:', error);
+        console.error('Error loading GeoJSON data at {{ geojsonurl|tojson }}:', error);
     });
 });
 </script>
