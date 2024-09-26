@@ -11,8 +11,9 @@
            hx-indicator="#val_ind"
            placeholder="Enter indicators here"></input>
     </div>
+    <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
+    <div id="error-message"></div>
     <input name="how" type="hidden" value="html"></input>
-
     <div id="table_link">
         <button hx-post="/tearsheet/sheet"
                 hx-indicator="#build_ind"
@@ -22,8 +23,6 @@
                 hx-swap="outerHTML">Create tearsheet</button>
     </div>
 </form>
-<div id="error-message"></div>
-<div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
 {% endblock %}
