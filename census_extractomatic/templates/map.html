@@ -80,6 +80,7 @@
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
+const DATA_URL = {{ geojsonurl|tojson }};
 function buildLabeler(fields) {
     const labeler = (feature, layer) => {
         layer.bindPopup(
