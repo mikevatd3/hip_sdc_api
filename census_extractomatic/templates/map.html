@@ -2,6 +2,9 @@
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
 <style>
+    body {
+        background-color: black;
+    }
     #map-container {
         position: relative;
     }
@@ -12,8 +15,8 @@
     }
 
     #controls {
-        margin: 10px;
-        padding: 10px;
+        margin: 1rem;
+        padding: 0.5rem;
         background-color: rgba(255, 255, 255, 0.8);
         z-index: 1000;
         position: absolute;
@@ -21,7 +24,11 @@
         left: 1rem;
     }
 
-    #controls label, #controls select {
+    #controls label {
+        color: black;
+    }
+
+    #controls select {
         color: #000;
         background-color: rgba(225, 225, 255, 0.8);
     }
@@ -29,16 +36,14 @@
     /* Styles for the legend */
     .info.legend {
         background: rgba(255, 255, 255, 0.8);
-        padding: 6px 8px;
+        padding: 0.25rem 0.5rem;
         font: 14px/16px Arial, Helvetica, sans-serif;
-        box-shadow: 0 0 15px rgba(0,0,0,0.2);
-        border-radius: 3px;
         line-height: 18px;
         color: #000;
     }
     .info.legend h4 {
-        margin: 0 0 5px;
-        color: #777;
+        margin: 0 0 1rem;
+        color: #555;
     }
     .info.legend i {
         width: 18px;
@@ -47,14 +52,48 @@
         margin-right: 8px;
         opacity: 0.7;
     }
+    .leaflet-control-zoom-in, 
+    .leaflet-control-zoom-out {
+        padding: 0;
+    }
+    .leaflet-popup-content p {
+        color: black;
+        opacity: 1;
+        margin: 0.25rem;
+        margin-left: 0.5rem;
+    }
+
+    .leaflet-popup-content p:first-child {
+        text-wrap: balance;
+        min-width: 25ch;
+        margin-bottom: 0.5rem;
+        margin-left: 0;
+    }
+
+    .moe {
+        color: #afafaf;
+        font-style: italic;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+function buildLabeler(fields) {
+    const labeler = (feature, layer) => {
+        layer.bindPopup(
+            [`<p><strong>${feature.properties['name']}</strong></p>`].concat(
+            fields.map(
+                field => `<p><strong>${field}:</strong> ${feature.properties[field]} <span class="moe">±${feature.properties[field + "_moe"]}</span></p>`
+            )).join("\n")
+        );
+    };
+    return labeler;
+};
 
+
+document.addEventListener('DOMContentLoaded', () => {
     // Initialize the map without setting the view
     const map = L.map('map');
 
@@ -76,12 +115,12 @@ document.addEventListener('DOMContentLoaded', () => {
     legend.addTo(map);
 
     // Load the GeoJSON data
-    fetch({{ geojsonurl|tojson }})
+    fetch(DATA_URL)
     .then(response => response.json())
     .then(geojsonData => {
         // Verify that geojsonData is loaded
         if (!geojsonData || !geojsonData.features || geojsonData.features.length === 0) {
-            console.error('GeoJSON data from {{ geojsonurl|tojson }} is empty or invalid.');
+            console.error(`GeoJSON data from ${DATA_URL} is empty or invalid.`);
             return;
         }
 
@@ -92,7 +131,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const fields = [];
         for (const key in properties) {
             const value = properties[key];
-            if (typeof value === 'number' || typeof value === 'boolean') {
+            if (
+                (
+                    typeof value === 'number' 
+                    || typeof value === 'boolean'
+                ) && !key.endsWith("_moe")
+            ) {
                 fields.push(key);
             }
         }
@@ -102,6 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('No numeric or boolean fields found in GeoJSON properties.');
             return;
         }
+        
+        labelFeature = buildLabeler(fields);
 
         // Populate the dropdown menu
         const fieldSelect = document.getElementById('field-select');
@@ -114,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let geojsonLayer;
         let validValues = []; // Declare validValues outside the function to access it in updateLegend
+
 
         // Function to update the choropleth map based on the selected field
         function updateChoropleth(field) {
@@ -141,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 getColor = d => d ? '#1f78b4' : '#e31a1c';
             } else {
                 getColor = d => {
+                    if (d == null) return '#aaaaaa';
                     const ratio = (d - min) / (max - min);
                     return `hsl(${(1 - ratio) * 240}, 100%, 50%)`; // Blue to red scale
                 };
@@ -159,10 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             geojsonLayer = L.geoJson(geojsonData, {
                 style: style,
-                onEachFeature: (feature, layer) => {
-                    const value = feature.properties[field];
-                    layer.bindPopup(`<strong>${field}:</strong> ${value}`);
-                }
+                onEachFeature: labelFeature,
             }).addTo(map);
 
             // Adjust the map view to fit the GeoJSON layer with padding
@@ -205,11 +250,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     labels.push(value.toFixed(2));
                 }
                 // Generate legend labels
-                for (let i = 0; i < labels.length - 1; i++) {
+                for (let i = 0; i < labels.length; i++) {
                     const from = labels[i];
-                    const to = labels[i + 1];
                     legendDiv.innerHTML +=
-                        `<i style="background:${getColor(+from)}"></i> ${from} &ndash; ${to}<br>`;
+                        `<i style="background:${getColor(+from)}"></i> ${from}<br>`;
                 }
             }
         }
@@ -223,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     })
     .catch(error => {
-        console.error('Error loading GeoJSON data at {{ geojsonurl|tojson }}:', error);
+        console.error(`Error loading GeoJSON data at ${DATA_URL}:`, error);
     });
 });
 </script>
