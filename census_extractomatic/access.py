@@ -220,7 +220,6 @@ class Indicator:
 
     @classmethod
     def identify_missing_tables(cls, variables, db, release="acs2022_5yr"):
-
         tables = {
             var[:-3].upper()
             for var in variables
@@ -358,6 +357,13 @@ class Indicator:
         return result.fetchall()
 
 
+class CensusAPIIndicator:
+    """
+    This should handle the same data pull steps available on the class
+    above but using the census API, not the census reporter database.
+    """
+
+
 class Tearsheet:
     @staticmethod
     def create(geographies, indicators, db, release="acs2022_5yr", geom=False):
@@ -430,12 +436,13 @@ class Geography:
     def search(query, db):
         stmt = text(
             """
-            select *
-            from geo_lookup
-            where search_col @@ to_tsquery(:query)
+            select display_name, full_geoid, population
+            from tiger2022.census_name_lookup
+            where geoid like '26%'
+            and to_tsvector(display_name || ' ' || full_geoid) @@ to_tsquery(:query)
             and priority is not null
-            order by priority desc
-            limit 5;
+            order by priority::int asc, population desc
+            limit 10;
             """
         )
 
