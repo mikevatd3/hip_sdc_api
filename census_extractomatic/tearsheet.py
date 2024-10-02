@@ -19,6 +19,13 @@ tearsheet = Blueprint("tearsheet", __name__)
 CORS(tearsheet)
 
 
+RECIPES = {
+    ":population": "B01001001",
+    ":pop_density": "(/ B01001001 (/ land_area 2589988))",
+    ":housing_units": "B25001001",
+}
+
+
 with open("config.toml", "rb") as f:
     conf = tomli.load(f)
 
@@ -171,6 +178,11 @@ def geo_search():
         return render_template("geo_results.html", result=result)
 
 
+@tearsheet.route("/recipes", methods=["GET", "POST"])
+def recipes():
+    return render_template("recipes.html", recipes=[])
+
+
 @tearsheet.route("/validate-test", methods=["GET", "POST"])
 def validate_test():
     return render_template("validate_only.html")
@@ -178,7 +190,6 @@ def validate_test():
 
 @tearsheet.route("/validate-geography")
 def validate_geo():
-
     # Before DB hit
     # 1. If parent-child, make sure the relationship makes sense
     # 2. Make sure the main geoid follows the basic
@@ -231,9 +242,7 @@ def validate_geo():
                 f"'{children[0]}' is not a valid child for '{geography}'"
             )
 
-        return render_template("validation.html", helpers=helpers)
-
-    return render_template("validation.html")
+    return render_template("validation.html", helpers=helpers)
 
 
 @tearsheet.route("/validate-program", methods=["GET", "POST"])
@@ -255,9 +264,13 @@ def validate_lesp():
         )
 
     # Part 1. Validate LESP
-
     helpers = []
     for indicator in indicators:
+        if indicator.startswith(":") and ("|" in indicator):
+            helpers.append(
+                "You cannot use a recipe name (starts with ':' as an indicator name in {indicator}."
+            )
+
         name, *eq = indicator.split("|")
         if eq:
             success, message = Indicator.validate_indicator(eq[0])

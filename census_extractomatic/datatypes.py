@@ -33,32 +33,23 @@ some numeric type or None.
 
 @dataclass(frozen=True, slots=True)
 class Maybe:
-    def __abs__(self):
-        ...
+    def __abs__(self): ...
 
-    def __add__(self, _):
-        ...
+    def __add__(self, _): ...
 
-    def __sub__(self, _):
-        ...
+    def __sub__(self, _): ...
 
-    def __neg__(self):
-        ...
+    def __neg__(self): ...
 
-    def __pow__(self, _):
-        ...
+    def __pow__(self, _): ...
 
-    def __mult__(self, _):
-        ...
+    def __mult__(self, _): ...
 
-    def __truediv__(self, _):
-        ...
+    def __truediv__(self, _): ...
 
-    def __le__(self, _):
-        ...
+    def __le__(self, _): ...
 
-    def __lt__(self, _):
-        ...
+    def __lt__(self, _): ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +91,8 @@ class Empty(Maybe):
                 raise TypeError(
                     "Some types can only be subtracted with another maybe"
                 )
+    
+    __rsub__ = __sub__
 
     def __lt__(self, _: Maybe):
         return False
@@ -189,7 +182,7 @@ class Some(Maybe):
     def __neg__(self):
         return Some(-self.inner)
 
-    def __sub__(self, another: Maybe):
+    def __sub__(self, another: Maybe | int | float):
         match another:
             case Some(_):
                 return Some(self.inner - another.inner)
@@ -201,6 +194,8 @@ class Some(Maybe):
                 raise TypeError(
                     "Somes must be subtracted by a float, int or maybe. Received {type(another)}."
                 )
+
+    __rsub__ = __sub__
 
     def __mul__(self, another: int | float | Maybe):
         match another:
@@ -217,7 +212,7 @@ class Some(Maybe):
 
     __rmul__ = __mul__
 
-    def __truediv__(self, another: Maybe):
+    def __truediv__(self, another: Maybe | int | float):
         match another:
             case Some(value):
                 try:
@@ -305,10 +300,8 @@ class TearValue:  # (Real)
                 error=Some(sqrt(self.error.inner**2 + other.error.inner**2)),
             )
         except TypeError as e:
-            return TearValue(
-                value=self.value + other.value,
-                error=Empty()
-            )
+            return TearValue(value=self.value + other.value, error=Empty())
+
     __radd__ = __add__
 
     def __ceil__(self) -> "TearValue":
