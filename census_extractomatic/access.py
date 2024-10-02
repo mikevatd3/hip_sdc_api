@@ -162,11 +162,11 @@ class Indicator:
         tables = {
             var[:-3] for var in variables if var not in cls.special_variables
         }
-        first_table = Table(tables.pop() + "_moe")
         geoheader = Table("geoheader")
 
         to_collect = []
         specials = []
+
         for var in set(variables):
             if var in cls.special_variables:
                 specials.append(var)
@@ -174,18 +174,18 @@ class Indicator:
                 to_collect.append(Column(var.lower()))
                 to_collect.append(Column(var.lower() + "_moe"))
 
-        stmt = Query.from_(first_table).select(
-            first_table.geoid, geoheader.name, *to_collect
+        stmt = Query.from_(geoheader).select(
+            geoheader.geoid, geoheader.name, *to_collect
         )
 
         for table in tables:
             table = Table(table.lower() + "_moe")
-            stmt = stmt.join(table).on(table.geoid == first_table.geoid)
+            stmt = stmt.left_join(table).on(table.geoid == geoheader.geoid)
 
         if geom | bool(specials):
             tiger2022 = Schema("tiger2022")
             stmt = stmt.join(tiger2022.census_name_lookup).on(
-                tiger2022.census_name_lookup.full_geoid == first_table.geoid
+                tiger2022.census_name_lookup.full_geoid == geoheader.geoid
             )
 
             # I don't like this nesting
@@ -203,11 +203,7 @@ class Indicator:
                     ]
                 )
 
-        stmt = (
-            stmt.join(geoheader)
-            .on(first_table.geoid == geoheader.geoid)
-            .where(first_table.geoid.isin(prepared_geos))
-        )
+        stmt = stmt.where(geoheader.geoid.isin(prepared_geos))
 
         db.execute(
             text("SET search_path TO :acs, d3_2024, d3_present, public;"),
