@@ -456,11 +456,10 @@ def text_search():
     return render_template("search_results.html", results=hits)
 
 
-<<<<<<< HEAD
 @tearsheet.route("/clear")
 def clear():
     return render_template("control_reset.html")
-=======
+
 def convert_to_dicts(variable_list):
     return [
         {
