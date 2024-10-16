@@ -132,5 +132,32 @@
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
 <script>
+    // Function to attach event listeners
+    function attachDialogEvents() {
+        const dialog = document.getElementById("var-search");
+        const openBtn = document.getElementById("var-search-open");
+        const closeBtn = document.getElementById("var-search-close");
+
+        if (openBtn && dialog) {
+            openBtn.addEventListener('click', () => {
+                dialog.show();
+            });
+        }
+
+        if (closeBtn && dialog) {
+            closeBtn.addEventListener('click', () => {
+                dialog.close();
+            });
+        }
+    }
+
+    // Initial attachment of event listeners
+    attachDialogEvents();
+
+    // Listen for htmx content replacement
+    document.body.addEventListener('htmx:afterSettle', function(evt) {
+        // Reattach event listeners after htmx call settles
+        attachDialogEvents();
+    });
 </script>
 {% endblock %}
