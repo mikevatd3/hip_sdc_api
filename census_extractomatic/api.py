@@ -63,6 +63,7 @@ app.config.from_object(
     )
 )
 app.config["SECRET_KEY"] = config["sessions"]["secret_key"]
+app.jinja_env.globals.update(zip=zip)
 
 db = SQLAlchemy(app)
 login = LoginManager(app)

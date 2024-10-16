@@ -16,6 +16,7 @@ from .access import Geography, Indicator, Tearsheet
 
 
 tearsheet = Blueprint("tearsheet", __name__)
+tearsheet.jinja_env.globals.update(zip=zip)
 
 CORS(tearsheet)
 
