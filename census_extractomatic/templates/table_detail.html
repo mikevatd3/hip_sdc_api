@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    .variable-id {
+        font-family: courier;
+    }
+
+    .tree ul {
+        padding-inline-start: 2em;
+        padding-left: 1.5em;
+        list-style-type: none;
+        margin-bottom: 0;
+    }
+    
+    .tree li {
+        list-style-type: none;
+        position: relative;
+        margin-bottom: 0.5em;
+    }
+
+    .tree li::before {
+        content: '';
+        border-left: 1px solid #555;
+        position: absolute;
+        top: 0.2em;
+        left: -1em;
+        bottom: -1.2em;
+    }
+
+    .tree li:last-child::before {
+        bottom: 0.5em;
+    }
+
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/htmx.org@2.0.2"></script>
+{% endblock %}
+
+{% block content %}
+<article id="table-summary">
+    <header>
+        <button aria-label="Close" id="var-search-close" rel="prev"></button>
+        <p><strong>Table {{ table.table_id }} - {{ table.table_label }}</strong></h1>
+    </header>
+    <p><a href="javascript:window.history.back();">Back to search results</a></p>
+    <p>Universe: {{ table.universe }} </p>
+    <ul class="tree">
+      {% if not variables %}
+        <p>No variable information available</p>
+      {% endif %}
+      {%- for variable in variables recursive %}
+      <li><span class="variable-id">{{ variable.variable_id }}:  </span> {{ variable.variable_label }}
+        {%- if variable.children %}
+          <ul>{{ loop(variable.children) }}</ul>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+</article>
+{% endblock %}
+
