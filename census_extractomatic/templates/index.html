@@ -1,18 +1,126 @@
 {% extends 'base.html' %}
+{% block extra_css %}
+<style>
+  input {
+    font-size: 1.3em;
+    width: 98%;
+    height: 2em;
+    border-radius: 0.5em;
+    padding: 0.5em;
+  }
+
+  dialog {
+      align-items: start;
+      backdrop-filter: none;
+      background: linear-gradient(
+          180deg, 
+          rgba(0,0,0, 0.75), 
+          rgba(0,0,0, 0.5), 3rem, 
+          rgba(0, 0, 0, 0), 5rem, 
+          rgba(0, 0, 0, 0), 10rem, 
+          rgba(0, 0, 0, 0.5), 12rem, 
+          rgba(0,0,0, 0.75));
+    }
+    
+    dialog article {
+        margin-top: 8.8rem;
+        width: 95%;
+        max-width: 65rem;
+        max-height: calc(95% - 8.8rem);
+    }
+    
+    .result-row {
+      border-color: #FFFFFF;
+      border-style: solid;
+      border-width: 1px;
+      border-radius: 0.5em;
+      padding: 1em;
+      margin-bottom: 1em;
+    }
+    #results {
+      margin-top: 1em;
+    }
+    .variable-result {
+      margin-left: 2em;
+    }
+    h3 a {
+      text-decoration: none;
+    }
+
+
+    .variable-id {
+        font-family: courier;
+    }
+
+    .tree ul {
+        padding-inline-start: 2em;
+        padding-left: 1.5em;
+        list-style-type: none;
+        margin-bottom: 0;
+    }
+    
+    .tree li {
+        list-style-type: none;
+        position: relative;
+        margin-bottom: 0.5em;
+    }
+
+    .tree li::before {
+        content: '';
+        border-left: 1px solid #555;
+        position: absolute;
+        top: 0.2em;
+        left: -1em;
+        bottom: -1.2em;
+    }
+
+    .tree li:last-child::before {
+        bottom: 0.5em;
+    }
+</style>
+{% endblock %}
 {% block content %}
 <form>
-    <input name="geographies" placeholder="Enter geographies here"></input>
-    <input type="text"
-           name="indicators" 
-           hx-get="/tearsheet/validate-program"
-           hx-trigger="keyup delay:500ms changed"
-           hx-target="#error-message"
-           hx-swap="innerHTML"
-           hx-indicator="#val_ind"
-           placeholder="Enter indicators here"></input>
+    <div id="geography-inputs">
+        <input name="geographies" placeholder="Enter geographies here"></input>
     </div>
+<<<<<<< HEAD
     <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
     <div id="error-message"></div>
+=======
+    <div id="indicator-inputs">
+        <input type="text"
+               name="indicators" 
+               hx-get="/tearsheet/validate-program"
+               hx-trigger="keyup delay:500ms changed"
+               hx-target="#error-message"
+               hx-swap="innerHTML"
+               hx-indicator="#val_ind"
+               placeholder="Enter indicators here"></input>
+        <button id="var-search-open">Search variables</button>
+        <dialog id="var-search">
+            <article id="search-tool">
+                <header>
+                  <button aria-label="Close" id="var-search-close" rel="prev"></button>
+                  <p>
+                    <strong>Search census tables and variables</strong>
+                  </p>
+                </header>
+                <input name="q"
+                       hx-get="/censearch/text-search"
+                       hx-trigger="keyup delay:500ms changed"
+                       hx-target="#results"
+                       hx-indicator="#load-ind"
+                       placeholder="search the ACS">
+                <div id="load-ind" class="htmx-indicator">
+                  <h3>Loading results ...</h3>
+                </div>
+                <div id="results"></div>
+            </article>
+        </dialog>
+    </div>
+</div>
+>>>>>>> 2809138 (Started integrating censearch tools with tearsheet.)
     <input name="how" type="hidden" value="html"></input>
     <div id="table_link">
         <p></p>
@@ -24,6 +132,10 @@
                 hx-swap="outerHTML">Create tearsheet</button>
     </div>
 </form>
+<div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
+<div id="error-message"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
+<script>
+</script>
 {% endblock %}
