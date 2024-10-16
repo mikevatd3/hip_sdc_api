@@ -529,7 +529,6 @@ def table_detail_page(table_id):
     return render_template(
         "table_detail.html", table=table, variables=nested_variables
     )
->>>>>>> 2809138 (Started integrating censearch tools with tearsheet.)
 
 
 @tearsheet.route("/help")
