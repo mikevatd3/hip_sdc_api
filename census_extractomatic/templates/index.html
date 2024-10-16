@@ -93,27 +93,6 @@
                hx-swap="innerHTML"
                hx-indicator="#val_ind"
                placeholder="Enter indicators here"></input>
-        <button id="var-search-open">Search variables</button>
-        <dialog id="var-search">
-            <article id="search-tool">
-                <header>
-                  <button aria-label="Close" id="var-search-close" rel="prev"></button>
-                  <p>
-                    <strong>Search census tables and variables</strong>
-                  </p>
-                </header>
-                <input name="q"
-                       hx-get="/censearch/text-search"
-                       hx-trigger="keyup delay:500ms changed"
-                       hx-target="#results"
-                       hx-indicator="#load-ind"
-                       placeholder="search the ACS">
-                <div id="load-ind" class="htmx-indicator">
-                  <h3>Loading results ...</h3>
-                </div>
-                <div id="results"></div>
-            </article>
-        </dialog>
     </div>
 </div>
     <input name="how" type="hidden" value="html"></input>
@@ -127,6 +106,27 @@
                 hx-swap="outerHTML">Create tearsheet</button>
     </div>
 </form>
+<button id="var-search-open">Search variables</button>
+<dialog id="var-search">
+    <article id="search-tool">
+        <header>
+          <button aria-label="Close" id="var-search-close" rel="prev"></button>
+          <p>
+            <strong>Search census tables and variables</strong>
+          </p>
+        </header>
+        <input name="q"
+               hx-get="/censearch/text-search"
+               hx-trigger="keyup delay:500ms changed"
+               hx-target="#results"
+               hx-indicator="#load-ind"
+               placeholder="search the ACS">
+        <div id="load-ind" class="htmx-indicator">
+          <h3>Loading results ...</h3>
+        </div>
+        <div id="results"></div>
+    </article>
+</dialog>
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="error-message"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
