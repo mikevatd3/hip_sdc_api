@@ -1,15 +1,19 @@
-{% for table in tables %}
-<details>
-    <summary>{{ table.table_id}} - {{ table.table_title }}</summary>
-    <ul>
-    {%- for variable in table.variables recursive %}
-        <li>
-        {{ variable.column_id }} - {{ variable.column_title }}
-        {%- if variable.children %}
-            <ul>{{ loop(variable.children) }}</ul>
-            {%- endif %}
-        </li>
-    {% endfor %}
-    </ul>
-</details>
+{% for result in results %}
+<div class="result-row">
+  <div class="table-title">
+  <h3><a hx-get="/varsearch/tables/{{ result.table_id }}"
+         hx-select="#table-summary"
+         hx-target="#search-tool"
+         hx-swap="outerHTML"
+         hx-push-url="true"
+         href="#">Table {{ result.table_id }}</a></h3>
+  <p>{{ result.table|safe }}</p>
+  </div>
+  {% if result.variable_id %}
+  {% for id, var in zip(result.variable_id, result.variable) %}
+      <p><strong>{{ id }}:</strong> {{ var|safe }}</p>
+  {% endfor %}
+  {% endif %}
+  <p>Universe: {{ result.universe }}</p>
+</div>
 {% endfor %}

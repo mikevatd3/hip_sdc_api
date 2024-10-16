@@ -453,12 +453,13 @@ def text_search():
     if how == "json":
         return jsonify(hits)
 
-    return render_template("search_results.html", results=hits)
+    return render_template("var_results.html", results=hits)
 
 
 @tearsheet.route("/clear")
 def clear():
     return render_template("control_reset.html")
+
 
 def convert_to_dicts(variable_list):
     return [
