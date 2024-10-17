@@ -135,7 +135,7 @@
     // Functions to attach event listeners
     function attachAddIndicators() {
         const variables = document.getElementsByClassName("variable-id");
-        variables.forEach(
+        Array.from(variables).forEach(
         (elem) => {
             const textContent = elem.textContent
             elem.addEventListener('click', () => {
