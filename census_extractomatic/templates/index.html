@@ -132,13 +132,14 @@
 <div id="data_table"></div>
 <script>
     // Function to attach event listeners
+    const baseurl = window.location.href;
+
     function attachDialogEvents() {
         const dialog = document.getElementById("var-search");
         const openBtn = document.getElementById("var-search-open");
         const closeBtn = document.getElementById("var-search-close");
 
         if (openBtn && dialog) {
-            let originalUrl = window.location.href;
             openBtn.addEventListener('click', () => {
                 dialog.show();
             });
@@ -146,7 +147,7 @@
 
         if (closeBtn && dialog) {
             closeBtn.addEventListener('click', () => {
-                window.history.replaceState({}, '', originalUrl);
+                window.history.replaceState({}, '', baseUrl);
                 dialog.close();
             });
         }
