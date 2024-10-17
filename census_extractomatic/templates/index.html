@@ -133,12 +133,12 @@
 <script>
     // Functions to attach event listeners
     function attachAddIndicator() {
-        document.getElementsByClassName("variable-id")
-            .forEach((elem) => {
-                elem.addEventListener('click', () => {
-                    console.log(elem.textContent);
-                };
-            };
+        document.getElementsByClassName("variable-id").forEach(
+        (elem) => {
+            elem.addEventListener('click', () => {
+                console.log(elem.textContent);
+            });
+        });
     };
 
     function attachDialogEvents() {
