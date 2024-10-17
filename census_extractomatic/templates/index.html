@@ -176,10 +176,21 @@
         const geographyWork = document.getElementById("indicators").textContent;
         const indicatorWork = document.getElementById("indicators").textContent;
 
+        localStorage.setItem('geographyWork', geographyWork);
+        localStorage.setItem('indicatorWork', indicatorWork);
+
         window.history.back();
+    };
+
+    function restoreWork() {
+        const geographyWork = localStorage.getItem('geographyWork');
+        const indicatorWork = localStorage.getItem('indicatorWork');
 
         document.getElementById("geographies").textContent = geographyWork;
         document.getElementById("indicators").textContent = indicatorWork;
+
+        localStorage.removeItem('geographyWork');
+        localStorage.removeItem('indicatorWork');
     };
 
 
@@ -210,6 +221,7 @@
         // Reattach event listeners after htmx call settles
         attachDialogEvents();
         attachAddIndicators();
+        restoreWork();
     });
 </script>
 {% endblock %}
