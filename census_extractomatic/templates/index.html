@@ -223,7 +223,8 @@
         attachAddIndicators();
     });
 
-    document.body.addEventListener('htmx:historyRestore', function(evt) {
+    document.body.addEventListener('DOMContentLoaded', function(evt) {
+        console.log("history restored");
         restoreWork();
     });
 </script>
