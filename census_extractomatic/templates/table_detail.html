@@ -52,7 +52,7 @@
         <p>No variable information available</p>
       {% endif %}
       {%- for variable in variables recursive %}
-      <li><span class="variable-id">{{ variable.variable_id }}:  </span> {{ variable.variable_label }}
+      <li><span class="variable-id">{{ variable.variable_id }}</span>: {{ variable.variable_label }}
         {%- if variable.children %}
           <ul>{{ loop(variable.children) }}</ul>
         {% endif %}

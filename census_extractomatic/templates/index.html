@@ -131,8 +131,15 @@
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
 <script>
-    // Function to attach event listeners
-    console.log("Event listener")
+    // Functions to attach event listeners
+    function attachAddIndicator() {
+        document.getElementsByClassName("variable-id")
+            .forEach((elem) => {
+                elem.addEventListener('click', () => {
+                    console.log(elem.textContent);
+                };
+            };
+    };
 
     function attachDialogEvents() {
         const dialog = document.getElementById("var-search");
