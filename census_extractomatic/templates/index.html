@@ -151,16 +151,19 @@
 
         Array.from(variables).forEach(
         (elem) => {
-            const textContent = elem.textContent
-            elem.addEventListener('click', () => {
-                if (!varInput.value) {
-                    varInput.value = textContent;
-                } else if (bracketsOpen(varInput.value)) {
-                    varInput.value += " " + textContent;
-                } else if (varInput.value.slice(-1) === "|") {
-                    varInput.value += textContent;
-                } else {
-                    varInput.value += ", " + textContent;
+            const textContent = elem.textContent;
+            if (!elem.hasListener) {
+                elem.addEventListener('click', () => {
+                    if (!varInput.value) {
+                        varInput.value = textContent;
+                    } else if (bracketsOpen(varInput.value)) {
+                        varInput.value += " " + textContent;
+                    } else if (varInput.value.slice(-1) === "|") {
+                        varInput.value += textContent;
+                    } else {
+                        varInput.value += ", " + textContent;
+                    }
+                elem.hasListener = true;
                 }
             });
         });
