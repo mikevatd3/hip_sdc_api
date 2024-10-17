@@ -138,6 +138,7 @@
         const closeBtn = document.getElementById("var-search-close");
 
         if (openBtn && dialog) {
+            let originalUrl = window.location.href;
             openBtn.addEventListener('click', () => {
                 dialog.show();
             });
@@ -145,7 +146,7 @@
 
         if (closeBtn && dialog) {
             closeBtn.addEventListener('click', () => {
-                history.popstate();
+                window.history.replaceState({}, '', originalUrl);
                 dialog.close();
             });
         }
