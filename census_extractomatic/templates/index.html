@@ -86,7 +86,8 @@
     </div>
     <div id="indicator-inputs">
         <input type="text"
-               name="indicators" 
+               name="indicators"
+               id="indicators"
                hx-get="/tearsheet/validate-program"
                hx-trigger="keyup delay:500ms changed"
                hx-target="#error-message"
@@ -132,14 +133,35 @@
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
 <script>
+    // Needed later for adding variables
+    function bracketsOpen(formula) {
+        let openCount = 0;
+
+        for (const char of formula) {
+            if (char === "(") openCount += 1;
+            if (char === ")") openCount -= 1;
+        }
+        return (openCount != 0);
+    }
+
     // Functions to attach event listeners
     function attachAddIndicators() {
         const variables = document.getElementsByClassName("variable-id");
+        const varInput = document.getElementById("indicators"); 
+
         Array.from(variables).forEach(
         (elem) => {
             const textContent = elem.textContent
             elem.addEventListener('click', () => {
-                console.log(textContent);
+                if (!varInput.value) {
+                    varInput.value = textContent;
+                } else if (bracketsOpen(varInput.value)) {
+                    varInput.value += " " + textContent;
+                } else if (varInput.value.slice(-1) === "|") {
+                    varInput.value += textContent;
+                } else {
+                    varInput.value += ", " + textContent;
+                }
             });
         });
     };
