@@ -11,7 +11,7 @@
   </div>
   {% if result.variable_id %}
   {% for id, var in zip(result.variable_id, result.variable) %}
-      <p><strong>{{ id }}:</strong> {{ var|safe }}</p>
+      <p><span class="variable-id">{{ id }}</span>: {{ var|safe }}</p>
   {% endfor %}
   {% endif %}
   <p>Universe: {{ result.universe }}</p>
