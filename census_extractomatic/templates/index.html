@@ -82,7 +82,9 @@
 {% block content %}
 <form>
     <div id="geography-inputs">
-        <input name="geographies" placeholder="Enter geographies here"></input>
+        <input name="geographies"
+               id="geographies"
+               placeholder="Enter geographies here"></input>
     </div>
     <div id="indicator-inputs">
         <input type="text"
@@ -98,7 +100,6 @@
 </div>
     <input name="how" type="hidden" value="html"></input>
     <div id="table_link">
-        <p></p>
         <button hx-post="/tearsheet/sheet"
                 hx-indicator="#build_ind"
                 hx-params="*"
@@ -168,6 +169,16 @@
             }
         });
     };
+
+    function backFromTableDetail() {
+        const geographyWork = document.getElementById("indicators").textContent;
+        const indicatorWork = document.getElementById("indicators").textContent;
+
+        window.history.back();
+
+        document.getElementById("geographies") = geographyWork;
+        document.getElementById("indicators") = indicatorWork;
+    }
 
     function attachDialogEvents() {
         const dialog = document.getElementById("var-search");
