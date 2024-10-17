@@ -49,6 +49,7 @@
 
     .variable-id {
         font-family: courier;
+        cursor: pointer;
     }
 
     .tree ul {
@@ -132,11 +133,13 @@
 <div id="data_table"></div>
 <script>
     // Functions to attach event listeners
-    function attachAddIndicator() {
-        document.getElementsByClassName("variable-id").forEach(
+    function attachAddIndicators() {
+        const variables = document.getElementsByClassName("variable-id");
+        variables.forEach(
         (elem) => {
+            const textContent = elem.textContent
             elem.addEventListener('click', () => {
-                console.log(elem.textContent);
+                console.log(textContent);
             });
         });
     };
@@ -167,6 +170,7 @@
     document.body.addEventListener('htmx:afterSettle', function(evt) {
         // Reattach event listeners after htmx call settles
         attachDialogEvents();
+        attachAddIndicators();
     });
 </script>
 {% endblock %}
