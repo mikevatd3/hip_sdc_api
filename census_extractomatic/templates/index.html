@@ -132,7 +132,7 @@
 <div id="data_table"></div>
 <script>
     // Function to attach event listeners
-    let baseurl = window.location.href;
+    console.log("Event listener")
 
     function attachDialogEvents() {
         const dialog = document.getElementById("var-search");
@@ -147,7 +147,7 @@
 
         if (closeBtn && dialog) {
             closeBtn.addEventListener('click', () => {
-                window.history.replaceState({}, '', baseUrl);
+                window.history.replaceState({}, '', "/tearsheet/");
                 dialog.close();
             });
         }
