@@ -215,13 +215,15 @@
 
     // Initial attachment of event listeners
     attachDialogEvents();
-    restoreWork();
 
     // Listen for htmx content replacement
     document.body.addEventListener('htmx:afterSettle', function(evt) {
         // Reattach event listeners after htmx call settles
         attachDialogEvents();
         attachAddIndicators();
+    });
+
+    document.body.addEventListener('htmx:historyRestore', function(evt) {
         restoreWork();
     });
 </script>
