@@ -171,6 +171,18 @@
         });
     };
 
+
+    function backFromTableDetail() {
+        const geographyWork = document.getElementById("indicators").textContent;
+        const indicatorWork = document.getElementById("indicators").textContent;
+
+        window.history.back();
+
+        document.getElementById("geographies") = geographyWork;
+        document.getElementById("indicators") = indicatorWork;
+    };
+
+
     function attachDialogEvents() {
         const dialog = document.getElementById("var-search");
         const openBtn = document.getElementById("var-search-open");
@@ -188,7 +200,7 @@
                 dialog.close();
             });
         }
-    }
+    };
 
     // Initial attachment of event listeners
     attachDialogEvents();
@@ -198,17 +210,6 @@
         // Reattach event listeners after htmx call settles
         attachDialogEvents();
         attachAddIndicators();
-
-        function backFromTableDetail() {
-            const geographyWork = document.getElementById("indicators").textContent;
-            const indicatorWork = document.getElementById("indicators").textContent;
-
-            window.history.back();
-
-            document.getElementById("geographies") = geographyWork;
-            document.getElementById("indicators") = indicatorWork;
-        }
-
     });
 </script>
 {% endblock %}
