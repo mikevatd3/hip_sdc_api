@@ -215,6 +215,7 @@
 
     // Initial attachment of event listeners
     attachDialogEvents();
+    restoreWork();
 
     // Listen for htmx content replacement
     document.body.addEventListener('htmx:afterSettle', function(evt) {
