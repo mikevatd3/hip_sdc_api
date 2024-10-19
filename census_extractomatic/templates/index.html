@@ -111,7 +111,7 @@
 </form>
 <button id="var-search-open">Search variables</button>
 <dialog id="var-search">
-    {% with q = '', results=None  %}
+    {% with q = '', results=[]  %}
         {% include 'var_search_tool.html' %}
     {% endwith %}
 </dialog>
