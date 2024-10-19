@@ -1,7 +1,7 @@
 {% for result in results %}
 <div class="result-row">
   <div class="table-title">
-  <h3><a hx-get="/tearsheet/varsearch/tables/{{ result.table_id }}"
+      <h3><a hx-get="/tearsheet/varsearch/tables/{{ result.table_id }}?source_q={{ q }}"
          hx-select="#table-summary"
          hx-target="#search-tool"
          hx-swap="outerHTML"

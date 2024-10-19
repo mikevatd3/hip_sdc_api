@@ -500,7 +500,6 @@ def nest_variables(variables, parent_id=None):
 
 @tearsheet.route("/varsearch/tables/<table_id>")
 def table_detail_page(table_id):
-
     source_q = request.args.get("source_q", "")
 
     stmt = text(
