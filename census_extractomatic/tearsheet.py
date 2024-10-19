@@ -405,9 +405,6 @@ def text_search():
         rows = db.execute(stmt, {"q": q})  # type: ignore
         results = rows.fetchall()
 
-    if not results or not q:
-        return render_template("no_results.html", query=q)
-
     row_dicts = [
         {
             "table": row.highlighted_table,
@@ -458,7 +455,7 @@ def text_search():
     if how == "json":
         return jsonify(hits)
 
-    return render_template("var_results.html", results=hits)
+    return render_template("var_search_tool.html", results=hits, q=q)
 
 
 @tearsheet.route("/clear")
