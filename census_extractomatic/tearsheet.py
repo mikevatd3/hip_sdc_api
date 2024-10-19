@@ -311,6 +311,11 @@ def validate_lesp():
 
 @tearsheet.route("/varsearch")
 def text_search():
+    """
+    There are two uses for this endpoint:
+    1. Obvious, return the results from the query in results.
+    2. Repeat the search and return the results and query box.
+    """
     q = request.args.get("q")
     how = request.args.get("how", "html")
 
@@ -498,6 +503,9 @@ def nest_variables(variables, parent_id=None):
 
 @tearsheet.route("/varsearch/tables/<table_id>")
 def table_detail_page(table_id):
+
+    source_q = request.args.get("source_q", "")
+
     stmt = text(
         """
         SELECT t.id as table_id,
@@ -528,7 +536,10 @@ def table_detail_page(table_id):
     }
 
     return render_template(
-        "table_detail.html", table=table, variables=nested_variables
+        "table_detail.html", 
+        table=table, 
+        variables=nested_variables,
+        source_q=source_q
     )
 
 
