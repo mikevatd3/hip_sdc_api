@@ -8,8 +8,8 @@
     <input name="q"
            hx-get="/tearsheet/geosearch"
            hx-trigger="keyup delay:500ms changed"
-           hx-target="#results"
-           hx-select="#results"
+           hx-target="#geo-results"
+           hx-select="#geo-results"
            hx-swap="outerHTML"
            hx-indicator="#load-ind"
            {% if q %}
@@ -21,7 +21,7 @@
     <div id="load-ind" class="htmx-indicator">
       <h3>Searching for geographies ...</h3>
     </div>
-    <div id="results">
+    <div id="geo-results">
         {% include 'geo_results.html' %}
     </div>
 </article>

@@ -8,8 +8,8 @@
     <input name="q"
            hx-get="/tearsheet/varsearch"
            hx-trigger="keyup delay:500ms changed"
-           hx-target="#results"
-           hx-select="#results"
+           hx-target="#var-results"
+           hx-select="#var-results"
            hx-swap="outerHTML"
            hx-indicator="#load-ind"
            {% if q %}
@@ -21,7 +21,7 @@
     <div id="load-ind" class="htmx-indicator">
       <h3>Searching ACS tables ...</h3>
     </div>
-    <div id="results">
+    <div id="var-results">
         {% include 'var_results.html' %}
     </div>
 </article>
