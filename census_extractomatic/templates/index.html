@@ -28,7 +28,7 @@
         max-width: 65rem;
         max-height: calc(95% - 8.8rem);
     }
-    
+
     .result-row {
       border-color: #FFFFFF;
       border-style: solid;
@@ -115,6 +115,12 @@
         {% include 'var_search_tool.html' %}
     {% endwith %}
 </dialog>
+<button id="var-search-open">Search geographies</button>
+<dialog id="var-search">
+    {% with q = '', results=[]  %}
+        {% include 'geo_search_tool.html' %}
+    {% endwith %}
+</dialog>
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="error-message"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
@@ -154,28 +160,6 @@
                 elem.hasListener = true;
             }
         });
-    };
-
-
-    function backFromTableDetail() {
-        const geographyWork = document.getElementById("geographies").textContent;
-        const indicatorWork = document.getElementById("indicators").textContent;
-
-        localStorage.setItem('geographyWork', geographyWork);
-        localStorage.setItem('indicatorWork', indicatorWork);
-
-        window.history.back();
-    };
-
-    function restoreWork() {
-        const geographyWork = localStorage.getItem('geographyWork');
-        const indicatorWork = localStorage.getItem('indicatorWork');
-
-        document.getElementById("geographies").textContent = geographyWork;
-        document.getElementById("indicators").textContent = indicatorWork;
-
-        localStorage.removeItem('geographyWork');
-        localStorage.removeItem('indicatorWork');
     };
 
 
