@@ -1,4 +1,8 @@
 <table>
+    {% if not results %}
+    <p> List is empty</p>
+    {% endif %}
+{{ results }}
 {% for row in results %}
 <tr>
     <td>
