@@ -174,9 +174,9 @@ def explain():
 @tearsheet.route("/geosearch")
 def geo_search():
     with db_engine.connect() as db:
-        result = Geography.search(unquote(request.args.get("query", "")), db)
+        results = Geography.search(unquote(request.args.get("q", "")), db)
 
-        return render_template("geo_results.html", result=result)
+        return render_template("geo_search_tool.html", results=results)
 
 
 @tearsheet.route("/recipes", methods=["GET", "POST"])
