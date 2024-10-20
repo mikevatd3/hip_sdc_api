@@ -164,20 +164,37 @@
 
 
     function attachDialogEvents() {
-        const dialog = document.getElementById("var-search");
-        const openBtn = document.getElementById("var-search-open");
-        const closeBtn = document.getElementById("var-search-close");
+        const varDialog = document.getElementById("var-search");
+        const varOpenBtn = document.getElementById("var-search-open");
+        const varCloseBtn = document.getElementById("var-search-close");
 
-        if (openBtn && dialog) {
-            openBtn.addEventListener('click', () => {
-                dialog.show();
+        if (varOpenBtn && varDialog) {
+            varOpenBtn.addEventListener('click', () => {
+                varDialog.show();
             });
         }
 
-        if (closeBtn && dialog) {
+        if (varCloseBtn && varDialog) {
             closeBtn.addEventListener('click', () => {
                 window.history.replaceState({}, '', "/tearsheet/");
-                dialog.close();
+                varDialog.close();
+            });
+        }
+
+        const geoDialog = document.getElementById("geo-search");
+        const geoOpenBtn = document.getElementById("geo-search-open");
+        const geoCloseBtn = document.getElementById("geo-search-close");
+
+        if (geoOpenBtn && geoDialog) {
+            geoOpenBtn.addEventListener('click', () => {
+                geoDialog.show();
+            });
+        }
+
+        if (geoCloseBtn && geoDialog) {
+            closeBtn.addEventListener('click', () => {
+                window.history.replaceState({}, '', "/tearsheet/");
+                geoDialog.close();
             });
         }
     };
@@ -194,7 +211,6 @@
 
     document.body.addEventListener('DOMContentLoaded', function(evt) {
         console.log("history restored");
-        restoreWork();
     });
 </script>
 {% endblock %}
