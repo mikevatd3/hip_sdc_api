@@ -175,7 +175,7 @@
         }
 
         if (varCloseBtn && varDialog) {
-            closeBtn.addEventListener('click', () => {
+            varCloseBtn.addEventListener('click', () => {
                 window.history.replaceState({}, '', "/tearsheet/");
                 varDialog.close();
             });
@@ -192,7 +192,7 @@
         }
 
         if (geoCloseBtn && geoDialog) {
-            closeBtn.addEventListener('click', () => {
+            geoCloseBtn.addEventListener('click', () => {
                 window.history.replaceState({}, '', "/tearsheet/");
                 geoDialog.close();
             });
