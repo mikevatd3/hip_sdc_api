@@ -145,10 +145,10 @@
             const textContent = elem.textContent;
             if (!elem.hasListener) {
                 elem.addEventListener('click', () => {
-                    if (!varInput.value) {
-                        varInput.value = textContent;
-                    } else if (varInput.value.slice(-1) === "|") {
-                        varInput.value += textContent;
+                    if (!geoInput.value) {
+                        geoInput.value = textContent;
+                    } else if (geoInput.value.slice(-1) === "|") {
+                        geoInput.value += textContent;
                     } else {
                         geoInput.value += ", " + textContent;
                     }
