@@ -47,7 +47,7 @@
       text-decoration: none;
     }
 
-    .variable-id {
+    .variable-id, geography-id {
         font-family: courier;
         cursor: pointer;
     }
@@ -135,6 +135,30 @@
             if (char === ")") openCount -= 1;
         }
         return (openCount != 0);
+    }
+    
+    function attachAddGeographies() {
+        const geographies = document.getElementsByClassName("geography-id");
+        const geoInput = document.getElementById("geographies"); 
+
+        Array.from(variables).forEach(
+        (elem) => {
+            const textContent = elem.textContent;
+            if (!elem.hasListener) {
+                elem.addEventListener('click', () => {
+                    if (!varInput.value) {
+                        varInput.value = textContent;
+                    } else if (varInput.value.slice(-1) === "|") {
+                        varInput.value += textContent;
+                    } else {
+                        geoInput.value += ", " + textContent;
+                    }
+                });
+                elem.hasListener = true;
+            }
+        });
+    };
+
     }
 
     // Functions to attach event listeners

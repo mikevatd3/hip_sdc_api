@@ -173,12 +173,8 @@ def explain():
 
 @tearsheet.route("/geosearch")
 def geo_search():
-    current_app.logger.warning(request.args.get("q", ""))
     with db_engine.connect() as db:
-        results = list(Geography.search(unquote(request.args.get("q", "")), db))
-        current_app.logger.warning(results)
-
-        current_app.logger.warning(type(results[0]))
+        results = Geography.search(unquote(request.args.get("q", "")), db)
 
         return render_template("geo_search_tool.html", results=results)
 
