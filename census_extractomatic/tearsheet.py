@@ -178,6 +178,8 @@ def geo_search():
         results = list(Geography.search(unquote(request.args.get("q", "")), db))
         current_app.logger.warning(results)
 
+        current_app.logger.warning(type(results[0]))
+
         return render_template("geo_search_tool.html", results=results)
 
 
