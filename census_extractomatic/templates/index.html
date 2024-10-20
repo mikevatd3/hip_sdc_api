@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
-{% block extra_css %}
-<style>
+{% block extra_css %} <style>
   input {
     font-size: 1.3em;
     width: 98%;
@@ -47,7 +46,7 @@
       text-decoration: none;
     }
 
-    .variable-id, geography-id {
+    .variable-id, .geography-id {
         font-family: courier;
         cursor: pointer;
     }
@@ -141,7 +140,7 @@
         const geographies = document.getElementsByClassName("geography-id");
         const geoInput = document.getElementById("geographies"); 
 
-        Array.from(variables).forEach(
+        Array.from(geographies).forEach(
         (elem) => {
             const textContent = elem.textContent;
             if (!elem.hasListener) {
