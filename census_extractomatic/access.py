@@ -432,7 +432,7 @@ class Geography:
         stmt = text(
             """
             with michigan as (
-                select display_name, full_geoid, population
+                select display_name, full_geoid, population, priority
                 from tiger2022.census_name_lookup
                 where geoid like '26%'
             )
