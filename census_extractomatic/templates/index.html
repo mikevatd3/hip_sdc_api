@@ -159,8 +159,6 @@
         });
     };
 
-    }
-
     // Functions to attach event listeners
     function attachAddIndicators() {
         const variables = document.getElementsByClassName("variable-id");
@@ -231,6 +229,7 @@
         // Reattach event listeners after htmx call settles
         attachDialogEvents();
         attachAddIndicators();
+        attachAddGeographies();
     });
 
     document.body.addEventListener('DOMContentLoaded', function(evt) {
