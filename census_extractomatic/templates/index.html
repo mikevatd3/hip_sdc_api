@@ -14,10 +14,10 @@
       background: linear-gradient(
           180deg, 
           rgba(0,0,0, 0.75), 
-          rgba(0,0,0, 0.5), 7rem, 
-          rgba(0, 0, 0, 0), 9rem, 
-          rgba(0, 0, 0, 0), 12.5rem, 
-          rgba(0, 0, 0, 0.5), 14.5rem, 
+          rgba(0,0,0, 0.5), 3rem, 
+          rgba(0, 0, 0, 0), 5rem, 
+          rgba(0, 0, 0, 0), 8.5rem, 
+          rgba(0, 0, 0, 0.5), 10.5rem, 
           rgba(0,0,0, 0.75));
     }
     
@@ -122,16 +122,16 @@
                 hx-swap="outerHTML">Create tearsheet</button>
     </div>
 </form>
-<button id="var-search-open">Search variables</button>
-<dialog id="var-search">
-    {% with q = '', results=[]  %}
-        {% include 'var_search_tool.html' %}
-    {% endwith %}
-</dialog>
 <button id="geo-search-open">Search geographies</button>
 <dialog id="geo-search">
     {% with q = '', results=[]  %}
         {% include 'geo_search_tool.html' %}
+    {% endwith %}
+</dialog>
+<button id="var-search-open">Search variables</button>
+<dialog id="var-search">
+    {% with q = '', results=[]  %}
+        {% include 'var_search_tool.html' %}
     {% endwith %}
 </dialog>
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
