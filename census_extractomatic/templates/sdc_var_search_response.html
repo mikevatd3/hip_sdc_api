@@ -1,0 +1,16 @@
+<div class="var-results">
+    {% for result in results %}
+    <div class="result-row">
+      <div class="table-title">
+          <h3><a href="/tables/{{ result.table_id }}">Table {{ result.table_id }}</a></h3>
+      <p>{{ result.table|safe }}</p>
+      </div>
+      {% if result.variable_id %}
+      {% for id, var in zip(result.variable_id, result.variable) %}
+          <p><span class="variable-id">{{ id }}</span>: {{ var|safe }}</p>
+      {% endfor %}
+      {% endif %}
+      <p>Universe: {{ result.universe }}</p>
+    </div>
+    {% endfor %}
+</div>

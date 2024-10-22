@@ -455,7 +455,15 @@ def text_search():
     if how == "json":
         return jsonify(hits)
 
-    return render_template("var_search_tool.html", results=hits, q=q)
+    if how == "sdc":
+        """
+        For now, this is how we handle application specific responses.
+        This might need some work because all you really need to change
+        is the behavior of the table id link.
+        """
+        return render_template("sdc_var_search_response.html", results=hits, q=q)
+    else:
+        return render_template("var_search_tool.html", results=hits, q=q)
 
 
 @tearsheet.route("/clear")
