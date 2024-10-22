@@ -432,13 +432,13 @@ class Geography:
         stmt = text(
             """
             with michigan as (
-                select display_name, full_geoid, population, priority
+                select display_name, full_geoid, population, name_vec, priority
                 from tiger2022.census_name_lookup
-                where geoid like '26%'
+                where state_fp = 26
             )
             select *
             from michigan
-            where to_tsvector(display_name || ' ' || full_geoid) @@ to_tsquery(:query)
+            where name_vec @@ to_tsquery(:query)
             and priority is not null
             order by priority::int asc, population desc
             limit 10;
