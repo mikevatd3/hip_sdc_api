@@ -113,6 +113,11 @@
         display: flex;
         gap: 1rem;
     }
+
+    .create-tearsheet {
+        background-color: gold;
+        color: black;
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -148,7 +153,8 @@
     <input name="how" type="hidden" value="html"></input>
     <div id="table_link">
         <p></p> <!--This is for flexbox-->
-        <button hx-post="/tearsheet/sheet"
+        <button class="create-tearsheet"
+                hx-post="/tearsheet/sheet"
                 hx-indicator="#build_ind"
                 hx-params="*"
                 hx-target="#data_table"
