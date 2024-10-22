@@ -21,7 +21,6 @@
           rgba(0,0,0, 0.75));
     }
     
-
     #var-search {
       align-items: start;
       backdrop-filter: none;
@@ -40,6 +39,7 @@
         max-width: 65rem;
         max-height: calc(95% - 8.8rem);
     }
+
     #geo-search article {
         margin-top: 9rem;
     }
@@ -56,12 +56,15 @@
       padding: 1em;
       margin-bottom: 1em;
     }
+
     #results {
       margin-top: 1em;
     }
+
     .variable-result {
       margin-left: 2em;
     }
+
     h3 a {
       text-decoration: none;
     }
@@ -97,8 +100,13 @@
         bottom: 0.5em;
     }
 
+    #var-search-open, #geo-search-open {
+        flex: 2;
+    }
+
     #geography-inputs, #indicator-inputs {
         display: flex;
+        gap: 1rem;
     }
 </style>
 {% endblock %}
