@@ -14,6 +14,7 @@
     {% block extra_js %}{% endblock %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark-reasonable.min.css">
     <style>
+
         caption {
             visibility: collapse;
             color: rgba(0, 0, 0, 0);
@@ -99,12 +100,22 @@
         .htmx-request.htmx-indicator{
             display:inline;
         }
+        @media print {
+            body {
+                font-size: 12pt;
+                color: black;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-    <nav id="top_bar" class="container">
+    <nav id="top_bar" class="container no-print">
         {% include 'nav.html' %}
     </nav>
     <main id="all_content" class="container">
