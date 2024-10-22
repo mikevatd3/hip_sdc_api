@@ -99,11 +99,17 @@
 </style>
 {% endblock %}
 {% block content %}
-<form>
+<div id="build-parameters">
     <div id="geography-inputs">
         <input name="geographies"
                id="geographies"
                placeholder="Enter geographies here"></input>
+        <button id="geo-search-open">Search geographies</button>
+        <dialog id="geo-search">
+            {% with q = '', results=[]  %}
+                {% include 'geo_search_tool.html' %}
+            {% endwith %}
+        </dialog>
     </div>
     <div id="indicator-inputs">
         <input type="text"
@@ -115,8 +121,13 @@
                hx-swap="innerHTML"
                hx-indicator="#val_ind"
                placeholder="Enter indicators here"></input>
+        <button id="var-search-open">Search variables</button>
+        <dialog id="var-search">
+            {% with q = '', results=[]  %}
+                {% include 'var_search_tool.html' %}
+            {% endwith %}
+        </dialog>
     </div>
-</div>
     <input name="how" type="hidden" value="html"></input>
     <div id="table_link">
         <p></p> <!--This is for flexbox-->
@@ -125,21 +136,10 @@
                 hx-params="*"
                 hx-target="#data_table"
                 hx-select="#data_table"
+                hx-include="#build-parameters"
                 hx-swap="outerHTML">Create tearsheet</button>
     </div>
-</form>
-<button id="geo-search-open">Search geographies</button>
-<dialog id="geo-search">
-    {% with q = '', results=[]  %}
-        {% include 'geo_search_tool.html' %}
-    {% endwith %}
-</dialog>
-<button id="var-search-open">Search variables</button>
-<dialog id="var-search">
-    {% with q = '', results=[]  %}
-        {% include 'var_search_tool.html' %}
-    {% endwith %}
-</dialog>
+</div>
 <div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="error-message"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
