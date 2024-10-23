@@ -51,18 +51,25 @@ def index():
 @tearsheet.route("/sheet", methods=["GET", "POST"])
 def sheet():
     if request.method == "POST":
-        geographies = (
-            request.form.get("geographies", "")
-            .strip()
-            .replace(", ", ",")
-            .split(",")
-        )
-        indicators = (
-            request.form.get("indicators", "")
-            .strip()
-            .replace(", ", ",")
-            .split(",")
-        )
+        # Allow a final comma for by filtering empty columns 
+        geographies = [
+            item for item in (
+                request.form.get("geographies", "")
+                .strip()
+                .replace(", ", ",")
+                .split(",")
+            ) if item
+        ]
+
+        indicators = [
+            item for item in (
+                request.form.get("indicators", "")
+                .strip()
+                .replace(", ", ",")
+                .split(",")
+            ) if item
+        ]
+
         release = request.form.get("release", "acs2022_5yr")
         how = request.form.get("how")
 
