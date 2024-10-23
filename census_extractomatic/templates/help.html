@@ -45,11 +45,12 @@
     Not all sub-geographies are available for each parent geography. In the future
     </p>
     
-
     <h2>📊 Specifying an indicator</h2>
     <h3>Basics</h3>
     <p class="help_text">
-    Following the ACS, basic indicators are specified by their ACS variable name. 
+    Following the ACS, basic indicators are specified by their ACS variable name. Like the geographies, these are searchable 
+    with the tool provided with the button on the right. Same as before, once you've identified the variable that you'd like you
+    can click it to add it to the field.
     </p>
     <h3>Advanced</h3>
     <h4>Aliasing</h4>
@@ -86,7 +87,7 @@
     pct_under_ten|(/ (+ B01001003 B01001004 B01001027 B01001028) B01001001)
     </code></pre>
 
-    <h5>API</h5>
+    <h2>API</h2>
     <p class="help_text">
     All of these features are available to call from the API from whatever tool you'd like. For instance if you're using 
     Python and you'd like to look at unemployment for people under 35, the code would look something like this:
@@ -122,6 +123,10 @@ response = requests.get(
 
 df = pd.DataFrame(response.json()).set_index("geoid")
 </code></pre>
+
+<h2><em>tearhseet is a work in progress</em></h2>
+<p>If things break, give it a refresh!</p>
+<p>Report issues and desired features here: </p>
 </article>
 {% endblock %}
 

@@ -134,7 +134,7 @@
         </dialog>
     </div>
     <div id="indicator-inputs">
-        <input type="text"
+        <textarea type="text"
                name="indicators"
                id="indicators"
                hx-get="/tearsheet/validate-program"
@@ -142,7 +142,7 @@
                hx-target="#error-message"
                hx-swap="innerHTML"
                hx-indicator="#val_ind"
-               placeholder="Enter indicators here"></input>
+               placeholder="Enter indicators here"></textarea>
         <button id="var-search-open">Search variables</button>
         <dialog id="var-search">
             {% with q = '', results=[]  %}
