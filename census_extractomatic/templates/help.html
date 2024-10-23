@@ -4,23 +4,28 @@
 <article>
     <p class="help_text">
     <dfn>tearsheet!</dfn> is a tool for quickly grabbing datapoints from the American Community Survey 
-    or other datasets that Data Driven Detroit has compiled. It is designed to make this basic task as 
-    straight forward as possible, and it includes a few tricks to simplify other common data pulls.
+    and other datasets that Data Driven Detroit has compiled. It is designed to make this task as simple
+    as possible, but it includes a few tricks to help you achieve more complex data pulls as well.
     </p>
     
     <h2>🌎 Specifying a geography</h2>
     <h3>Basics</h3>
     <p class="help_text">
-    In the 'geographies' box, enter the geoid for any Census-style geography. For example, if you wanted data for 
-    Michigan, enter `04000US26`. Counties, county subdivisions, tracts, zip codes, are all available. Each of these 
-    will be identified by their geoid on a tearsheet. You can enter multiple geoids separated by a comma to get data 
-    for all those geographies.
+    In the 'geographies' box, enter the full-length geoid for any Census-style geography. For example, if 
+    you wanted data for Michigan, enter `04000US26`. Counties, county subdivisions, tracts, zip codes, are 
+    all available. Each of these will be identified by their geoid on a tearsheet. You can enter multiple 
+    geoids separated by a comma to get data for all those geographies.
+    </p>
+    <p>
+    If you know what geography that you'd like to look at by name but don't know the geoid, click 'Search 
+    geographies' and use the search tool that is provided to find the geography. Once the geography you're 
+    interested in comes up, you can click the listed geoid to add it to the field.
     </p>
 
     <h3>Advanced</h3>
     <p class="help_text">
-    Often, it's useful to select all of a smaller geography level falling within a larger 
-    geography. This can be done with a specification trick: use the `|` character.
+    Often, it's useful to select all of a smaller geography level falling within a larger geography. This 
+    can be done with a specification trick: use the `|` character.
     </p>
 
     <p>
@@ -35,6 +40,12 @@
     <p class="help_text">
     Then once you click the 'add', all Detroit zip codes will be added to your taresheet.
     </p>
+
+    <p>
+    Not all sub-geographies are available for each parent geography. In the future
+    </p>
+    
+
     <h2>📊 Specifying an indicator</h2>
     <h3>Basics</h3>
     <p class="help_text">
@@ -74,6 +85,43 @@
     <pre><code class="help_text">
     pct_under_ten|(/ (+ B01001003 B01001004 B01001027 B01001028) B01001001)
     </code></pre>
+
+    <h5>API</h5>
+    <p class="help_text">
+    All of these features are available to call from the API from whatever tool you'd like. For instance if you're using 
+    Python and you'd like to look at unemployment for people under 35, the code would look something like this:
+    </p>
+
+    <pre><code class="help_text">
+from urllib.parse import quote, unquote
+import requests
+import pandas as pd
+
+
+geographies = (
+    "tracts|06000US2616322000", # Tracts in Detroit
+    "06000US2616322000",        # Detroit overall
+    "05000US26163",             # Wayne County
+    "04000US26"                 # Michigan
+)
+
+
+indicators = (
+    "unemp_16_19|(/ (+ B23001008 B23001094) (+ B23001006 B23001092)),"
+    "unemp_20_21|(/ (+ B23001015 B23001101) (+ B23001013 B23001099)),"
+    "unemp_22_24|(/ (+ B23001022 B23001108) (+ B23001020 B23001106)),"
+    "unemp_25_29|(/ (+ B23001029 B23001115) (+ B23001027 B23001113)),"
+    "unemp_30_34|(/ (+ B23001036 B23001122) (+ B23001034 B23001120)),"
+)
+
+response = requests.get(
+    "https://sdcapi.datadrivendetroit.org/tearsheet/sheet?"
+    f"geographies={quote(geographies)}&"
+    f"indicators={quote(indicators)}&"
+)
+
+df = pd.DataFrame(response.json()).set_index("geoid")
+</code></pre>
 </article>
 {% endblock %}
 
