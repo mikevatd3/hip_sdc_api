@@ -260,6 +260,8 @@ def make_maybe(value: Maybe | float | None, empty_zeros=False) -> Some | Empty:
         case float(value) | int(value):
             if (value == 0) & empty_zeros:
                 return Empty()
+            elif not value: # np.nan should be falsy here
+                return Empty()
             return Some(value)
         case _:
             raise TypeError(f"Can only wrap floats or Nones, received {value}")

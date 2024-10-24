@@ -264,7 +264,7 @@ class Indicator:
                 for formula in formulae
             ],
             axis=1,
-        ).replace(np.nan, None) # Hopefully clearing nans before packing
+        )
 
         result = []
         for row in calculated_rows.to_dict(orient="records"):
