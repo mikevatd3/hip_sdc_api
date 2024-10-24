@@ -567,7 +567,7 @@ def feedback():
             "email": request.form.get("email"),
             "feedback": request.form.get("feedback"),
         })
-        return redirect(url_for("tearsheet.help"))
+        return redirect(url_for("tearsheet.thank_you"))
 
     return render_template("issue_form.html")
 
