@@ -126,14 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const properties = geojsonData.features[0].properties;
 
         // Filter numeric and boolean fields
+        // This is currently failing if the first item is null.
         const fields = [];
         for (const key in properties) {
             const value = properties[key];
             if (
-                (
-                    typeof value === 'number' 
-                    || typeof value === 'boolean'
-                ) && !key.endsWith("_moe")
+                !(key !== "geoid")
+                && !(key !== "name")
+                && !key.endsWith("_moe")
             ) {
                 fields.push(key);
             }
@@ -158,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let geojsonLayer;
         let validValues = []; // Declare validValues outside the function to access it in updateLegend
-
 
         // Function to update the choropleth map based on the selected field
         function updateChoropleth(field) {
