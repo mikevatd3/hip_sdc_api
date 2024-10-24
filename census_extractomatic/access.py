@@ -141,14 +141,14 @@ class Indicator:
                 else:
                     value = row[var]
                     # The census returns large negative values sometimes
-                    if value < -1000: 
+                    if (not value) or (value < -1000): 
                         value = Empty()
                     else:
                         value = make_maybe(value)
 
                     error = row[var + "_moe"]
                     # Negative errors don't make sense, so default to empty
-                    if error < 0:
+                    if (not error) or (error < 0):
                         error = Empty()
                     else:
                         error = make_maybe(error)
