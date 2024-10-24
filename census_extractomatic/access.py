@@ -267,16 +267,18 @@ class Indicator:
                 record["geom"] = row["geom"]
 
             for formula in formulae:
+                ind_name = formula[0]
+
                 try:
-                    record[formula[1]] = serialize_maybes(
-                        row[formula[1].lower()].value
+                    record[ind_name] = serialize_maybes(
+                        row[ind_name.lower()].value
                     )
-                    record[formula[1] + "_moe"] = serialize_maybes(
-                        row[formula[1].lower()].error
+                    record[ind_name + "_moe"] = serialize_maybes(
+                        row[ind_name.lower()].error
                     )
                 except AttributeError as e:
-                    if isinstance(row[formula[1].lower()], bool):
-                        record[formula[1]] = row[formula[1]]
+                    if isinstance(row[ind_name.lower()], bool):
+                        record[ind_name] = row[ind_name]
                     else:
                         raise e
 
