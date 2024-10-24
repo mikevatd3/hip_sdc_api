@@ -278,6 +278,10 @@ def make_maybe_dict(
 def serialize_maybes(maybe: Maybe) -> float | None:
     match maybe:
         case Some(inner=value):
+            if (value == 0):
+                return value
+            if not value:
+                return None
             return round(value, 2)
         case Empty():
             return None

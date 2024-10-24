@@ -251,7 +251,6 @@ class Indicator:
         namespace = Indicator.create_namespace(
             prepared_geos, variables, db, release, geom=geom
         )
-
         non_formula_vars = ["geoid", "name"]
 
         if geom:
