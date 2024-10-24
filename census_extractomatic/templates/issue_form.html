@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="tearsheet/feedback" method="post">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" />
+    <label for="email">Email:</label>
+    <input type="text" id="email" name="email" />
+    <label for="feedback">Feedback:</label>
+    <textarea type="text" id="feedback" name="feedback"></textarea>
+    <button>Submit feedback</button>
+</form>
+{% endblock %}

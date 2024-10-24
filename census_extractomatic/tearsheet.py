@@ -2,7 +2,7 @@ from urllib.parse import quote, unquote
 import re
 from itertools import groupby
 
-from flask import render_template, request, jsonify, Blueprint, current_app
+from flask import redirect, render_template, request, jsonify, Blueprint, current_app, url_for
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
@@ -557,3 +557,21 @@ def table_detail_page(table_id):
 @tearsheet.route("/help")
 def help():
     return render_template("help.html")
+
+
+@tearsheet.route("/feedback", methods=["GET", "POST"])
+def feedback():
+    if request.method == "POST":
+        current_app.logger.info({
+            "name": request.form.get("name"),
+            "email": request.form.get("email"),
+            "feedback": request.form.get("feedback"),
+        })
+        return redirect(url_for("help"))
+
+    return render_template("issue_form.html")
+
+
+@tearsheet.route("/thank-you")
+def thank_you():
+    return render_template("thank_you.html")
