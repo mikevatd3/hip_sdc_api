@@ -129,11 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // This is currently failing if the first item is null.
         const fields = [];
         for (const key in properties) {
-            const value = properties[key];
-            if (
-                !(key !== "geoid")
-                && !(key !== "name")
-                && !key.endsWith("_moe")
+            if !(
+                (key === "geoid")
+                || (key === "name")
+                || key.endsWith("_moe")
             ) {
                 fields.push(key);
             } else {
