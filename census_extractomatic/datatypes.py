@@ -1,5 +1,5 @@
 from typing import Union
-from math import sqrt
+from math import sqrt, isnan
 from dataclasses import dataclass
 
 """
@@ -260,7 +260,7 @@ def make_maybe(value: Maybe | float | None, empty_zeros=False) -> Some | Empty:
         case float(value) | int(value):
             if (value == 0) & empty_zeros:
                 return Empty()
-            elif not value: # np.nan should be falsy here
+            elif isnan(value): # np.nan should be falsy here
                 return Empty()
             return Some(value)
         case _:
