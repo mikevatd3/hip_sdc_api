@@ -105,7 +105,7 @@ class Indicator:
             case IndFlag.custom:
                 return execute(arithmetic, namespace).rename(name.lower())
             case IndFlag.standard:
-                return namespace[arithmetic].rename(name.lower())
+                return namespace[arithmetic].replace(np.nan, None).rename(name.lower())
 
     @classmethod
     def wrap_values(
