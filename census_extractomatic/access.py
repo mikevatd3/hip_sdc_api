@@ -12,6 +12,7 @@ from pypika import (
 )
 from pypika import functions as fn
 import pandas as pd
+import numpy as np
 from lesp.core import execute
 from lesp.analyze import extract_variables, validate_program, LespCompileError
 from .datatypes import Some, Empty, TearValue, serialize_maybes
@@ -104,7 +105,7 @@ class Indicator:
             case IndFlag.custom:
                 return execute(arithmetic, namespace).rename(name.lower())
             case IndFlag.standard:
-                return namespace[arithmetic].rename(name.lower())
+                return namespace[arithmetic].replace({np.nan: None}).rename(name.lower())
 
     @classmethod
     def wrap_values(
