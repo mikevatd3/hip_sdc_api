@@ -1,1 +1,11 @@
-{% if helpers %}{% for helper in helpers %}<p>{{ helper }}</p>{% endfor %}{% endif %}
+{% if helpers %}
+<div id="error-message" 
+     hx-get="/tearsheet/validate-program" 
+     hx-trigger="every 3s changed" 
+     hx-swap="outerHTML"
+     hx-include="#indicators">
+    {% for helper in helpers %}<p>{{ helper }}</p>{% endfor %}
+</div>
+{% else %}
+<div id="error-message"></div>
+{% endif %}

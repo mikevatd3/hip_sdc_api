@@ -140,8 +140,7 @@
                hx-get="/tearsheet/validate-program"
                hx-trigger="change delay:500ms changed"
                hx-target="#error-message"
-               hx-swap="innerHTML"
-               hx-indicator="#val_ind"
+               hx-swap="outerHTML"
                placeholder="Enter indicators here"></textarea>
         <button id="var-search-open">Search variables</button>
         <dialog id="var-search">
@@ -163,7 +162,6 @@
                 hx-swap="outerHTML">Create tearsheet</button>
     </div>
 </div>
-<div id="val_ind" class="htmx-indicator"><p>Validating indicators</p></div>
 <div id="error-message"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
