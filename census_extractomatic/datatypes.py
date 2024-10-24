@@ -1,3 +1,4 @@
+from typing import Union
 from math import sqrt
 from dataclasses import dataclass
 
@@ -43,7 +44,9 @@ class Maybe:
 
     def __pow__(self, _) -> "Maybe": ...
 
-    def __mult__(self, _) -> "Maybe": ...
+    def __mult__(self, _: Union[int, float, 'Maybe']) -> "Maybe": ...
+
+    def __rmult__(self, _: Union[int, float, 'Maybe']) -> "Maybe": ...
 
     def __truediv__(self, _) -> "Maybe": ...
 
@@ -331,7 +334,7 @@ class TearValue:  # (Real)
     def __sub__(self, other: "TearValue") -> "TearValue":
         return TearValue(
             value=self.value - other.value,
-            error=sqrt(self.error**2 + other.error**2),
+            error=Some(sqrt(self.error.inner**2 + other.error.inner**2)),
         )
 
     __rsub__ = __sub__
@@ -404,3 +407,7 @@ class TearValue:  # (Real)
 
     def __str__(self) -> str:
         return f"{self.value.inner:.2f}±{self.error.inner:.2f}"
+
+
+if __name__ == "__main__":
+    pass
