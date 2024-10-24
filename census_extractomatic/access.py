@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from pprint import pformat
 from sqlalchemy import text
 import tomli
 from pypika import (
@@ -282,7 +282,7 @@ class Indicator:
 
             result.append(record)
 
-        current_app.logger.warning(result)
+        current_app.logger.warning(pformat(result))
 
         return result
 
