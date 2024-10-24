@@ -105,7 +105,7 @@ class Indicator:
             case IndFlag.custom:
                 return execute(arithmetic, namespace).rename(name.lower())
             case IndFlag.standard:
-                return namespace[arithmetic].replace(np.nan, None).rename(name.lower())
+                return namespace[arithmetic].rename(name.lower())
 
     @classmethod
     def wrap_values(
@@ -264,7 +264,7 @@ class Indicator:
                 for formula in formulae
             ],
             axis=1,
-        )
+        ).replace(np.nan, None) # Hopefully clearing nans before packing
 
         result = []
         for row in calculated_rows.to_dict(orient="records"):
