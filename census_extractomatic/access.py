@@ -11,12 +11,11 @@ from pypika import (
     CustomFunction,
 )
 from pypika import functions as fn
+from flask import current_app
 import pandas as pd
-import numpy as np
 from lesp.core import execute
 from lesp.analyze import extract_variables, validate_program, LespCompileError
 from .datatypes import Some, Empty, TearValue, serialize_maybes
-
 
 """
 Classes in this file serve as rough module boundaries.
@@ -265,6 +264,8 @@ class Indicator:
             axis=1,
         )
 
+        current_app.logger.warning(calculated_rows)
+
         result = []
         for row in calculated_rows.to_dict(orient="records"):
             record = {}
@@ -289,6 +290,8 @@ class Indicator:
                         raise e
 
             result.append(record)
+
+        current_app.logger.warning(result)
 
         return result
 
@@ -364,7 +367,7 @@ class Tearsheet:
     def create(geographies, indicators, db, release="acs2022_5yr", geom=False):
         prepared_geos = Geography.prep_geo_request(geographies, db)
         formulae, variables = Indicator.prep_ind_request(indicators)
-
+        
         return Indicator.compile(
             prepared_geos, formulae, variables, db, release, geom=geom
         )
