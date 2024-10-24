@@ -30,11 +30,6 @@ with open("config.toml", "rb") as f:
     conf = tomli.load(f)
 
 
-class IndFlag(Enum):
-    standard = auto()
-    custom = auto()
-
-
 class Indicator:
     special_variables = {
         "land_area": "aland",
@@ -64,9 +59,9 @@ class Indicator:
     def prep_ind_request(
         cls,
         indicators: list[str],
-    ) -> tuple[list[tuple[IndFlag, str, str]], list[str]]:
+    ) -> tuple[list[tuple[str, str]], list[str]]:
         formulae = []
-        result = []
+        variables = []
         for ind in indicators:
             if "|" in ind:  # lesp strings have to be aliased
                 title, function = ind.split("|")
@@ -76,35 +71,22 @@ class Indicator:
                         f"'{title}' is a reserved indicator name, choose something else."
                     )
 
-                formulae.append((IndFlag.custom, title, function.lower()))
-                result.extend(
+                formulae.append((title, function.lower()))
+                variables.extend(
                     [var.lower() for var in extract_variables(function)]
                 )
             else:
-                formulae.append((IndFlag.standard, ind, ind.lower()))
-                result.append(
-                    ind.lower()
-                )  # TODO: This needs to be validated further!
+                formulae.append((ind, ind.lower()))
+                variables.append(ind.lower())
+                # TODO: This needs to be validated further!
 
-        return formulae, result
+        return formulae, variables
 
     @classmethod
     def explain(*args, **kwargs):
         return {
             "apology": "It would be lovely if this feature were working, but it just isn't yet."
         }
-
-    @staticmethod
-    def run_formula(
-        formula: tuple[IndFlag, str, str], namespace: pd.DataFrame
-    ) -> pd.Series:
-        flag, name, arithmetic = formula
-
-        match flag:
-            case IndFlag.custom:
-                return execute(arithmetic, namespace).rename(name.lower())
-            case IndFlag.standard:
-                return namespace[arithmetic].rename(name.lower())
 
     @classmethod
     def wrap_values(
@@ -134,14 +116,14 @@ class Indicator:
                     # otherwise use the name provided.
                     real_var_name = cls.special_variables.get(var, var)
 
-                    # Special variables don't have errors 
+                    # Special variables don't have errors
                     wrapped_row[var] = TearValue(
                         make_maybe(row[real_var_name]), make_maybe(0)
                     )
                 else:
                     value = row[var]
                     # The census returns large negative values sometimes
-                    if (not value) or (value < -1000): 
+                    if (not value) or (value < -1000):
                         value = Empty()
                     else:
                         value = make_maybe(value)
@@ -269,13 +251,11 @@ class Indicator:
         calculated_rows = pd.concat(
             [namespace[non_formula_vars]]
             + [
-                Indicator.run_formula(formula, namespace)
-                for formula in formulae
+                execute(arithmetic, namespace).rename(name.lower())
+                for name, arithmetic in formulae
             ],
             axis=1,
         )
-
-        current_app.logger.warning(calculated_rows)
 
         result = []
         for row in calculated_rows.to_dict(orient="records"):
@@ -378,7 +358,7 @@ class Tearsheet:
     def create(geographies, indicators, db, release="acs2022_5yr", geom=False):
         prepared_geos = Geography.prep_geo_request(geographies, db)
         formulae, variables = Indicator.prep_ind_request(indicators)
-        
+
         return Indicator.compile(
             prepared_geos, formulae, variables, db, release, geom=geom
         )
