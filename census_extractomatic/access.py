@@ -15,7 +15,7 @@ from flask import current_app
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables, validate_program, LespCompileError
-from .datatypes import Some, Empty, TearValue, serialize_maybes
+from .datatypes import make_maybe, Empty, TearValue, serialize_maybes
 
 """
 Classes in this file serve as rough module boundaries.
@@ -116,6 +116,10 @@ class Indicator:
 
         wrapped_rows = []
         for _, row in dataframe.iterrows():
+            """
+            Remember that we're fully iterating, so each row should be
+            handled at the value level.
+            """
             wrapped_row = {}
             wrapped_row["geoid"] = row["geoid"]
             wrapped_row["name"] = row["name"]
@@ -125,22 +129,29 @@ class Indicator:
 
             for var in variables:
                 if var in cls.special_variables:
-                    # Special variables don't have errors associated with them
+
+                    # Get the special var real name if alias is provided
+                    # otherwise use the name provided.
+                    real_var_name = cls.special_variables.get(var, var)
+
+                    # Special variables don't have errors 
                     wrapped_row[var] = TearValue(
-                        Some(row[cls.special_variables[var]]), Some(0)
+                        make_maybe(row[real_var_name]), make_maybe(0)
                     )
                 else:
                     value = row[var]
-                    if (not value) or (value < -1000):
+                    # The census returns large negative values sometimes
+                    if value < -1000: 
                         value = Empty()
                     else:
-                        value = Some(value)
+                        value = make_maybe(value)
 
                     error = row[var + "_moe"]
-                    if (not error) or (error < 0):
+                    # Negative errors don't make sense, so default to empty
+                    if error < 0:
                         error = Empty()
                     else:
-                        error = Some(error)
+                        error = make_maybe(error)
 
                     wrapped_row[var] = TearValue(value, error)
 
