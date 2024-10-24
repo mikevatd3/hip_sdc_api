@@ -53,7 +53,7 @@ def sheet():
     if request.method == "POST":
         # Allow a final comma for by filtering empty columns 
         geographies = [
-            item for item in (
+            item.strip() for item in (
                 request.form.get("geographies", "")
                 .strip()
                 .replace(", ", ",")
@@ -62,7 +62,7 @@ def sheet():
         ]
 
         indicators = [
-            item for item in (
+            item.strip() for item in (
                 request.form.get("indicators", "")
                 .strip()
                 .replace(", ", ",")
