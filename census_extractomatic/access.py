@@ -11,7 +11,6 @@ from pypika import (
     CustomFunction,
 )
 from pypika import functions as fn
-from flask import current_app
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables, validate_program, LespCompileError
@@ -283,8 +282,6 @@ class Indicator:
                         raise e
 
             result.append(record)
-
-        current_app.logger.warning(pformat(result))
 
         return result
 

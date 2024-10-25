@@ -93,10 +93,6 @@ def sheet():
     geojsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
     mapurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
 
-    current_app.logger.warning(
-        request.form if request.method == "POST" else request.args
-    )
-
     try:
         with db_engine.connect() as db:
             geom = how == "geojson"
