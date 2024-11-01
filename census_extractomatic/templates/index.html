@@ -183,23 +183,21 @@
 <div id="data_table"></div>
 <script>
     // Copy tearsheet table to clipboard
-    function copyTableToClipboard() {
-        // Get table element
-        const table = document.getElementById("data_table");
-        let tsv = "";
+    async function copyTableToClipboard() {
+        const table = document.getElementById("myTable");
+        const html = table.outerHTML;
 
-        // Loop through rows
-        for (let row of table.rows) {
-            let cells = Array.from(row.cells).map(cell => cell.innerText);
-            tsv += cells.join("\t") + "\n";
+        try {
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    "text/html": new Blob([html], { type: "text/html" }),
+                    "text/plain": new Blob([table.innerText], { type: "text/plain" })
+                })
+            ]);
+            alert('Table copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy table: ', err);
         }
-
-        // Copy TSV to clipboard
-        navigator.clipboard.writeText(tsv).then(() => {
-            alert("Table copied to clipboard!");
-        }).catch(err => {
-            console.error("Failed to copy table: ", err);
-        });
     }
 
     // Needed later for adding variables
