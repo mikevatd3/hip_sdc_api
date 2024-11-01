@@ -47,7 +47,7 @@ from ._api.download_data import (
 from ._api.access import safe_default
 
 from returns.result import Success, Failure
-from .tearsheet_caching import cache
+from .tearsheet_caching import tearsheet_cache
 
 from ._api.reference import supported_formats
 from ._api.endpoints import data_pull
@@ -69,7 +69,7 @@ app.config["CACHE_TYPE"] = "SimpleCache"
 app.config["CACHE_DEFAULT_TIMEOUT"] = 300
 
 
-cache.init_app(app)
+tearsheet_cache.init_app(app)
 
 app.jinja_env.globals.update(zip=zip)
 
