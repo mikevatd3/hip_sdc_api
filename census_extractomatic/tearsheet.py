@@ -4,7 +4,6 @@ from itertools import groupby
 
 from flask import redirect, render_template, request, jsonify, Blueprint, current_app, url_for
 from flask_cors import CORS
-from flask_caching import Cache
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from psycopg2.errors import UndefinedTable
@@ -14,13 +13,12 @@ from lesp.analyze import extract_variables
 from census_extractomatic._api.download_data import pack_geojson_response
 
 from .access import Geography, Indicator, Tearsheet
+from .tearsheet_caching import cache
 
 
 tearsheet = Blueprint("tearsheet", __name__)
 
 CORS(tearsheet)
-
-cache = Cache(current_app)
 
 RECIPES = {
     ":population": "B01001001",
