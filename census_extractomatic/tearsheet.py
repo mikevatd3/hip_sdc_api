@@ -13,7 +13,7 @@ from lesp.analyze import extract_variables
 from census_extractomatic._api.download_data import pack_geojson_response
 
 from .access import Geography, Indicator, Tearsheet
-from .tearsheet_caching import cache
+from .tearsheet_caching import tearsheet_cache
 
 
 tearsheet = Blueprint("tearsheet", __name__)
