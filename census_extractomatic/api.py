@@ -63,6 +63,10 @@ app.config.from_object(
     )
 )
 app.config["SECRET_KEY"] = config["sessions"]["secret_key"]
+
+app.config["CACHE_TYPE"] = "SimpleCache"
+app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+
 app.jinja_env.globals.update(zip=zip)
 
 db = SQLAlchemy(app)

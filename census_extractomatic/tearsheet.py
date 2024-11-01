@@ -4,6 +4,7 @@ from itertools import groupby
 
 from flask import redirect, render_template, request, jsonify, Blueprint, current_app, url_for
 from flask_cors import CORS
+from flask_caching import Cache
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
 from psycopg2.errors import UndefinedTable
@@ -19,6 +20,7 @@ tearsheet = Blueprint("tearsheet", __name__)
 
 CORS(tearsheet)
 
+cache = Cache(current_app)
 
 RECIPES = {
     ":population": "B01001001",
@@ -313,6 +315,7 @@ def validate_lesp():
 
 
 @tearsheet.route("/varsearch")
+@cache.cached()
 def text_search():
     """
     There are two uses for this endpoint:
