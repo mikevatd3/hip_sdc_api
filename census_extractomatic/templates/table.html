@@ -23,7 +23,7 @@
 </div>
 {% if method != 'GET' %}
 <div id="table_link" hx-swap-oob="true">
-    <p><a href="{{ mapurl }}">view on map</a> download: <a href="{{ geojsonurl }}" download="tearsheet.geojson">geojson</a></p>
+    <p><a href="{{ mapurl }}">view on map</a> <a href="{{ geojsonurl }}" download="tearsheet.geojson">download geojson</a></p>
         <button onclick="copyTableToClipboard()">Copy</button>
         <button hx-trigger="click" hx-get="/tearsheet/clear" hx-target="#table_link" hx-swap="outerHTML">Clear</button>
         <button class="create-tearsheet"
