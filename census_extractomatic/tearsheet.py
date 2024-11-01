@@ -313,7 +313,7 @@ def validate_lesp():
 
 
 @tearsheet.route("/varsearch")
-@tearsheet_cache.cached()
+@tearsheet_cache.cached(timeout=300, query_string=True)
 def text_search():
     """
     There are two uses for this endpoint:
