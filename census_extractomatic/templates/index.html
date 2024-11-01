@@ -182,6 +182,26 @@
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
 <script>
+    // Copy tearsheet table to clipboard
+    function copyTableToClipboard() {
+        // Get table element
+        const table = document.getElementById("data_table");
+        let tsv = "";
+
+        // Loop through rows
+        for (let row of table.rows) {
+            let cells = Array.from(row.cells).map(cell => cell.innerText);
+            tsv += cells.join("\t") + "\n";
+        }
+
+        // Copy TSV to clipboard
+        navigator.clipboard.writeText(tsv).then(() => {
+            alert("Table copied to clipboard!");
+        }).catch(err => {
+            console.error("Failed to copy table: ", err);
+        });
+    }
+
     // Needed later for adding variables
     function bracketsOpen(formula) {
         let openCount = 0;
