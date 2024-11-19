@@ -91,6 +91,7 @@ def sheet():
 
     url = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
     geojsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
+    jsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=json"
     mapurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
 
     try:
@@ -110,6 +111,7 @@ def sheet():
                 values=values,
                 url=url,
                 geojsonurl=geojsonurl,
+                jsonurl=jsonurl,
                 mapurl=mapurl,
                 method=request.method,
             )
