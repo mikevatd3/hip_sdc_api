@@ -68,12 +68,12 @@
         }
 
         #user-title {
-            font-size: 2em;
+            font-size: 2rem;
             font-weight: normal;
         }
 
         #edit-hint {
-            font-size: 1em;
+            font-size: 0.5rem;
         }
 
         .completion-popup {
@@ -146,8 +146,13 @@
 
         // Add an event listener for input events
         editableTitle.addEventListener('input', function () {
-          // Update the document's title dynamically
-          document.title = editableTitle.textContent;
+          if (editableTitle.textContent === '') {
+              // Update the document's title dynamically
+              document.title = 'New tearsheet!'
+          } else {
+              // Update the document's title dynamically
+              document.title = editableTitle.textContent;
+          }
         });
     </script>
 </body>
