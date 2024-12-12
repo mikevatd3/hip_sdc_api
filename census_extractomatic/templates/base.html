@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>tearsheet</title>
+    <title>New tearsheet!</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
@@ -66,6 +66,10 @@
             font-size: larger;
         }
 
+        #user-title {
+            font-weight: normal;
+        }
+
         .completion-popup {
             position: absolute;
             border: 1px solid #ccc;
@@ -116,11 +120,30 @@
 
 <body>
     <nav id="top_bar" class="container no-print">
-        {% include 'nav.html' %}
+        <ul>
+            <li><i><strong><a href="/tearsheet">tearsheet!</a></strong></i></li>
+        </ul>
+        <ul>
+            <li><h1 id="user-title" contenteditable="true">Untitled Tearsheet</h1><li>
+        </ul>
+        <ul>
+            <li>PROTOTYPE</li>
+            <li><a href="/tearsheet/help">Help using tearsheet</a></li>
+        </ul>
     </nav>
     <main id="all_content" class="container">
         {% block content %}{% endblock %}
     </main>
+    <script>
+        // Grab the user provided title
+        const editableTitle = document.getElementById('user-title');
+
+        // Add an event listener for input events
+        editableTitle.addEventListener('input', function () {
+          // Update the document's title dynamically
+          document.title = editableTitle.textContent;
+        });
+    </script>
 </body>
 
 </html>
