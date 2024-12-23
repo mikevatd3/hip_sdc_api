@@ -350,9 +350,7 @@
         if (position) {
             const node = position.offsetNode;
 
-            console.log(node.nodeName);
-
-            if (node && node.nodeType === "TEXTAREA") {
+            if (node && node.nodeName === "TEXTAREA") {
                 const text = node.value;
                 const offset = node.selectionStart;
 
