@@ -134,6 +134,27 @@
         top: 0;
         z-index: 1;
     }
+
+    .tooltip {
+      position: absolute;
+      display: none;
+      background: #333;
+      color: #fff;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      z-index: 1000;
+      max-width: 200px;
+      word-wrap: break-word;
+    }
+
+    .text-box {
+      border: 1px solid #ccc;
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+    }
+
 </style>
 {% endblock %}
 {% block content %}
@@ -181,6 +202,7 @@
 <div id="error-message"></div>
 <div id="build_ind" class="htmx-indicator"><p>Preparing tearsheet!</p></div>
 <div id="data_table"></div>
+<div id="tooltip"></div>
 <script>
     // Copy tearsheet table to clipboard
     async function copyTableToClipboard() {
@@ -309,5 +331,58 @@
     document.body.addEventListener('DOMContentLoaded', function(evt) {
         console.log("history restored");
     });
+
+
+    // Handling the hover over variable information
+    const variableBox = document.getElementById("indicators");
+    const tooltip = document.getElementById("tooltip");
+
+    variableBox.addEventListener('mousemove', async (event) => {
+        // Get the node at the mouse pointer
+        const range = document.createRange();
+        const position = document.caretPositionFromPoint
+            ? document.caretPositionFromPoint(event.clientX, event.clientY)
+            : document.caretRangeFromPoint(event.clientX, event.clientY);
+
+        if (position) {
+            const node = position.offsetNode;
+
+            if (node && node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent;
+                const offset = position.offset;
+
+                // Extract the word under the cursor
+                const leftPart = text.slice(0, offset).split(/\s/).pop();
+                const rightPart = text.slice(offset).split(/\s/)[0];
+                const word = leftPart + rightPart;
+
+                if (word) {
+                    // Update tooltip position
+                    tooltip.style.left = `${event.pageX + 10}px`;
+                    tooltip.style.top = `${event.pageY + 10}px`;
+                    tooltip.style.display = 'block';
+
+                    // Fetch tooltip content if word changes
+                    if (tooltip.dataset.currentWord !== word) {
+                        tooltip.dataset.currentWord = word;
+                        tooltip.innerHTML = 'Loading...'; // Show loading message
+
+                        try {
+                            const response = await fetch(`/api/tooltip/${encodeURIComponent(word)}`);
+                            if (response.ok) {
+                                const html = await response.text();
+                                tooltip.innerHTML = html;
+                            } else {
+                                tooltip.innerHTML = `Error: ${response.status}`;
+                            }
+                        } catch (error) {
+                            tooltip.innerHTML = 'Failed to load tooltip.';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
 </script>
 {% endblock %}

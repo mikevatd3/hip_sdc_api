@@ -20,6 +20,7 @@ tearsheet = Blueprint("tearsheet", __name__)
 
 CORS(tearsheet)
 
+
 RECIPES = {
     ":population": "B01001001",
     ":pop_density": "(/ B01001001 (/ land_area 2589988))",
@@ -553,6 +554,18 @@ def table_detail_page(table_id):
     )
 
 
+@tearsheet.route("/variables/<path:variable>")
+def variable_preview(variable):
+    with db_engine.connect() as db:
+        tree, table = Indicator.preview(variable, db)
+
+    if (not tree) or (not table):
+        return "<h3>Variable not found</h3>"
+    
+    variables = nest_variables(tree)
+    return render_template("var_info.html", variables=variables, table=table)
+
+
 @tearsheet.route("/help")
 def help():
     return render_template("help.html")
@@ -574,3 +587,4 @@ def feedback():
 @tearsheet.route("/thank-you")
 def thank_you():
     return render_template("thank_you.html")
+

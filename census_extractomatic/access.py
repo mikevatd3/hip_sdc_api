@@ -1,4 +1,3 @@
-from pprint import pformat
 from sqlalchemy import text
 import tomli
 from pypika import (
@@ -80,6 +79,39 @@ class Indicator:
                 # TODO: This needs to be validated further!
 
         return formulae, variables
+
+
+    @classmethod
+    def preview(cls, variable_id, db):
+        tree_q = text("""
+        WITH RECURSIVE hits AS (
+            SELECT *
+            FROM acs2022_5yr.census_column_metadata
+            WHERE column_id = :variable_id
+
+            UNION ALL
+
+            SELECT cm.*
+            FROM acs2022_5yr.census_column_metadata cm
+            INNER JOIN hits ON hits.parent_column_id = cm.column_id
+        )
+        SELECT *
+        FROM hits
+        ORDER BY indent;
+        """)
+
+
+        table_q = text("""
+        SELECT *
+        FROM acs2022_5yr.census_table_metadata
+        WHERE table_id = LEFT(:variable_id, 6);
+        """)
+
+        tree = db.execute(tree_q, {"variable_id": variable_id})
+        table = db.execute(table_q, {"variable_id": variable_id})
+
+        return tree.fetchall(), table.fetchone()
+
 
     @classmethod
     def explain(*args, **kwargs):
