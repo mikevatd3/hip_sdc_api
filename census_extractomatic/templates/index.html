@@ -338,6 +338,7 @@
     const tooltip = document.getElementById("tooltip");
 
     variableBox.addEventListener('mousemove', async (event) => {
+        console.log(event);
         // Get the node at the mouse pointer
         const range = document.createRange();
         const position = document.caretPositionFromPoint
@@ -348,6 +349,8 @@
 
         if (position) {
             const node = position.offsetNode;
+
+            console.log(node.nodeType);
 
             if (node && node.nodeType === Node.TEXT_NODE) {
                 const text = node.textContent;
