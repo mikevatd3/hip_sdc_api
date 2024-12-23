@@ -343,6 +343,8 @@
         const position = document.caretPositionFromPoint
             ? document.caretPositionFromPoint(event.clientX, event.clientY)
             : document.caretRangeFromPoint(event.clientX, event.clientY);
+        
+        console.log(position);
 
         if (position) {
             const node = position.offsetNode;
@@ -355,6 +357,8 @@
                 const leftPart = text.slice(0, offset).split(/\s/).pop();
                 const rightPart = text.slice(offset).split(/\s/)[0];
                 const word = leftPart + rightPart;
+                
+                console.log(word);
 
                 if (word) {
                     // Update tooltip position
@@ -368,7 +372,7 @@
                         tooltip.innerHTML = 'Loading...'; // Show loading message
 
                         try {
-                            const response = await fetch(`/api/tooltip/${encodeURIComponent(word)}`);
+                            const response = await fetch(`/tearsheet/variables/${encodeURIComponent(word)}`);
                             if (response.ok) {
                                 const html = await response.text();
                                 tooltip.innerHTML = html;
@@ -384,5 +388,9 @@
         }
     });
 
+    variableBox.addEventListener('mouseout', () => {
+      tooltip.style.display = 'none';
+      tooltip.dataset.currentWord = '';
+    });
 </script>
 {% endblock %}
