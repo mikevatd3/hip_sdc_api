@@ -350,12 +350,11 @@
         if (position) {
             const node = position.offsetNode;
 
-            console.log(node.nodeType);
-            console.log(Node.TEXT_NODE);
+            console.log(node.nodeName);
 
-            if (node && node.nodeType === Node.TEXT_NODE) {
-                const text = node.textContent;
-                const offset = position.offset;
+            if (node && node.nodeType === "TEXTAREA") {
+                const text = node.value;
+                const offset = node.selectionStart;
 
                 // Extract the word under the cursor
                 const leftPart = text.slice(0, offset).split(/\s/).pop();
