@@ -344,22 +344,22 @@
         const position = document.caretPositionFromPoint
             ? document.caretPositionFromPoint(event.clientX, event.clientY)
             : document.caretRangeFromPoint(event.clientX, event.clientY);
-        
-        console.log(position);
 
         if (position) {
             const node = position.offsetNode;
 
             if (node && node.nodeName === "TEXTAREA") {
-                const text = node.value;
+                const indicators = node.value;
                 const offset = node.selectionStart;
 
                 // Extract the word under the cursor
+
+                const parts = indicators.split("|");
+                const text = parts[parts.length - 1]
+
                 const leftPart = text.slice(0, offset).split(/\s/).pop();
                 const rightPart = text.slice(offset).split(/\s/)[0];
-                const word = leftPart + rightPart;
-                
-                console.log(word);
+                const word = (leftPart + rightPart).replace(/^\W+|\W+$/g, "");
 
                 if (word) {
                     // Update tooltip position
