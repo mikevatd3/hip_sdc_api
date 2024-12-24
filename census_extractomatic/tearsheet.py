@@ -2,7 +2,15 @@ from urllib.parse import quote, unquote
 import re
 from itertools import groupby
 
-from flask import redirect, render_template, request, jsonify, Blueprint, current_app, url_for
+from flask import (
+    redirect,
+    render_template,
+    request,
+    jsonify,
+    Blueprint,
+    current_app,
+    url_for,
+)
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import ProgrammingError
@@ -52,23 +60,27 @@ def index():
 @tearsheet.route("/sheet", methods=["GET", "POST"])
 def sheet():
     if request.method == "POST":
-        # Allow a final comma for by filtering empty columns 
+        # Allow a final comma for by filtering empty columns
         geographies = [
-            item.strip() for item in (
+            item.strip()
+            for item in (
                 request.form.get("geographies", "")
                 .strip()
                 .replace(", ", ",")
                 .split(",")
-            ) if item
+            )
+            if item
         ]
 
         indicators = [
-            item.strip() for item in (
+            item.strip()
+            for item in (
                 request.form.get("indicators", "")
                 .strip()
                 .replace(", ", ",")
                 .split(",")
-            ) if item
+            )
+            if item
         ]
 
         release = request.form.get("release", "acs2022_5yr")
@@ -468,7 +480,9 @@ def text_search():
         This might need some work because all you really need to change
         is the behavior of the table id link.
         """
-        return render_template("sdc_var_search_response.html", results=hits, q=q)
+        return render_template(
+            "sdc_var_search_response.html", results=hits, q=q
+        )
     else:
         return render_template("var_search_tool.html", results=hits, q=q)
 
@@ -495,8 +509,8 @@ def convert_to_dicts(variable_list):
 
 def nest_variables(variables, parent_id=None):
     """
-    ACS variables are hierarchical. This will take a list of ACS 
-    variables and arrange them appropriately into a tree based on the 
+    ACS variables are hierarchical. This will take a list of ACS
+    variables and arrange them appropriately into a tree based on the
     parent column.
 
     Only use this on small data. It's n^2 in its current form.
@@ -548,10 +562,10 @@ def table_detail_page(table_id):
     }
 
     return render_template(
-        "table_detail.html", 
-        table=table, 
+        "table_detail.html",
+        table=table,
         variables=nested_variables,
-        source_q=source_q
+        source_q=source_q,
     )
 
 
@@ -562,8 +576,19 @@ def variable_preview(variable):
 
     if (not tree) or (not table):
         return "<h3>Variable not found</h3>"
+
     
-    variables = nest_variables(convert_to_dicts(tree))
+    var_dicts = [{
+        "table_id": row.table_id,
+        "line_number": row.line_number,
+        "column_id": row.column_id,
+        "column_title": row.column_title,
+        "indent": row.indent,
+        "parent_column_id": row.parent_column_id,
+    } for row in tree]
+
+
+    variables = nest_variables(var_dicts)
 
     return render_template("var_info.html", variables=variables, table=table)
 
@@ -576,11 +601,13 @@ def help():
 @tearsheet.route("/feedback", methods=["GET", "POST"])
 def feedback():
     if request.method == "POST":
-        current_app.logger.info({
-            "name": request.form.get("name"),
-            "email": request.form.get("email"),
-            "feedback": request.form.get("feedback"),
-        })
+        current_app.logger.info(
+            {
+                "name": request.form.get("name"),
+                "email": request.form.get("email"),
+                "feedback": request.form.get("feedback"),
+            }
+        )
         return redirect(url_for("tearsheet.thank_you"))
 
     return render_template("issue_form.html")
@@ -589,4 +616,3 @@ def feedback():
 @tearsheet.route("/thank-you")
 def thank_you():
     return render_template("thank_you.html")
-
