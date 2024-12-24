@@ -1,7 +1,7 @@
 <div class="var_info">
     <h3>{{ table.table_id }}: {{ table.simple_table_title }}</h3>
       {%- for variable in variables recursive %}
-      <li><span class="variable-id">{{ variable.variable_id }}</span>: {{ variable.variable_label }}
+      <li><span class="variable-id">{{ variable.variable_id }}</span>: {{ variable.variable_title }}
         {%- if variable.children %}
           <ul>{{ loop(variable.children) }}</ul>
         {% endif %}
