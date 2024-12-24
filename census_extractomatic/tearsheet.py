@@ -581,8 +581,8 @@ def variable_preview(variable):
     var_dicts = [{
         "table_id": row.table_id,
         "line_number": row.line_number,
-        "column_id": row.column_id,
-        "column_title": row.column_title,
+        "variable_id": row.column_id,
+        "variable_title": row.column_title,
         "indent": row.indent,
         "parent_id": row.parent_column_id,
     } for row in tree]
