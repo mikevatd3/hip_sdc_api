@@ -25,7 +25,6 @@
 <div id="table_link" hx-swap-oob="true">
     <p><a href="{{ mapurl }}">view on map</a> <a href="{{ jsonurl }}" download="tearsheet.json">download json</a> <a href="{{ geojsonurl }}" download="tearsheet.geojson">download geojson</a></p>
         <button onclick="copyTableToClipboard()">Copy</button>
-        <button hx-trigger="click" hx-get="/tearsheet/clear" hx-target="#table_link" hx-swap="outerHTML">Clear</button>
         <button class="create-tearsheet"
                 hx-post="/tearsheet/sheet"
                 hx-indicator="#build_ind"
