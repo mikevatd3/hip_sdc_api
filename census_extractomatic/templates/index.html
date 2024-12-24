@@ -353,12 +353,13 @@
                 const offset = node.selectionStart;
 
                 // Extract the word under the cursor
-
+                
                 const parts = indicators.split("|");
-                const text = parts[parts.length - 1]
+                const discount = parts.slice(0, -1).map(x => x.length).reduce((x,y) => x + y);
+                const text = parts[parts.length - 1];
 
-                const leftPart = text.slice(0, offset).split(/\s/).pop();
-                const rightPart = text.slice(offset).split(/\s/)[0];
+                const leftPart = text.slice(0, offset - discount).split(/\s/).pop();
+                const rightPart = text.slice(offset - discount).split(/\s/)[0];
                 const word = (leftPart + rightPart).replace(/^\W+|\W+$/g, "");
 
                 if (word) {
