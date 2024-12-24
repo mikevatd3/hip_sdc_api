@@ -355,7 +355,14 @@
                 // Extract the word under the cursor
                 
                 const parts = indicators.split("|");
-                const discount = parts.slice(0, -1).map(x => x.length).reduce((x,y) => x + y);
+
+                // 'discount' is the length of the equation name
+                // | ignore      |<- count from here
+                // indicator_name|Indicator value 
+                const discount = parts.slice(0, -1)
+                                      .map(x => x.length)
+                                      .reduce((x,y) => x + y, 0); // Needs 0!
+
                 const text = parts[parts.length - 1];
 
                 const leftPart = text.slice(0, offset - discount).split(/\s/).pop();
