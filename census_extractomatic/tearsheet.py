@@ -584,7 +584,7 @@ def variable_preview(variable):
         "column_id": row.column_id,
         "column_title": row.column_title,
         "indent": row.indent,
-        "parent_column_id": row.parent_column_id,
+        "parent_id": row.parent_column_id,
     } for row in tree]
 
 
