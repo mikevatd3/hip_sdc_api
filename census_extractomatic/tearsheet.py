@@ -495,8 +495,9 @@ def convert_to_dicts(variable_list):
 
 def nest_variables(variables, parent_id=None):
     """
-    ACS variables are hierarchical. This will take a list of ACS variables and
-    arrange them appropriately into a tree based on the parent column.
+    ACS variables are hierarchical. This will take a list of ACS 
+    variables and arrange them appropriately into a tree based on the 
+    parent column.
 
     Only use this on small data. It's n^2 in its current form.
     """
@@ -562,7 +563,8 @@ def variable_preview(variable):
     if (not tree) or (not table):
         return "<h3>Variable not found</h3>"
     
-    variables = nest_variables(tree)
+    variables = nest_variables(convert_to_dicts(tree))
+
     return render_template("var_info.html", variables=variables, table=table)
 
 
