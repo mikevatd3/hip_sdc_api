@@ -126,6 +126,17 @@
         gap: 1rem;
     }
 
+    @media (max-width: 770) { /* Adjust the width threshold as needed */
+        #geography-inputs, #indicator-inputs {
+            flex-direction: column; /* Stack items vertically */
+            gap: 0.5rem; /* Adjust spacing for smaller screens */
+        }
+
+        #var-search-open, #geo-search-open {
+            width: 100%; /* Ensure buttons take full width in the stacked layout */
+        }
+    }
+
     .create-tearsheet {
         background-color: gold;
         color: black;
