@@ -55,6 +55,23 @@
     with the tool provided with the button on the right. Same as before, once you've identified the variable that you'd like you
     can click it to add it to the field.
     </p>
+
+    <h4>Search</h4>
+    <p class="help_text">
+    Clicking the 'Search variables' button brings up the variable search. This search is a work in progress, so here are a few tips
+    to help you find the variable you're looking for:
+    </p>
+    <ul class="help_text">
+        <li>Search table codes: Often if you know a table that's close you can search the first few characters of that code to find related variables.</li>
+        <li>Try synonyms: The Census uses a specific vocabulary so you may have the wrong term</li>
+        <li>Review these guides to locate table codes: <a href="https://sdc.datadrivendetroit.org/topics/">State of the Child: Topics Pages</a></li>
+    </ul>
+    <p class="help_text">
+    Once you find the variable you want, you can click the variable name to add it to the field. Work in progress: This can sometimes cause wacky 
+    character inserts!
+    </p>
+
+
     <h3>Advanced</h3>
     <h4>Aliasing</h4>
     <p class="help_text">
@@ -82,13 +99,21 @@
     available.
     </p>
     <p class="help_text">
-    The syntax for writing custom variables is very simple. First, provide an alias. All Crisp-based indicators require one. Then, start your
-    custom indicator with an opening parenthesis '(', then one of the operators listed above. Then put any number of ACS variables separated by
-    spaces, then a closing parenthesis, ')'. The operator that you placed at the first will then be applied cumulatively to all variables.
+    The syntax for writing custom variables is very simple. First, provide an alias. All Crisp-based indicators require one. Then, 
+    start your custom indicator with an opening parenthesis '(', then one of the operators listed above. Then put any number of ACS 
+    variables separated by spaces, then a closing parenthesis, ')'. The operator that you placed at the first will then be applied 
+    cumulatively to all variables.
     </p>
     <pre><code class="help_text">
     pct_under_ten|(/ (+ B01001003 B01001004 B01001027 B01001028) B01001001)
     </code></pre>
+    
+    <h3>Errors</h3>
+    <p class="help_text">
+    Tearsheet provides some feedback to help users write correct code, but these are mostly still in development. When they help, 
+    great, but if they seem confusing you can ignore them. So long as the code is correct in the geography and indicator boxes, 
+    your request should be successful.
+    </p>
 
     <h2>API</h2>
     <p class="help_text">
@@ -128,8 +153,8 @@ df = pd.DataFrame(response.json()).set_index("geoid")
 </code></pre>
 
 <h2><em>tearhseet is a work in progress</em></h2>
-<p>If things break, give it a refresh!</p>
-<p>Report issues or feature ideas <a href="/tearsheet/feedback">here</a></p>
+<p class="help_text">If things break, give it a refresh!</p>
+<p class="help_text">Report issues or feature ideas <a href="/tearsheet/feedback">here</a></p>
 </article>
 {% endblock %}
 

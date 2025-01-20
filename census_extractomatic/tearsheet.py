@@ -158,8 +158,8 @@ def sheet():
                         case _:
                             return render_template(
                                 "error.html",
-                                e=e.statement,
-                                error_type=type(e.orig),
+                                e="Data retrevial error",
+                                error_type="Unknown",
                             )
                 case AttributeError():
                     return render_template(
@@ -169,7 +169,7 @@ def sheet():
                     )
                 case _:
                     return render_template(
-                        "error.html", e=e, error_type=type(e)
+                        "error.html", e="Unknown error: review your geographies and equations and try again.", error_type="Unknown"
                     )
 
         return jsonify({"message": f"there was an error with your request {e}"})
