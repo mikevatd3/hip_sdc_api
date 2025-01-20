@@ -130,27 +130,15 @@
             <li><i><strong><a href="/tearsheet">tearsheet!</a></strong></i></li>
         </ul>
         <ul>
-            <li><a href="/tearsheet/help">Help using tearsheet</a></li>
+            <li>PROTOTYPE: send questions to mike@datadrivendetroit.org</li>
+        </ul>
+        <ul>
+            <li><a href="/tearsheet/help">Help!</a></li>
         </ul>
     </nav>
     <main id="all_content" class="container">
         {% block content %}{% endblock %}
     </main>
-    <script>
-        // Grab the user provided title
-        const editableTitle = document.getElementById('user-title');
-
-        // Add an event listener for input events
-        editableTitle.addEventListener('input', function () {
-          if (editableTitle.textContent === '') {
-              // Update the document's title dynamically
-              document.title = 'New tearsheet!'
-          } else {
-              // Update the document's title dynamically
-              document.title = editableTitle.textContent;
-          }
-        });
-    </script>
 </body>
 
 </html>
