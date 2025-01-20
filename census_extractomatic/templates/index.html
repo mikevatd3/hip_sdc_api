@@ -114,6 +114,8 @@
         flex: 1.75;
         min-height: 3em; /* Default height */
         max-height: fit-content; /* Allow growth if content wraps */
+        min-width: fit-content;
+        overflow-wrap: normal;
         margin-bottom: 1em;
         box-sizing: border-box; /* Include padding/borders in size calculation */
         overflow: hidden; /* Prevent overflow in most cases */
@@ -126,16 +128,6 @@
         gap: 1rem;
     }
 
-    @media (max-width: 770) { /* Adjust the width threshold as needed */
-        #geography-inputs, #indicator-inputs {
-            flex-direction: column; /* Stack items vertically */
-            gap: 0.5rem; /* Adjust spacing for smaller screens */
-        }
-
-        #var-search-open, #geo-search-open {
-            width: 100%; /* Ensure buttons take full width in the stacked layout */
-        }
-    }
 
     .create-tearsheet {
         background-color: gold;
