@@ -150,6 +150,25 @@ response = requests.get(
 )
 
 df = pd.DataFrame(response.json()).set_index("geoid")
+
+
+# When using the API -- you also have access to data from previous years
+# You can provide the year with the following call
+
+# The following years are available
+
+# acs2016_5yr
+# acs2017_5yr
+# acs2021_5yr
+# acs2022_5yr
+
+response = requests.get(
+    "https://sdcapi.datadrivendetroit.org/tearsheet/sheet?"
+    f"geographies={quote(geographies)}&"
+    f"indicators={quote(indicators)}&"
+    "release=acs2017_5yr"
+)
+
 </code></pre>
 
 <h2><em>tearhseet is a work in progress</em></h2>
