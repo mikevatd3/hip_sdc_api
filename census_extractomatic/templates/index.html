@@ -110,10 +110,13 @@
     }
 
     #var-search-open, #geo-search-open {
+        /* CHATGPT For this crap*/
         flex: 1.75;
-        min-height: 3em;
-        max-height: min-content;
+        min-height: 3em; /* Default height */
+        max-height: fit-content; /* Allow growth if content wraps */
         margin-bottom: 1em;
+        box-sizing: border-box; /* Include padding/borders in size calculation */
+        overflow: hidden; /* Prevent overflow in most cases */
     }
 
     #geography-inputs, #indicator-inputs {
