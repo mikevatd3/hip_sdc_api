@@ -9,8 +9,8 @@
     </td>
 </tr>
 {% if row.children %}
-    <tr class="children" colspan="2">
-        <td>
+    <tr class="children">
+        <td colspan="2">
             Break into:
             {% for child in row.children %}
             <span class="geography-id"> {{ child }}|{{ row.full_geoid }}</span>, 
