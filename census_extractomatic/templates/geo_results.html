@@ -10,7 +10,7 @@
     {% if row.children %}
     <tr class="children">
         <td>
-            Available sub-geographies:
+            Break into:
             {% for child in row.children %}
             <span class="geography-id"> {{ child }}|{{ row.full_geoid }}</span>, 
             {% endfor %}
