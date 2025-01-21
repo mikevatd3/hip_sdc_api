@@ -506,7 +506,7 @@ class Geography:
             available_child_levs[row.parent_geoid].append(row.sum_lev)
 
         for geography in geographies:
-            geography["available_children"] = [
+            geography["children"] = [
                 cls.rev_aliases[child] 
                 for child in available_child_levs[geography["full_geoid"]]
             ]
