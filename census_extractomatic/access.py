@@ -10,6 +10,7 @@ from pypika import (
     CustomFunction,
 )
 from pypika import functions as fn
+from collections import defaultdict
 import pandas as pd
 from lesp.core import execute
 from lesp.analyze import extract_variables, validate_program, LespCompileError
@@ -414,6 +415,8 @@ class Geography:
         "school_districts": "970",
     }
 
+    rev_aliases = {v: k for k, v in sum_lev_aliases.items()}
+
     valid_sum_levs = {"040", "050", "060", "160", "140", "860", "970", "950"}
 
     @classmethod
@@ -452,16 +455,20 @@ class Geography:
 
         return result
 
-    @staticmethod
-    def search(query, db):
-        stmt = text(
+    @classmethod
+    def search(cls, query, db):
+        """
+        Apply basic text, search, then pull out all available geographies
+        for fill-in helpers.
+        """
+        search_q = text(
             """
             with michigan as (
                 select display_name, full_geoid, population, name_vec, priority
                 from tiger2022.census_name_lookup
                 where state_fp = 26
             )
-            select *
+            select full_geoid, display_name
             from michigan
             where name_vec @@ to_tsquery(:query)
             and priority is not null
@@ -470,6 +477,37 @@ class Geography:
             """
         )
 
-        result = db.execute(stmt, {"query": " & ".join(query.split())})
+        result = db.execute(search_q, {"query": " & ".join(query.split())})
 
-        return result.fetchall()
+        geographies = [
+            {
+                "full_geoid": row.full_geoid,
+                "display_name": row.display_name,
+            } for row in result.fetchall()
+        ]
+
+        children_q = text(
+            """
+            select distinct(left(child_geoid, 3)) as sum_lev, 
+                   parent_geoid
+            from tiger2022.census_geo_containment
+            where parent_geoid in :geoids
+            """
+        )
+
+        children_levs = db.execute(
+            children_q, 
+            {"geoids": [row["full_geoid"] for row in geographies]}
+        )
+
+        available_child_levs = defaultdict(list)
+        for row in children_levs.fetchall():
+            available_child_levs[row.parent_geoid].append(row.sum_lev)
+
+        for geography in geographies:
+            geography["available_children"] = [
+                cls.rev_aliases[child] 
+                for child in available_child_levs[geography["full_geoid"]]
+            ]
+
+        return geographies
