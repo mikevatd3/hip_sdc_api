@@ -13,7 +13,7 @@
         <td colspan="2">
             Break into:
             {% for child in row.children %}
-            <span class="geography-id"> {{ child }}|{{ row.full_geoid }}</span>, 
+            <span class="geography-id"> {{ child }}|{{ row.full_geoid }}</span>{% if not loop.last %},{% endif %}
             {% endfor %}
         </td>
     <tr>
