@@ -492,6 +492,7 @@ class Geography:
                    parent_geoid
             from tiger2022.census_geo_containment
             where parent_geoid in :geoids
+            and not child_geoid like '150%'; -- no block groups!
             """
         )
 
