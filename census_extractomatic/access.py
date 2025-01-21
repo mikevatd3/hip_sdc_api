@@ -497,7 +497,7 @@ class Geography:
 
         children_levs = db.execute(
             children_q, 
-            {"geoids": [row["full_geoid"] for row in geographies]}
+            {"geoids": (row["full_geoid"] for row in geographies)}
         )
 
         available_child_levs = defaultdict(list)
