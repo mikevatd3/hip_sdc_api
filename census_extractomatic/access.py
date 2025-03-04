@@ -1,3 +1,13 @@
+
+"""
+Classes in this file serve as rough module boundaries.
+
+- Indicators are either variables, or 'cooked' formulas with lesp
+- Variables are raw values from the db
+
+"""
+
+
 from sqlalchemy import text
 import tomli
 from pypika import (
@@ -16,13 +26,9 @@ from lesp.core import execute
 from lesp.analyze import extract_variables, validate_program, LespCompileError
 from .datatypes import make_maybe, Empty, TearValue, serialize_maybes
 
-"""
-Classes in this file serve as rough module boundaries.
 
-- Indicators are either variables, or 'cooked' formulas with lesp
-- Variables are raw values from the db
-
-"""
+DEFAULT_ACS_YEAR = "acs2022_5yr"
+DEFAULT_D3_YEAR = "d3_2024"
 
 
 with open("config.toml", "rb") as f:
@@ -36,12 +42,12 @@ class Indicator:
         "geom": "geom",
     }
 
-    acs_schema = Schema("acs2022_5yr")
-    d3_schema = Schema("d3_2024")
+    acs_schema = Schema(DEFAULT_ACS_YEAR)
+    d3_schema = Schema(DEFAULT_D3_YEAR)
 
     unified_table_q = unified_table_q = Query.from_(
-        Schema("acs2022_5yr").census_table_metadata
-    ).select("*") + Query.from_(Schema("d3_2024").census_table_metadata).select(
+        acs_schema.census_table_metadata
+    ).select("*") + Query.from_(d3_schema.census_table_metadata).select(
         "*"
     )
 
@@ -84,16 +90,16 @@ class Indicator:
 
     @classmethod
     def preview(cls, variable_id, db):
-        tree_q = text("""
+        tree_q = text(f"""
         WITH RECURSIVE hits AS (
             SELECT *
-            FROM acs2022_5yr.census_column_metadata
+            FROM {DEFAULT_ACS_YEAR}.census_column_metadata
             WHERE column_id = :variable_id
 
             UNION ALL
 
             SELECT cm.*
-            FROM acs2022_5yr.census_column_metadata cm
+            FROM {DEFAULT_ACS_YEAR}.census_column_metadata cm
             INNER JOIN hits ON hits.parent_column_id = cm.column_id
         )
         SELECT *
@@ -104,7 +110,7 @@ class Indicator:
 
         table_q = text("""
         SELECT *
-        FROM acs2022_5yr.census_table_metadata
+        FROM {DEFAULT_ACS_YEAR}.census_table_metadata
         WHERE table_id = LEFT(:variable_id, 6);
         """)
 
@@ -239,7 +245,7 @@ class Indicator:
         )
 
     @classmethod
-    def identify_missing_tables(cls, variables, db, release="acs2022_5yr"):
+    def identify_missing_tables(cls, variables, db, release=DEFAULT_ACS_YEAR):
         tables = {
             var[:-3].upper()
             for var in variables
@@ -331,9 +337,9 @@ class Indicator:
         #    - Use table title,
 
         unified_col_q = Query.from_(
-            Schema("acs2022_5yr").census_column_metadata
+            Schema(DEFAULT_ACS_YEAR).census_column_metadata
         ).select("*") + Query.from_(
-            Schema("d3_2024").census_column_metadata
+            Schema(DEFAULT_D3_YEAR).census_column_metadata
         ).select(
             "*"
         )
@@ -387,7 +393,7 @@ class CensusAPIIndicator:
 
 class Tearsheet:
     @staticmethod
-    def create(geographies, indicators, db, release="acs2022_5yr", geom=False):
+    def create(geographies, indicators, db, release=DEFAULT_ACS_YEAR, geom=False):
         prepared_geos = Geography.prep_geo_request(geographies, db)
         formulae, variables = Indicator.prep_ind_request(indicators)
 
@@ -396,7 +402,7 @@ class Tearsheet:
         )
 
     @staticmethod
-    def explain(geographies, indicators, db, release="acs2022_5yr"):
+    def explain(geographies, indicators, db, release=DEFAULT_ACS_YEAR):
         prepared_geos = Geography.prep_geo_request(geographies, db)
         formulae, variables = Indicator.prep_ind_request(indicators)
 
@@ -512,3 +518,16 @@ class Geography:
             ]
 
         return geographies
+
+"""
+The problem that we continue to face is that due to lack of consistant code 
+standards, tool choice, and deployment procedure, often facing time constraints,
+we tend to either fail to set up a dev server or set up one and then it gets 
+repurposed for something else that comes up.
+
+We need a set of agreed-upon tools that we know how to reliably deploy, 
+a standard deployment procedure (including development servers and production 
+servers, naming conventions, etc), and testing & git workflows. We need team-wide
+understanding that that procedure exists and is the ONLY way we start web projects.
+"""
+

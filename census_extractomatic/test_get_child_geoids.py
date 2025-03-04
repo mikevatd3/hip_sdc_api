@@ -1,6 +1,5 @@
 from sqlalchemy import text
 import pytest
-from icecream import ic
 
 from .metadata_api.connection import public_engine
 from ._api.access import (
