@@ -199,6 +199,12 @@
                 {% include 'var_search_tool.html' %}
             {% endwith %}
         </dialog>
+        <label for="acs-release">ACS 5-year release</label>
+        <select name="release" id="acs-release">
+            {% for opt in valid_releases %}
+            <option value={{ opt }}>{{ opt[3:8] }}</option>
+            {% endfor %}
+        </select>
     </div>
     <input name="how" type="hidden" value="html"></input>
     <div id="table_link">

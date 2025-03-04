@@ -52,9 +52,18 @@ connection_string = (
 db_engine = create_engine(connection_string)
 
 
+VALID_RELEASES = [
+    "acs2023_5yr",
+    "acs2022_5yr",
+    "acs2021_5yr",
+    "acs2017_5yr",
+    "acs2016_5yr",
+]
+
+
 @tearsheet.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", valid_releases=VALID_RELEASES)
 
 
 @tearsheet.route("/sheet", methods=["GET", "POST"])
@@ -83,7 +92,7 @@ def sheet():
             if item
         ]
 
-        release = request.form.get("release", "acs2022_5yr")
+        release = request.form.get("release", VALID_RELEASES[0])
         how = request.form.get("how")
 
     else:
@@ -99,7 +108,7 @@ def sheet():
             .replace(", ", ",")
             .split(",")
         )
-        release = unquote(request.args.get("release", "acs2022_5yr"))
+        release = unquote(request.args.get("release", VALID_RELEASES[0]))
         how = request.args.get("how")
 
     url = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
