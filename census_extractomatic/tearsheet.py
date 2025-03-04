@@ -111,10 +111,10 @@ def sheet():
         release = unquote(request.args.get("release", VALID_RELEASES[0]))
         how = request.args.get("how")
 
-    url = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html"
-    geojsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson"
-    jsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=json"
-    mapurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map"
+    url = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=html&release={release}"
+    geojsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=geojson&release={release}"
+    jsonurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=json&release={release}"
+    mapurl = f"sheet?geographies={quote(','.join(geographies))}&indicators={quote(','.join(indicators))}&how=map&release={release}"
 
     try:
         with db_engine.connect() as db:
