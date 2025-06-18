@@ -1,0 +1,22 @@
+{% for result in results %}
+<div class="result-row">
+  <div class="table-title">
+  <h3><a href="/tables/{{ result.id }}">Table {{ result.id }}</a></h3>
+  <p>{{ result.title|safe }}</p>
+  </div>
+  {% if result.variable %}
+      {% if result.parent_id %}
+      <ul>
+          <li>{{ result.parent_id }}: {{ result.parent_label }}
+      {% endif %}
+              <ul>
+                  <li>{{ result.variable|safe }}</li>
+              </ul>
+      {% if result.parent_id %}
+          </li>
+      </ul>
+  {% endif %}
+  {% endif %}
+  <p>Universe: {{ result.universe }}</p>
+</div>
+{% endfor %}

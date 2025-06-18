@@ -84,11 +84,11 @@ from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
 app.register_blueprint(metadata_api, url_prefix="/metadata")
 register_d3_metadata_admin(app)
 
-from census_extractomatic.auth import auth
-from census_extractomatic.tearsheet import tearsheet
+# from census_extractomatic.auth import auth
+# app.register_blueprint(auth, url_prefix="/auth")
 
-app.register_blueprint(auth, url_prefix="/auth")
-app.register_blueprint(tearsheet, url_prefix="/tearsheet")
+# from census_extractomatic.tearsheet import tearsheet
+# app.register_blueprint(tearsheet, url_prefix="/tearsheet")
 
 
 sentry = Sentry(app)
@@ -117,6 +117,7 @@ except Exception as e:
 
 
 ACS_NAMES = {
+    "acs2023_5yr": {"name": "ACS 2023 5-year", "years": "2019-2023"},
     "acs2022_5yr": {"name": "ACS 2022 5-year", "years": "2018-2022"},
     "acs2021_5yr": {"name": "ACS 2021 5-year", "years": "2017-2021"},
     "acs2019_5yr": {"name": "ACS 2019 5-year", "years": "2015-2019"},
@@ -2315,7 +2316,6 @@ def robots_txt():
 @app.route("/")
 def index():
     return redirect("https://www.datadrivendetroit.org")
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

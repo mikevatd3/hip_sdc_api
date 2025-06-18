@@ -1,0 +1,6 @@
+{% if query|length < 3 %}
+<h3>Search results will appear here...</h3>
+{% else %}
+<h3>No results for query: {{ query }}</h3>
+{% endif%}
+
