@@ -1,5 +1,5 @@
 from flask_login import current_user, login_user, logout_user
-from flask import render_template, redirect, url_for, request
+from flask import flash, render_template, redirect, url_for
 from sqlalchemy import select
 from werkzeug.urls import url_parse
 from . import auth
@@ -20,9 +20,13 @@ def login():
 
         if user is None or not user.check_password(form.password.data):
             nologin = True
+            flash("Username or password is incorrect", "error")
+            return redirect(url_for("auth.login"))
+
         else:
             login_user(user, remember=form.remember_me.data)
             return redirect("/admin")
+
     return render_template('auth/login.html', title='Sign In', form=form, message=nologin)
 
 @auth.route('/logout')
