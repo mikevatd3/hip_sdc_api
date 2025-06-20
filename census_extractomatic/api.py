@@ -84,11 +84,11 @@ from census_extractomatic.metadata_api.admin import register_d3_metadata_admin
 app.register_blueprint(metadata_api, url_prefix="/metadata")
 register_d3_metadata_admin(app)
 
-# from census_extractomatic.auth import auth
-# app.register_blueprint(auth, url_prefix="/auth")
+from census_extractomatic.auth import auth
+app.register_blueprint(auth, url_prefix="/auth")
 
-# from census_extractomatic.tearsheet import tearsheet
-# app.register_blueprint(tearsheet, url_prefix="/tearsheet")
+from census_extractomatic.tearsheet import tearsheet
+app.register_blueprint(tearsheet, url_prefix="/tearsheet")
 
 
 sentry = Sentry(app)
