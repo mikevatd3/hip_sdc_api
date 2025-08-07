@@ -15,14 +15,11 @@ export C_INCLUDE_PATH=/usr/include/gdal
 pip install -r requirements.txt
 
 sudo -u postgres psql
-postgres=# CREATE DATABASE census;
-postgres=# CREATE EXTENSION postgis;
 postgres=# CREATE USER census WITH PASSWORD '********';
-postgres=# GRANT ALL PRIVILEGES ON DATABASE "census" to census;
-postgres=# GRANT USAGE ON SCHEMA public TO census;
+postgres=# CREATE DATABASE census WITH OWNER census;
+postgres=# \c census
+postgres=# CREATE EXTENSION postgis;
 postgres=# \q
-psql -d census -U postgres
-census=# CREATE EXTENSION postgis;
 
 
 apt-get install -q -y memcached
